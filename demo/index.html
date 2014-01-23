@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf8">
+  <title>Musje</title>
+  <link rel="stylesheet" href="musje.css">
+  <script src="lib/jquery-1.10.2.min.js"></script>
+</head>
+<body>
+
+  <textarea id="source">                        &lt;&lt;&lt;望春風&gt;&gt;&gt;                    鄧雨賢
+4/4 5,.5,_ (6, 1) | 2 (1_2_)  3 - | (5. 3_) (3_2_)1| 2 - - - |
+ (3. 5_) 5 (3_5_) | (1.  2_)  2 - | (5,.3_) (3  2) | 1 - - - |
+  2. 2_  3 (2_1_) | 6,(5,_6,_) 1- | (6,.1_) (2  3) | 5 - - - |
+  5. 5_  6 (5_3_) | 3 (2_1_)  6,- |  5,. 3_ (3  2) | 1 - - -|]
+</textarea>
+  <p><button id="playButton">Play</button> Total measures: <span id="measure-count"></span></p>
+  <svg></svg>
+  <pre id="schema">[JSON Schema]</pre>
+  <pre id="validate">[validate]</pre>
+  <pre id="converted">[converted]</pre>
+  <pre id="result">[result]</pre>
+
+  <script src="lib/d3.v3.min.js"></script>
+  <script src="lib/lodash.min.js"></script>
+  <script src="lib/tv4.min.js"></script>
+
+  <script src="../musje.js"></script>
+  <script src="../src/musje.model.js"></script>
+  <script src="render.js"></script>
+  <script src="../src/musje.sequencer.js"></script>
+
+  <script src="main.js"></script>
+</body>
