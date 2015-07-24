@@ -37,7 +37,7 @@ var musje = musje || {};
       case 'root':
         delete schema.root;
         schema.type = 'object';
-        schema.properties = rawGroup[_.keys(rawGroup)[0]];
+        schema.properties = rawGroup[Object.keys(rawGroup)[0]];
         schema.additionalProperties = false;
         break;
       case 'objects':
@@ -73,7 +73,7 @@ var musje = musje || {};
             items: val,
             addtionalItems: false
           };
-          if (_.isArray(val)) {
+          if (Array.isArray(val)) {
             newGroup[key].items = { oneOf: val };
           }
         });
@@ -221,7 +221,7 @@ var musje = musje || {};
         var arr = [];
         arr.push = function () {
           _.each(arguments, function (item) {
-            var propName = _.keys(item)[0],
+            var propName = Object.keys(item)[0],
               Constructor = nameSpace[camel(propName)];
             push.call(arr, new Constructor(item[propName]));
           });
@@ -480,7 +480,7 @@ var musje = musje || {};
     return result;
   };
 
-  var rootName = _.keys(model.root)[0];
+  var rootName = Object.keys(model.root)[0];
   defineClasses(musje, model, 'arrays');
   defineClasses(musje, model, 'objects');
   defineClasses(musje, model, 'namedObjects');

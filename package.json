@@ -22,7 +22,5 @@
     "url": "https://github.com/jianpu/musje/issues"
   },
   "homepage": "https://github.com/jianpu/musje",
-  "dependencies": {
-    "lodash": "~2.4.1"
-  }
+  "dependencies": {}
 }
