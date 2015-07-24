@@ -82,7 +82,7 @@ function render(sheet, score) {
     baseline = 20,
     x = 0;
 
-  _.each(measure, function (data) {
+  measure.forEach(function (data) {
     switch (data.__name__) {
     case 'note':
       renderNote(sheet, data, x += 30, baseline);
