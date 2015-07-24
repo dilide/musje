@@ -3,6 +3,24 @@
  * var score = musje.score(JSONString or object);
  */
 
+// To be considered...
+function objClone(obj) {
+  return obj;
+}
+
+function objForEach(obj, cb) {
+  Object.keys(obj).forEach(function (key) {
+    cb(obj[key], key);
+  });
+}
+
+function extend(obj, ext) {
+  objForEach(ext, function (val, key) {
+    obj[key] = val;
+  });
+  return obj;
+}
+
 var musje = musje || {};
 
 (function () {
@@ -11,27 +29,27 @@ var musje = musje || {};
   var push = Array.prototype.push;
 
   function makeSchema(model) {
-    var schema = _.extend({
+    var schema = extend({
       $schema: 'http://json-schema.org/draft-04/schema#'
     }, model);
 
     function noAccessor(obj) {
-      var result = _.clone(obj);
-      _.each(result, function (val, key) {
+      var result = objClone(obj);
+      objForEach(result, function (val, key) {
         if (val.get || val.set) { delete result[key]; }
       });
       return result;
     }
 
     // Group of schema definitions with name: integers, objects, arrays...
-    _.each(schema, function (rawGroup, groupName) {
+    objForEach(schema, function (rawGroup, groupName) {
       var newGroup;
 
       switch (groupName) {
       case 'integers':
         newGroup = schema.integers = {};
-        _.each(rawGroup, function (val, key) {
-          newGroup[key] = _.extend({ type: 'integer' }, val);
+        objForEach(rawGroup, function (val, key) {
+          newGroup[key] = extend({ type: 'integer' }, val);
         });
         break;
       case 'root':
@@ -42,7 +60,7 @@ var musje = musje || {};
         break;
       case 'objects':
         newGroup = schema.objects = {};
-        _.each(rawGroup, function (val, key) {
+        objForEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: noAccessor(val),
@@ -52,7 +70,7 @@ var musje = musje || {};
         break;
       case 'namedObjects':
         newGroup = schema.namedObjects = {};
-        _.each(rawGroup, function (val, key) {
+        objForEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: {},
@@ -67,7 +85,7 @@ var musje = musje || {};
         break;
       case 'arrays':
         newGroup = schema.arrays = {};
-        _.each(rawGroup, function (val, key) {
+        objForEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'array',
             items: val,
@@ -129,7 +147,7 @@ var musje = musje || {};
 
     proto.__name__ = objectName;
 
-    _.each(model[groupName][objectName], function (descriptor, propName) {
+    objForEach(model[groupName][objectName], function (descriptor, propName) {
       var defaultVal, objName;
 
       // ES5 accessor property
@@ -192,7 +210,7 @@ var musje = musje || {};
 
     proto.__name__ = objectName;
 
-    _.each(model.namedObjects[objectName], function (descriptor, propName) {
+    objForEach(model.namedObjects[objectName], function (descriptor, propName) {
 
       if (descriptor.default !== undefined) {
         proto.value = descriptor.default;
@@ -216,11 +234,11 @@ var musje = musje || {};
       schema = model.arrays[arrayName],
       constructorName;
 
-    if (_.isArray(schema)) {
+    if (Array.isArray(schema)) {
       nameSpace[className] = function (a) {
         var arr = [];
         arr.push = function () {
-          _.each(arguments, function (item) {
+          objForEach(arguments, function (item) {
             var propName = Object.keys(item)[0],
               Constructor = nameSpace[camel(propName)];
             push.call(arr, new Constructor(item[propName]));
@@ -235,7 +253,7 @@ var musje = musje || {};
       nameSpace[className] = function (a) {
         var arr = [];
         arr.push = function () {
-          _.each(arguments, function (item) {
+          objForEach(arguments, function (item) {
             push.call(arr, new nameSpace[constructorName](item));
           });
         };
@@ -247,11 +265,11 @@ var musje = musje || {};
 
   function defineClasses(nameSpace, model, groupName) {
     if (groupName === 'arrays') {
-      _.each(model[groupName], function (descriptor, objectName) {
+      objForEach(model[groupName], function (descriptor, objectName) {
         defineArrayClass(nameSpace, objectName, model);
       });
     } else {
-      _.each(model[groupName], function (descriptor, objectName) {
+      objForEach(model[groupName], function (descriptor, objectName) {
         if (groupName === 'namedObjects' && descriptor.type) {
           defineSimpleClass(nameSpace, objectName, model);
         } else {
@@ -295,7 +313,7 @@ var musje = musje || {};
         head: { $ref: '#/objects/scoreHead' },
         parts: { $ref: '#/arrays/parts' },
         toString: function () {
-          return this.head + _.map(this.parts, function (part) {
+          return this.head + this.parts.map(function (part) {
             return part.toString();
           }).join('\n\n');
         }
@@ -323,8 +341,8 @@ var musje = musje || {};
         // head: { $ref: '#/objects/partHead' },
         measures: { $ref: '#/arrays/measures' },
         toString: function () {
-          return _.map(this.measures, function (measure) {
-            return _.map(measure, function (musicData) {
+          return this.measures.map(function (measure) {
+            return measure.map(function (musicData) {
               return musicData.toString();
             }).join(' ');
           }).join(' ');
@@ -429,7 +447,7 @@ var musje = musje || {};
         },
         duration: { $ref: '#/objects/duration' },
         toString: function () {
-          return '<' + _.map(this.pitches, function (pitch) {
+          return '<' + this.pitches.map(function (pitch) {
             return pitch.toString();
           }).join('') + '>' + this.duration;
         }
@@ -487,7 +505,7 @@ var musje = musje || {};
   defineClass(musje, 'root', rootName, model);
   musje[camel(rootName)].prototype.stringify = function (replacer, space) {
     return JSON.stringify(this, replacer, space);
-  }
+  };
 
   musje.score = function (src, validate) {
     validate = validate === undefined ? true : validate;

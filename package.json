@@ -1,6 +1,6 @@
 {
   "name": "musje",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "123 music language",
   "main": "musje.js",
   "scripts": {
