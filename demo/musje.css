@@ -22,19 +22,23 @@ pre {
 }
 
 svg {
-  border: solid blue 1px;
+  border: solid 1px blue;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
-.step {
-  font-size: 18px;
+line {
+  stroke: black;
 }
 
-.accidental {
-  font-size: 16px;
+.bbox {
+  fill: none;
+  stroke: red;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 1;
 }
 
-.time {
-  font-size: 16px;
-  /*font-weight: bold;*/
-  text-anchor: middle;
+.ref-line {
+  stroke: #ddd;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 2;
 }

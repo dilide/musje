@@ -6,9 +6,8 @@ $(function () {
     $result = $('#result'),
     $validate = $('#validate'),
     $measureCount = $('#measure-count'),
-    svg = d3.select('svg')
-      .attr('width', outerWidth)
-      .attr('height', outerHeight),
+    lo = musje.layoutOptions,
+    svg = Snap('svg').attr(lo),
     sheet, score;
 
   // $('#schema').text(JSON.stringify(musje.JSONSchema, null, 2));
@@ -35,10 +34,10 @@ $(function () {
 
     // Render score
     if (sheet) { sheet.remove(); }
-    sheet = svg.append('g')
-      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    sheet = svg.g()
+      .attr('transform', 'translate(' + lo.marginLeft + ',' + lo.marginTop + ')');
 
-    render(sheet, score);
+    musje.render(score, sheet);
   }
 
   run();
@@ -47,3 +46,49 @@ $(function () {
   $('#playButton').on('click', function () { score.play(); });
 });
 
+
+// var pos = { x: 20, y: 50 };
+// s.line(pos.x, pos.y, pos.x + 200, pos.y).addClass('ref-line');
+
+// for (var n = 1; n < 8; n++) {
+//   var note = {
+//     pitch: {
+//       step: n, accidental: '#', octave: n % 4
+//     },
+//     duration: {
+//       type: 512 / Math.pow(2, n)
+//     }
+//   };
+//   var el = createPitchDef(note);
+//   s.use(el).attr({ x: pos.x, y: pos.y });
+
+//   drawType({
+//     type: note.duration.type,
+//     x: pos.x, y: pos.y, x2: pos.x + el.width
+//   });
+
+//   pos.x += el.width + 3;
+// }
+
+// var pos = { x: 20, y: 90 };
+// s.line(pos.x, pos.y, pos.x + 200, pos.y).addClass('ref-line');
+
+// for (var n = 1; n < 8; n++) {
+//   var note = {
+//     pitch: {
+//       step: n, accidental: '#', octave: -n % 4
+//     },
+//     duration: {
+//       type: 512 / Math.pow(2, n)
+//     }
+//   };
+//   var el = createPitchDef(note);
+//   s.use(el).attr({ x: pos.x, y: pos.y });
+
+//   drawType({
+//     type: note.duration.type,
+//     x: pos.x, y: pos.y, x2: pos.x + el.width
+//   });
+
+//   pos.x += el.width + 3;
+// }

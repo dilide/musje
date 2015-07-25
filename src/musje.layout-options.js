@@ -4,7 +4,7 @@ var musje = musje || {};
   'use strict';
 
   musje.layoutOptions = {
-    width: 600,
+    width: 1200,
     height: 300,
     marginTop: 15,
     marginRight: 10,
@@ -43,6 +43,6 @@ var musje = musje || {};
     // authorFontFamily
     // authorFontWeight
     // authorFontStyle
-    headerToBody
+    // headerToBody
   };
 }());
