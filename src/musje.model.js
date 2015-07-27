@@ -3,24 +3,6 @@
  * var score = musje.score(JSONString or object);
  */
 
-// To be considered...
-function objClone(obj) {
-  return obj;
-}
-
-function objForEach(obj, cb) {
-  Object.keys(obj).forEach(function (key) {
-    cb(obj[key], key);
-  });
-}
-
-function extend(obj, ext) {
-  objForEach(ext, function (val, key) {
-    obj[key] = val;
-  });
-  return obj;
-}
-
 var musje = musje || {};
 
 (function () {
@@ -28,13 +10,38 @@ var musje = musje || {};
 
   var push = Array.prototype.push;
 
+  function isObject(obj) {
+    var type = typeof obj;
+    return type === 'function' || type === 'object' && !!obj;
+  }
+
+  function objForEach(obj, cb) {
+    if (isObject(obj)) {
+      Object.keys(obj).forEach(function (key) {
+        cb(obj[key], key);
+      });
+    }
+  }
+
+  var objExtend = musje.objExtend = function(obj, ext) {
+    objForEach(ext, function (val, key) { obj[key] = val; });
+    return obj;
+  };
+
+  // TODO: To be implemented without dependency...
+  function objDeepClone(obj) {
+    return $.extend(true, {}, obj);
+  }
+
+
+
   function makeSchema(model) {
-    var schema = extend({
+    var schema = objExtend({
       $schema: 'http://json-schema.org/draft-04/schema#'
     }, model);
 
     function noAccessor(obj) {
-      var result = objClone(obj);
+      var result = objDeepClone(obj);
       objForEach(result, function (val, key) {
         if (val.get || val.set) { delete result[key]; }
       });
@@ -49,7 +56,7 @@ var musje = musje || {};
       case 'integers':
         newGroup = schema.integers = {};
         objForEach(rawGroup, function (val, key) {
-          newGroup[key] = extend({ type: 'integer' }, val);
+          newGroup[key] = objExtend({ type: 'integer' }, val);
         });
         break;
       case 'root':
@@ -291,7 +298,18 @@ var musje = musje || {};
     TEMPO = 80,
     STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
     ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, 'n': 0, 'b' : -1, 'bb': -2 },
+    // Convert from accidental src to unicode.
+    // Double sharp and double flat are in astral plane.
+    ACCIDENTAL_TO_UNICODE = {
+      '#': '\u266f', b: '\u266d', n: '\u266e',
+      '##': 'x', bb: '\u266d\u266d' // to be changed
+    },
     TYPE_TO_STRING = { 1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_', 64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '====' },
+    // Convert from duration type to number of underlines.
+    TYPE_TO_NUM_UNDERLINES = {
+      1: 0, 2: 0, 4: 0, 8: 1, 16: 2, 32: 3,
+      64: 4, 128: 5, 256: 6, 512: 7, 1024: 8
+    },
     DOT_TO_STRING = { 0: '', 1: '.', 2: '..' },
     BAR_TO_STRING = {single: '|', double: '||', end: '|]', 'repeat-begin': '|:', 'repeat-end': ':|', 'repeat-both': ':|:'};
 
@@ -331,6 +349,9 @@ var musje = musje || {};
       scoreHead: {
         title: { type: 'string' },
         composer: { type: 'string' },
+        isEmpty: function () {
+          return !this.title && !this.composer;
+        },
         toString: function () {
           return '              <<<' + this.title + '>>>          ' +
                  this.composer + '\n';
@@ -369,6 +390,11 @@ var musje = musje || {};
           enum: ['#', 'b', '', '##', 'bb'],
           default: ''
         },
+        accidentalUnicode: {
+          get: function () {
+            return ACCIDENTAL_TO_UNICODE[this.accidental];
+          }
+        },
         midiNumber: {
           get: function () {
             return (this.octave + 5) * 12 +
@@ -401,6 +427,11 @@ var musje = musje || {};
                    this.dot === 1 ? d * 1.5 : d * 1.75;
           }
         },
+        numUnderlines: {
+          get: function () {
+            return TYPE_TO_NUM_UNDERLINES[this.type] || 0;
+          }
+        },
         toString: function () {
           return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
         }
@@ -416,6 +447,11 @@ var musje = musje || {};
         beatType: { $ref: '#/integers/beatType' },
         toString: function () {
           return this.beats + '/' + this.beatType;
+        },
+        defId: {
+          get: function () {
+          return ['t', this.beats, '-', this.beatType].join('');
+          }
         }
       },
 
@@ -426,6 +462,13 @@ var musje = musje || {};
           type: 'array',
           items: {
             enum: ['begin', 'end']
+          }
+        },
+        defId: {
+          get: function () {
+            var pitch = this.pitch;
+            return 'n' + pitch.accidental.replace(/#/g, 's') +
+                   pitch.step + pitch.octave + this.duration.numUnderlines;
           }
         },
         toString: function () {

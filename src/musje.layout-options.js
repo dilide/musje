@@ -1,15 +1,17 @@
+
 var musje = musje || {};
 
 (function () {
   'use strict';
 
   musje.layoutOptions = {
-    width: 1200,
+    mode: 'block', // inline | block | paper
+    width: 550,
     height: 300,
-    marginTop: 15,
-    marginRight: 10,
-    marginBottom: 15,
-    marginLeft: 10,
+    marginTop: 25,
+    marginRight: 30,
+    marginBottom: 25,
+    marginLeft: 30,
     margin: {
       get: function () {
         return [this.marginTop, this.marginRight, this.marginBottom, this.marginLeft];
@@ -36,13 +38,29 @@ var musje = musje || {};
     },
     fontSize: 20,   // in pixel
     fontFamily: 'Helvetica, Arial, Sans Serif',
-    titleFontSize: 32,
+    titleFontSize: 22,
     // titleFontFamily
-    titleFontWeight: 'heavy',
-    authorFontSize: 24,
-    // authorFontFamily
-    // authorFontWeight
-    // authorFontStyle
-    // headerToBody
+    titleFontWeight: 'bold',
+    composerFontSize: 20,
+    // composerFontFamily:
+    composerFontWeight: 'bold',
+    // composerFontStyle,
+    timeFontSize: 18,
+    timeFontWeight: 'bold',
+
+    headerSep: 1,
+    musicDataSep: 0.2,
+
+    accidentalFontSize: 0.7,
+    accidentalShift: 0.3,
+
+    octaveRadius: 0.066,
+    octaveOffset: 0.0,
+    octaveSep: 0.23,
+
+    stepBaselineShift: 0.12,
+    typeStrokeWidth: 0.05,
+    underlineSep: 0.17,
+
   };
 }());

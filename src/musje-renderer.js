@@ -5,26 +5,7 @@ var musje = musje || {};
 (function (Snap) {
   'use strict';
 
-  var
-    // Convert from accidental src to unicode.
-    // Double sharp and double flat are in astral plane.
-    ACCIDENTAL_UNICODE = {
-      '#': '\u266f', b: '\u266d', n: '\u266e',
-      '##': 'x', bb: '\u266d\u266d' // to be changed
-    },
-    // Convert from duration type to number of underlines.
-    NUM_UNDERLINES = {
-      'undefined': 0, 0: 0, 1: 0, 2: 0, 4: 0,
-      8: 1, 16: 2, 32: 3, 64: 4,
-      128: 5, 256: 6, 512: 7, 1024: 8
-    };
-
-  var
-    // Layout options are stored in musje.layout-options.js
-    lo = musje.layoutOptions,
-    baselineShift = lo.fontSize * 0.12,
-    typeStrokeWidth = lo.fontSize * 0.05,
-    underlineGap = lo.fontSize * 0.17;
+  var objExtend = musje.objExtend;
 
   function near(a, b, epsilon) {
     epsilon = epsilon || 0.00001;
@@ -33,135 +14,271 @@ var musje = musje || {};
 
   function drawBBox(el) {
     var bb = el.getBBox();
-    console.log(bb);
-    s.rect(bb.x, bb.y, bb.width, bb.height)
+    el.paper.rect(bb.x, bb.y, bb.width, bb.height)
       .addClass('bbox');
   }
 
-  function createPitchDef(svg, note) {
-    var
-      stepFontSize = lo.fontSize,
-      accidental = note.pitch.accidental,
-      accidentalFontSize,
-      accidentalShift,
-      accidentalEl,
-      abbox,
-      stepEl,
-      sbbox,
-      octave = note.pitch.octave,
-      octaveRadius = stepFontSize * 0.066,
-      octaveStart = stepFontSize * 0.0,
-      octaveGap = stepFontSize * 0.23,
-      octaveEl,
-      pitchEl = svg.g(),
-      pbbox,
-      type = note.duration.type,
-      numUnderlines = NUM_UNDERLINES[type],
-      i;
+  function drawBoxBolder(box) {
+    box.rect(0, 0, box.width, box.height).addClass('bbox');
+  }
 
-    // Draw accidental
-    if (accidental) {
-      accidentalFontSize = stepFontSize * 0.6;
-      accidentalShift = stepFontSize * -0.3;
-      accidentalEl = svg.text(0, accidentalShift, ACCIDENTAL_UNICODE[accidental])
-        .attr('font-size', 0.7 * stepFontSize);
-      abbox = accidentalEl.getBBox();
-      pitchEl.add(accidentalEl);
+  function drawMusicDataBolder(useEl, el) {
+    var x = +useEl.attr('x'), y = +useEl.attr('y');
+    useEl.parent().rect(x, y - el.height, el.width, el.height).addClass('bbox');
+  }
+
+  function makeTimeDef(id, time, svg, lo) {
+    var
+      fontSize = lo.timeFontSize,
+      lineExtend = fontSize * 0.1,
+      timeEl = svg.g(
+          svg.text(0, -1 * fontSize, time.beats),
+          svg.text(0, 0, time.beatType)   // baseline y = 0
+        )
+        .attr({
+          id: id,
+          fontSize: lo.timeFontSize,
+          fontWeight: lo.timeFontWeight,
+          textAnchor: 'middle'
+        }),
+      bb = timeEl.getBBox(),
+      lineY = -0.85 * fontSize;
+
+    timeEl.line(bb.x - lineExtend, lineY, bb.x2 + lineExtend, lineY);
+    timeEl.transform(Snap.matrix().scale(1, 0.8).translate(lineExtend - bb.x, 0));
+    bb = timeEl.getBBox();
+    timeEl.toDefs();
+
+    return objExtend(timeEl, {
+      width: bb.width, height: -bb.y
+    });
+  }
+
+  function addAccidental(pitchEl, accidentalUnicode, lo) {
+    if (!accidentalUnicode) { return 0; }
+    return pitchEl
+      .text(0, -lo.accidentalShift * lo.fontSize, accidentalUnicode)
+      .attr('font-size', lo.accidentalFontSize * lo.fontSize)
+      .getBBox().x2;
+  }
+
+  function addStep(pitchEl, step, accidentalEndX, lo) {
+    return pitchEl
+      .text(accidentalEndX, 0, step)
+      .attr('font-size', lo.fontSize)
+      .getBBox();
     }
 
-    // Draw step
-    stepEl = svg.text(abbox ? abbox.x2 : 0, 0, note.pitch.step)
-      .attr('font-size', stepFontSize);
-    sbbox = stepEl.getBBox();
-    pitchEl.add(stepEl);
+  function addOctave(pitchEl, octave, sbbox, lo) {
+    var
+      octaveRadius = lo.fontSize * lo.octaveRadius,
+      octaveOffset = lo.fontSize * lo.octaveOffset,
+      octaveSep = lo.fontSize * lo.octaveSep,
+      octaveEl, i;
 
-    // Draw octave
     if (octave) {
-      octaveEl = svg.g();
+      octaveEl = pitchEl.g();
       if (octave > 0) {
         for (i = 0; i < octave; i++) {
-          octaveEl.add(svg.circle(sbbox.cx, sbbox.y + octaveStart - octaveGap * i, octaveRadius));
+          octaveEl.circle(sbbox.cx, sbbox.y + octaveOffset - octaveSep * i, octaveRadius);
         }
       } else {
         for (i = 0; i > octave; i--) {
-          octaveEl.add(svg.circle(sbbox.cx, sbbox.y2 - octaveStart - octaveGap * i, octaveRadius));
+          octaveEl.circle(sbbox.cx, sbbox.y2 - octaveOffset - octaveSep * i, octaveRadius);
         }
       }
       pitchEl.add(octaveEl);
     }
-
-    pbbox = pitchEl.getBBox();
-    pitchEl.attr('transform', Snap.format('translate({x},{y}) scale({sx},{sy}) translate(0,{y2})', {
-      x: -pbbox.x,
-      y: (octave >= 0 && numUnderlines === 0 ? -baselineShift : 0) - numUnderlines * underlineGap,
-      sx: Math.pow(0.975, Math.abs(octave) + numUnderlines),
-      sy: Math.pow(0.96, Math.abs(octave) + numUnderlines),
-      y2: near(pbbox.y2, sbbox.y2) ? 0 : -pbbox.y2
-    }));
-    pitchEl.width = pbbox.width;
-    pitchEl.height = pbbox.height;
-
-    return pitchEl.toDefs();
   }
 
-  function drawType(svg, opt) {
+  // Transform the pitch to be in a good baseline position and
+  // scale it to be more square.
+  function transformPitch(pitchEl, hasAccidental, octave, numUnderlines, sbbox, lo) {
     var
-      numUnderlines = NUM_UNDERLINES[opt.type],
+      stepBaselineShift = -lo.fontSize * lo.stepBaselineShift,
+      pbbox = pitchEl.getBBox(),
+      octaveAbs = Math.abs(octave);
+
+    pitchEl.transform(
+      Snap.matrix().translate(
+        -pbbox.x,
+        (octave >= 0 && numUnderlines === 0 ? stepBaselineShift : 0) - numUnderlines * lo.fontSize * lo.underlineSep
+      ).scale(
+        Math.pow(0.975, octaveAbs + numUnderlines + (hasAccidental ? 3 : 0)),
+        Math.pow(0.96, octaveAbs + numUnderlines)
+      ).translate(
+        0,
+        near(pbbox.y2, sbbox.y2) ? 0 : -pbbox.y2
+      )
+    );
+  }
+
+  function makePitchDef(id, note, svg, lo) {
+    var
+      pitch = note.pitch,
+      octave = pitch.octave,
+      pitchEl = svg.g().attr('id', id),
+      accidentalEndX,
+      sbbox,
+      pbbox;
+
+    accidentalEndX = addAccidental(pitchEl, pitch.accidentalUnicode, lo);
+    sbbox = addStep(pitchEl, pitch.step, accidentalEndX, lo);
+    addOctave(pitchEl, octave, sbbox, lo);
+    transformPitch(pitchEl, accidentalEndX, octave, note.duration.numUnderlines, sbbox, lo);
+
+    pbbox = pitchEl.getBBox();
+    pitchEl.toDefs();
+
+    return objExtend(pitchEl, {
+      width: pbbox.width, height: -pbbox.y
+    });
+  }
+
+  function drawType(content, lo, opt) {
+    var
+      numUnderlines = opt.duration.numUnderlines,
       y = opt.y,
       i;
-
     for (i = 0; i < numUnderlines; i++) {
-      svg.line(opt.x, y, opt.x2, y)
-        .attr('stroke-width', typeStrokeWidth);
-      y -= underlineGap;
+      content.line(opt.x, y, opt.x2, y)
+        .attr('stroke-width', lo.typeStrokeWidth * lo.fontSize);
+      y -= lo.underlineSep * lo.fontSize;
     }
   }
 
 
+  // ======================================================================
 
+  function makeBody(svg, lo) {
+    var body = svg.g().transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop)),
+      width = lo.width - lo.marginLeft - lo.marginRight,
+      height = lo.height - lo.marginTop - lo.marginBottom;
 
-  function renderNote(sheet, note, pos) {
-    var el = createPitchDef(sheet, note);
-    sheet.use(el).attr(pos);
-
-    drawType(sheet, {
-      type: note.duration.type,
-      x: pos.x, y: pos.y, x2: pos.x + el.width
+    return objExtend(body, {
+      x: 0, y: 0, cx: width / 2, cy: height / 2,
+      x2: width, width: width,
+      y2: height, height: height
     });
   }
 
-  function renderTime(sheet, time, left, bottom) {
-    var timeGroup = sheet.g().attr({
-        fontSize: lo.fontSize,
-        textAnchor: 'middle'
-      });
-    timeGroup.text(left, bottom - 10, time.beats)
-        .addClass('time');
-    timeGroup.text(left, bottom + 10, time.beatType)
-        .addClass('time');
-    timeGroup.line(left - 10, bottom - 6, left + 10, bottom - 6);
-  }
-
-
-  function render(score, sheet) {
+  function renderHeader(score, body, lo) {
     var
-      measures = score.parts[0].measures,
-      baseline = 30,
-      x = 0;
+      header = body.g(body.text(body.cx, lo.titleFontSize, score.head.title)
+          .attr({
+            fontSize: lo.titleFontSize,
+            fontWeight: lo.titleFontWeight,
+            textAnchor: 'middle'
+          }),
+        body.text(body.x2, lo.titleFontSize * 1.5, score.head.composer)
+          .attr({
+            fontSize: lo.composerFontSize,
+            fontWeight: lo.composerFontWeight,
+            textAnchor: 'end'
+          })),
+      height = header.getBBox().height;
 
-    measures.forEach(function (measure) {
-      measure.forEach(function (data) {
-        switch (data.__name__) {
-        case 'note':
-          renderNote(sheet, data, { x: x += 30, y: baseline });
-          break;
-        case 'time':
-          renderTime(sheet, data, x += 30, baseline);
-          break;
-        }
+    // Geometry is defined inside the body frame.
+    return objExtend(header, {
+      x: 0, y: 0, cx: body.cx, cy: height / 2,
+      x2: body.x2, width: body.width,
+      y2: height, height: height
+    });
+  }
+
+  function makeContent(body, header, lo) {
+    var
+      yOffset = header.y2 + lo.headerSep * lo.fontSize,
+      height = body.height - yOffset,
+      content = body.g().transform(Snap.matrix().translate(0, yOffset));
+
+    return objExtend(content, {
+      x: 0, y: 0, cx: body.cx, cy: height / 2,
+      x2: body.x2, width: body.width,
+      y2: height, height: height
+    });
+  }
+
+  function walkMusicData(score, callback) {
+    score.parts.forEach(function (part, partIdx) {
+      part.measures.forEach(function (measure, measureIdx) {
+        measure.forEach(function (musicData, musicDataIdx) {
+          callback(musicData, musicDataIdx, measureIdx, partIdx);
+        });
       });
     });
   }
 
-  musje.render = render;
+
+  // @constructor
+  function Defs(svg, layoutOptions) {
+    this.svg = svg;
+    this.lo = layoutOptions;
+  }
+  Defs.prototype.get = function (musicData) {
+    var id = musicData.defId;
+    return this[id] || (this[id] = this._prepare(id, musicData));
+  };
+  Defs.prototype._prepare = function (id, musicData) {
+    switch (musicData.__name__) {
+    case 'note':
+      return makePitchDef(id, musicData, this.svg, this.lo);
+    case 'time':
+      return makeTimeDef(id, musicData, this.svg, this.lo);
+    }
+  };
+
+
+  musje.render = function (score, svg, lo) {
+    lo = objExtend(musje.layoutOptions, lo);
+    svg = Snap(svg).attr({ width: lo.width, height: lo.height });
+    svg.clear();
+
+    var
+      defs = new Defs(svg, lo),
+      body = makeBody(svg, lo),
+      header = renderHeader(score, body, lo),
+      content = makeContent(body, header, lo);
+
+    // drawBoxBolder(body);
+    // drawBoxBolder(header);
+    // drawBoxBolder(content);
+
+    //================================================
+
+    var x = 0, baseline = 30;
+
+    function renderTime(time) {
+      var el = defs.get(time);
+      var useEl = content.use(el).attr({ x: x, y: baseline });
+      // drawMusicDataBolder(useEl, el);
+      x += el.width + lo.musicDataSep * lo.fontSize;
+    }
+
+    function renderNote(note) {
+      var el = defs.get(note);
+      var useEl = content.use(el).attr({ x: x, y: baseline });
+      // drawMusicDataBolder(useEl, el);
+      drawType(content, lo, {
+        duration: note.duration,
+        x: x, y: baseline, x2: x + el.width,
+        lo
+      });
+      x += el.width + lo.musicDataSep * lo.fontSize;
+    }
+
+    content.line(x, baseline, content.width, baseline).addClass('ref-line');
+
+    walkMusicData(score, function (data) {
+      switch (data.__name__) {
+      case 'note':
+        renderNote(data);
+        break;
+      case 'time':
+        renderTime(data);
+        break;
+      }
+    });
+  };
+
 }(Snap));
