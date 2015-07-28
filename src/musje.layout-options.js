@@ -6,7 +6,7 @@ var musje = musje || {};
 
   musje.layoutOptions = {
     mode: 'block', // inline | block | paper
-    width: 550,
+    width: 650,
     height: 300,
     marginTop: 25,
     marginRight: 30,
@@ -58,9 +58,16 @@ var musje = musje || {};
     octaveOffset: 0.0,
     octaveSep: 0.23,
 
-    stepBaselineShift: 0.12,
+    stepBaselineShift: 0.12,  // shift the baseline of step up with
+
     typeStrokeWidth: 0.05,
-    underlineSep: 0.17,
+    underbarSep: 0.17,
+    typebarWidth: 0.6,
+    typebarOffset: 0.3,
+    typebarSep: 0.5,
+    dotRadius: 0.066,
+    // dotOffset:
+    dotSep: 0.3
 
   };
 }());

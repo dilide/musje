@@ -27,32 +27,6 @@ var musje = musje || {};
     useEl.parent().rect(x, y - el.height, el.width, el.height).addClass('bbox');
   }
 
-  function makeTimeDef(id, time, svg, lo) {
-    var
-      fontSize = lo.timeFontSize,
-      lineExtend = fontSize * 0.1,
-      timeEl = svg.g(
-          svg.text(0, -1 * fontSize, time.beats),
-          svg.text(0, 0, time.beatType)   // baseline y = 0
-        )
-        .attr({
-          id: id,
-          fontSize: lo.timeFontSize,
-          fontWeight: lo.timeFontWeight,
-          textAnchor: 'middle'
-        }),
-      bb = timeEl.getBBox(),
-      lineY = -0.85 * fontSize;
-
-    timeEl.line(bb.x - lineExtend, lineY, bb.x2 + lineExtend, lineY);
-    timeEl.transform(Snap.matrix().scale(1, 0.8).translate(lineExtend - bb.x, 0));
-    bb = timeEl.getBBox();
-    timeEl.toDefs();
-
-    return objExtend(timeEl, {
-      width: bb.width, height: -bb.y
-    });
-  }
 
   function addAccidental(pitchEl, accidentalUnicode, lo) {
     if (!accidentalUnicode) { return 0; }
@@ -65,8 +39,7 @@ var musje = musje || {};
   function addStep(pitchEl, step, accidentalEndX, lo) {
     return pitchEl
       .text(accidentalEndX, 0, step)
-      .attr('font-size', lo.fontSize)
-      .getBBox();
+      .attr('font-size', lo.fontSize);
     }
 
   function addOctave(pitchEl, octave, sbbox, lo) {
@@ -91,59 +64,170 @@ var musje = musje || {};
     }
   }
 
+  function getBBoxHack(svg, bbox, matrix) {
+    var
+      rect = svg.rect(bbox.x, bbox.y, bbox.width, bbox.height),
+      g = svg.g(rect);
+
+    rect.transform(matrix);
+    bbox = g.getBBox();
+    g.remove();
+    return bbox;
+ }
+
   // Transform the pitch to be in a good baseline position and
   // scale it to be more square.
-  function transformPitch(pitchEl, hasAccidental, octave, numUnderlines, sbbox, lo) {
+  function transformPitch(pitchEl, hasAccidental, octave, underbar, sbbox, lo) {
     var
       stepBaselineShift = -lo.fontSize * lo.stepBaselineShift,
       pbbox = pitchEl.getBBox(),
-      octaveAbs = Math.abs(octave);
+      octaveAbs = Math.abs(octave),
+      matrix = Snap.matrix().translate(
+          -pbbox.x,
+          (octave >= 0 && underbar === 0 ? stepBaselineShift : 0) -
+                              underbar * lo.fontSize * lo.underbarSep
+        ).scale(
+          Math.pow(0.975, octaveAbs + underbar + (hasAccidental ? 3 : 0)),
+          Math.pow(0.96, octaveAbs + underbar + (hasAccidental ? 1 : 0))
+        ).translate(
+          0,
+          near(pbbox.y2, sbbox.y2) ? 0 : -pbbox.y2
+        );
 
-    pitchEl.transform(
-      Snap.matrix().translate(
-        -pbbox.x,
-        (octave >= 0 && numUnderlines === 0 ? stepBaselineShift : 0) - numUnderlines * lo.fontSize * lo.underlineSep
-      ).scale(
-        Math.pow(0.975, octaveAbs + numUnderlines + (hasAccidental ? 3 : 0)),
-        Math.pow(0.96, octaveAbs + numUnderlines)
-      ).translate(
-        0,
-        near(pbbox.y2, sbbox.y2) ? 0 : -pbbox.y2
-      )
-    );
+    pitchEl.transform(matrix);
+
+    return getBBoxHack(pitchEl.paper, sbbox, matrix);
   }
 
-  function makePitchDef(id, note, svg, lo) {
+  // @constructor
+  function Defs(svg, layoutOptions) {
+    this.svg = svg;
+    this.lo = layoutOptions;
+  }
+  Defs.prototype.get = function (musicData) {
+    var id = musicData.defId;
+    return this[id] || (this[id] = this._prepare(id, musicData));
+  };
+  Defs.prototype._prepare = function (id, musicData) {
+    switch (musicData.__name__) {
+    case 'note':
+      return this.makeNoteDef(id, musicData);
+    case 'time':
+      return this.makeTimeDef(id, musicData);
+    }
+  };
+  Defs.prototype.makeTimeDef = function(id, time) {
     var
-      pitch = note.pitch,
+      svg = this.svg,
+      lo = this.lo,
+      fontSize = lo.timeFontSize,
+      lineExtend = fontSize * 0.1,
+      timeEl = svg.g(
+          svg.text(0, -1 * fontSize, time.beats),
+          svg.text(0, 0, time.beatType)   // baseline y = 0
+        )
+        .attr({
+          id: id,
+          fontSize: lo.timeFontSize,
+          fontWeight: lo.timeFontWeight,
+          textAnchor: 'middle'
+        }),
+      bb = timeEl.getBBox(),
+      lineY = -0.85 * fontSize;
+
+    timeEl.line(bb.x - lineExtend, lineY, bb.x2 + lineExtend, lineY);
+    timeEl.transform(Snap.matrix().scale(1, 0.8).translate(lineExtend - bb.x, 0));
+    bb = timeEl.getBBox();
+    timeEl.toDefs();
+
+    return objExtend(timeEl, {
+      width: bb.width, height: -bb.y
+    });
+  };
+  Defs.prototype.makePitchDef = function (id, pitch, underbar) {
+    var
+      lo = this.lo,
       octave = pitch.octave,
-      pitchEl = svg.g().attr('id', id),
+      pitchEl = this.svg.g().attr('id', id),
       accidentalEndX,
+      stepEl,
       sbbox,
       pbbox;
 
     accidentalEndX = addAccidental(pitchEl, pitch.accidentalUnicode, lo);
-    sbbox = addStep(pitchEl, pitch.step, accidentalEndX, lo);
+    stepEl = addStep(pitchEl, pitch.step, accidentalEndX, lo);
+    sbbox = stepEl.getBBox();
     addOctave(pitchEl, octave, sbbox, lo);
-    transformPitch(pitchEl, accidentalEndX, octave, note.duration.numUnderlines, sbbox, lo);
+    sbbox = transformPitch(pitchEl, accidentalEndX, octave, underbar, sbbox, lo);
 
     pbbox = pitchEl.getBBox();
     pitchEl.toDefs();
 
     return objExtend(pitchEl, {
-      width: pbbox.width, height: -pbbox.y
+      width: pbbox.width, height: -pbbox.y,
+      stepY: sbbox.y, stepCy: sbbox.cy, stepY2: sbbox.y2
     });
-  }
-
-  function drawType(content, lo, opt) {
+  };
+  Defs.prototype.makeNoteDef = function (id, note) {
     var
-      numUnderlines = opt.duration.numUnderlines,
-      y = opt.y,
+      lo = this.lo,
+      pitch = note.pitch,
+      duration = note.duration,
+      type = duration.type,
+      pitchId = pitch.defId + note.duration.underbar,
+      pitchDef =  this[pitchId] ||
+          (this[pitchId] = this.makePitchDef(pitchId, pitch, duration.underbar));
+
+      return {
+        pitchDef: pitchDef,
+        width: pitchDef.width +
+           duration.dot * lo.dotSep * lo.fontSize +
+          (type === 2 ? lo.typebarOffset + lo.typebarWidth :
+           type === 1 ? lo.typebarOffset + 2 * lo.typebarSep + 3 * lo.typebarWidth :
+                        0) * lo.fontSize,
+        height: pitchDef.height
+      };
+  };
+
+
+  // Only for testing purposes...
+  function renderDuration(container, pitchDef, duration, lo, dimension) {
+    var
+      underbar = duration.underbar,
+      typeStrokeWidth = lo.typeStrokeWidth * lo.fontSize,
+      typebarOffset = lo.typebarOffset * lo.fontSize,
+      typebarWidth = lo.typebarWidth * lo.fontSize,
+      typebarSep = lo.typebarSep * lo.fontSize,
+      x0,
+      y,
       i;
-    for (i = 0; i < numUnderlines; i++) {
-      content.line(opt.x, y, opt.x2, y)
-        .attr('stroke-width', lo.typeStrokeWidth * lo.fontSize);
-      y -= lo.underlineSep * lo.fontSize;
+
+    switch (duration.type) {
+    case 2:   // half
+      y = dimension.baseline + pitchDef.stepCy;
+      x0 = dimension.x + pitchDef.width + typebarOffset;
+      container.line(x0, y, x0 + typebarWidth, y)
+        .attr('stroke-width', typeStrokeWidth);
+      break;
+    case 1:   // whole
+      y = dimension.baseline + pitchDef.stepCy;
+      x0 = dimension.x + pitchDef.width + typebarOffset;
+      container.line(x0, y, x0 + typebarWidth, y)
+        .attr('stroke-width', typeStrokeWidth);
+      x0 += typebarWidth + typebarSep;
+      container.line(x0, y, x0 + typebarWidth, y)
+        .attr('stroke-width', typeStrokeWidth);
+      x0 += typebarWidth + typebarSep;
+      container.line(x0, y, x0 + typebarWidth, y)
+        .attr('stroke-width', typeStrokeWidth);
+      break;
+    default:  // others
+      y = dimension.baseline;
+      for (i = 0; i < underbar; i++) {
+        container.line(dimension.x, y, dimension.x2, y)
+          .attr('stroke-width', lo.typeStrokeWidth * lo.fontSize);
+        y -= lo.underbarSep * lo.fontSize;
+      }
     }
   }
 
@@ -210,24 +294,6 @@ var musje = musje || {};
   }
 
 
-  // @constructor
-  function Defs(svg, layoutOptions) {
-    this.svg = svg;
-    this.lo = layoutOptions;
-  }
-  Defs.prototype.get = function (musicData) {
-    var id = musicData.defId;
-    return this[id] || (this[id] = this._prepare(id, musicData));
-  };
-  Defs.prototype._prepare = function (id, musicData) {
-    switch (musicData.__name__) {
-    case 'note':
-      return makePitchDef(id, musicData, this.svg, this.lo);
-    case 'time':
-      return makeTimeDef(id, musicData, this.svg, this.lo);
-    }
-  };
-
 
   musje.render = function (score, svg, lo) {
     lo = objExtend(musje.layoutOptions, lo);
@@ -256,15 +322,16 @@ var musje = musje || {};
     }
 
     function renderNote(note) {
-      var el = defs.get(note);
-      var useEl = content.use(el).attr({ x: x, y: baseline });
-      // drawMusicDataBolder(useEl, el);
-      drawType(content, lo, {
-        duration: note.duration,
-        x: x, y: baseline, x2: x + el.width,
-        lo
+      var noteDef = defs.get(note);
+      var pitchDef = noteDef.pitchDef;
+      var useEl = content.use(pitchDef).attr({ x: x, y: baseline });
+      // drawMusicDataBolder(useEl, noteDef);
+      renderDuration(content, pitchDef, note.duration, lo, {
+        x: x,
+        baseline: baseline,
+        x2: x + noteDef.width,
       });
-      x += el.width + lo.musicDataSep * lo.fontSize;
+      x += noteDef.width + lo.musicDataSep * lo.fontSize;
     }
 
     content.line(x, baseline, content.width, baseline).addClass('ref-line');

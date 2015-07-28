@@ -15,7 +15,7 @@
     // $('#schema').text(JSON.stringify(musje.JSONSchema, null, 2));
 
     function run() {
-      try {
+      // try {
         score = musje.parse($source.val());
         score = musje.score(score);
         $measureCount.html(score ? score.parts[0].measures.length : 0);
@@ -30,11 +30,11 @@
           JSON.stringify(musje.validate.missing, null, '  '));
 
         musje.render(score, svgSelector);
-      } catch (e) {
-        $measureCount.html('N/A');
-        $result.text(e);
-        $result.addClass('error');
-      }
+      // } catch (e) {
+      //   $measureCount.html('N/A');
+      //   $result.text(e);
+      //   $result.addClass('error');
+      // }
     }
 
     run();

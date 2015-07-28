@@ -31,7 +31,7 @@ line {
 }
 
 .bbox {
-  fill: #ddd;
+  fill: none;
   stroke: #e59;
   stroke-width: 0.3;
   stroke-dasharray: 5 2;

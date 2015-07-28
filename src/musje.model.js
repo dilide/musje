@@ -305,8 +305,8 @@ var musje = musje || {};
       '##': 'x', bb: '\u266d\u266d' // to be changed
     },
     TYPE_TO_STRING = { 1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_', 64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '====' },
-    // Convert from duration type to number of underlines.
-    TYPE_TO_NUM_UNDERLINES = {
+    // Convert from duration type to number of underbars.
+    TYPE_TO_UNDERBAR = {
       1: 0, 2: 0, 4: 0, 8: 1, 16: 2, 32: 3,
       64: 4, 128: 5, 256: 6, 512: 7, 1024: 8
     },
@@ -407,6 +407,11 @@ var musje = musje || {};
             return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
           }
         },
+        defId: {
+          get: function () {
+            return ['p', this.accidental.replace(/#/g, 's'), this.step, this.octave].join('');
+          }
+        },
         toString: function () {
           return this.accidental + this.step + octaveString(this.octave);
         }
@@ -427,9 +432,9 @@ var musje = musje || {};
                    this.dot === 1 ? d * 1.5 : d * 1.75;
           }
         },
-        numUnderlines: {
+        underbar: {
           get: function () {
-            return TYPE_TO_NUM_UNDERLINES[this.type] || 0;
+            return TYPE_TO_UNDERBAR[this.type] || 0;
           }
         },
         toString: function () {
@@ -466,9 +471,11 @@ var musje = musje || {};
         },
         defId: {
           get: function () {
-            var pitch = this.pitch;
-            return 'n' + pitch.accidental.replace(/#/g, 's') +
-                   pitch.step + pitch.octave + this.duration.numUnderlines;
+            var pitch = this.pitch, duration = this.duration;
+            return [
+              'n', pitch.accidental.replace(/#/g, 's'), pitch.step, pitch.octave,
+              duration.type, duration.dot
+            ].join('');
           }
         },
         toString: function () {
