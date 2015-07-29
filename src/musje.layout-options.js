@@ -4,7 +4,7 @@ var musje = musje || {};
 (function () {
   'use strict';
 
-  musje.layoutOptions = {
+  var layoutOptions = musje.layoutOptions = {
     mode: 'block', // inline | block | paper
     width: 650,
     height: 300,
@@ -36,38 +36,59 @@ var musje = musje || {};
         }
       }
     },
-    fontSize: 20,   // in pixel
+    fontSize: 20,
     fontFamily: 'Helvetica, Arial, Sans Serif',
-    titleFontSize: 22,
+
+    titleFontSize: '110%',
     // titleFontFamily
     titleFontWeight: 'bold',
-    composerFontSize: 20,
+    composerFontSize: '100%',
     // composerFontFamily:
     composerFontWeight: 'bold',
     // composerFontStyle,
-    timeFontSize: 18,
+    timeFontSize: '90%',
     timeFontWeight: 'bold',
 
-    headerSep: 1,
-    musicDataSep: 0.2,
+    headerSep: '100%',
+    musicDataSep: '20%',
 
-    accidentalFontSize: 0.7,
-    accidentalShift: 0.3,
+    accidentalFontSize: '70%',
+    accidentalShift: '30%',
 
-    octaveRadius: 0.066,
-    octaveOffset: 0.0,
-    octaveSep: 0.23,
+    octaveRadius: '6.6%',
+    octaveOffset: '0%',
+    octaveSep: '23%',
 
-    stepBaselineShift: 0.12,  // shift the baseline of step up with
+    stepBaselineShift: '12%',  // shift the baseline of step up with
 
-    typeStrokeWidth: 0.05,
-    underbarSep: 0.17,
-    typebarWidth: 0.6,
-    typebarOffset: 0.3,
-    typebarSep: 0.5,
-    dotRadius: 0.066,
+    typeStrokeWidth: '5%',
+    underbarSep: '17%',
+    typebarWidth: '60%',
+    typebarOffset: '30%',
+    typebarSep: '50%',
+    dotRadius: '66%',
     // dotOffset:
-    dotSep: 0.3
-
+    dotSep: '30%'
   };
+
+  var fontSize = layoutOptions.fontSize;
+
+  musje.objForEach(layoutOptions, function (value, key) {
+    if (typeof value !== 'string') { return; }
+
+    var unit = value.replace(/[\d\.]+/, '');
+    value = +value.replace(/[^\d\.]+/, '');
+
+    switch (unit) {
+    case '%':
+      layoutOptions[key] = fontSize * value / 100;
+      break;
+    case '': // fall through
+    case 'px':
+      layoutOptions[key] = value;
+      break;
+    case 'others to be implemented':
+      break;
+    }
+  });
 }());

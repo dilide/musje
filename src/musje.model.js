@@ -15,13 +15,13 @@ var musje = musje || {};
     return type === 'function' || type === 'object' && !!obj;
   }
 
-  function objForEach(obj, cb) {
+  var objForEach = musje.objForEach = function (obj, cb) {
     if (isObject(obj)) {
       Object.keys(obj).forEach(function (key) {
         cb(obj[key], key);
       });
     }
-  }
+  };
 
   var objExtend = musje.objExtend = function(obj, ext) {
     objForEach(ext, function (val, key) { obj[key] = val; });
