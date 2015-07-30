@@ -59,16 +59,18 @@ var musje = musje || {};
     octaveOffset: '0%',
     octaveSep: '23%',
 
-    stepBaselineShift: '12%',  // shift the baseline of step up with
+    stepBaselineShift: '12%',  // for step without lower octave and underline
 
     typeStrokeWidth: '5%',
+    typebarOffset: '30%',   // 1 - - -
+    typebarLength: '60%',   // off len sep len sep len (dot) ext
+    typebarSep: '40%',      // 1 -
+    typebarExt: '30%',      // off len (dot) ext
     underbarSep: '17%',
-    typebarWidth: '60%',
-    typebarOffset: '30%',
-    typebarSep: '50%',
-    dotRadius: '66%',
-    // dotOffset:
-    dotSep: '30%'
+
+    dotOffset: '60%',       // for type = 2
+    dotRadius: '6.6%',      // 1 - . .
+    dotSep: '60%'           // off len dotOff . dotSep . ext
   };
 
   var fontSize = layoutOptions.fontSize;

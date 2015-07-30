@@ -437,6 +437,11 @@ var musje = musje || {};
             return TYPE_TO_UNDERBAR[this.type] || 0;
           }
         },
+        defId: {
+          get: function () {
+            return 'd' + this.type + this.dot;
+          }
+        },
         toString: function () {
           return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
         }
@@ -473,8 +478,8 @@ var musje = musje || {};
           get: function () {
             var pitch = this.pitch, duration = this.duration;
             return [
-              'n', pitch.accidental.replace(/#/g, 's'), pitch.step, pitch.octave,
-              duration.type, duration.dot
+              'n', pitch.accidental.replace(/#/g, 's'),
+              pitch.step, pitch.octave, duration.type, duration.dot
             ].join('');
           }
         },

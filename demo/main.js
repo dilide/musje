@@ -15,13 +15,13 @@
     // $('#schema').text(JSON.stringify(musje.JSONSchema, null, 2));
 
     function run() {
-      try {
+      // try {
         score = musje.parse($source.val());
         score = musje.score(score);
         $measureCount.html(score ? score.parts[0].measures.length : 0);
-        $result.text(JSON.stringify(score, null, "  "));
-        $result.removeClass('error');
-        $('#converted').text(score);
+        // $result.text(JSON.stringify(score, null, "  "));
+        // $result.removeClass('error');
+        // $('#converted').text(score);
 
         $validate.text('Valid: ' + musje.validate(score.stringify()) +
           '\nValidation Error: ' +
@@ -30,16 +30,16 @@
           JSON.stringify(musje.validate.missing, null, '  '));
 
         musje.render(score, svgSelector);
-      } catch (e) {
-        $measureCount.html('N/A');
-        $result.text(e);
-        $result.addClass('error');
-      }
+      // } catch (e) {
+      //   $measureCount.html('N/A');
+      //   $result.text(e);
+      //   $result.addClass('error');
+      // }
     }
 
     run();
 
-    $source.on('keyup', run);
+    $source.on('input propertychange', run);
     $('#playButton').on('click', function () { score.play(); });
   });
 }(jQuery));
