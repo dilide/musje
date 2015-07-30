@@ -14,7 +14,38 @@
 
     // $('#schema').text(JSON.stringify(musje.JSONSchema, null, 2));
 
-    function run() {
+    // Debounce -- Copy from underscore.js
+    function debounce(func, wait) {
+      var timeout, args, context, timestamp, result;
+
+      function now() { return new Date().getTime(); }
+
+      function later() {
+        var last = now() - timestamp;
+
+        if (last < wait && last >= 0) {
+          timeout = setTimeout(later, wait - last);
+        } else {
+          timeout = null;
+          result = func.apply(context, args);
+          if (!timeout) { context = args = null; }
+        }
+      }
+
+      return function() {
+        context = this;
+        args = arguments;
+        timestamp = now();
+        if (!timeout) {
+          timeout = setTimeout(later, wait);
+          result = func.apply(context, args);
+          context = args = null;
+        }
+        return result;
+      };
+    }
+
+    var run = debounce(function() {
       // try {
         score = musje.parse($source.val());
         score = musje.score(score);
@@ -35,7 +66,7 @@
       //   $result.text(e);
       //   $result.addClass('error');
       // }
-    }
+    }, 300);
 
     run();
 
