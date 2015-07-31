@@ -490,6 +490,12 @@ var musje = musje || {};
 
       rest: {
         duration: { $ref: '#/objects/duration' },
+        defId: {
+          get: function () {
+            var duration = this.duration;
+            return 'r' + duration.type + duration.dot;
+          }
+        },
         toString: function () {
           return '0' + this.duration;
         }

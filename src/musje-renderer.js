@@ -84,7 +84,7 @@ var musje = musje || {};
 
   PitchDef.prototype._addStep = function (step) {
     this._sbbox = this.el
-      .text(this._accidentalEndX, 0, step)
+      .text(this._accidentalEndX, 0, '' + step)
       .attr('font-size', this._lo.fontSize)
       .getBBox();
   };
@@ -294,6 +294,19 @@ var musje = musje || {};
     return this[id] ||
         (this[id] = new PitchDef(this._svg, id, pitch, underbar, this._lo));
   };
+  Defs.prototype._makeRest = function(id, rest) {
+    var
+      duration = rest.duration,
+      pitchDef = this._getPitch(id, { step: 0, octave: 0 }, duration.underbar),
+      durationDef = this.get(duration);
+
+    return {
+      pitchDef: pitchDef,
+      durationDef: durationDef,
+      height: pitchDef.height,
+      width: pitchDef.width + durationDef.width
+    };
+  };
 
 
 
@@ -459,10 +472,11 @@ var musje = musje || {};
     }
 
 
-    content.line(x, baseline, content.width, baseline).addClass('ref-line');
+    // content.line(x, baseline, content.width, baseline).addClass('ref-line');
 
     walkMusicData(score, function (data) {
       switch (data.__name__) {
+      case 'rest':  // fall through
       case 'note':
         renderNote(data);
         break;
