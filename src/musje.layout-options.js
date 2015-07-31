@@ -36,21 +36,29 @@ var musje = musje || {};
         }
       }
     },
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Helvetica, Arial, Sans Serif',
 
     titleFontSize: '110%',
     // titleFontFamily
     titleFontWeight: 'bold',
-    composerFontSize: '100%',
+    composerFontSize: '90%',
     // composerFontFamily:
     composerFontWeight: 'bold',
     // composerFontStyle,
-    timeFontSize: '90%',
+    timeFontSize: '95%',
     timeFontWeight: 'bold',
 
     headerSep: '100%',
-    musicDataSep: '20%',
+    musicDataSep: '50%',
+
+    measurePaddingLeft: '60%',
+    measurePaddingRight: '60%',
+
+    thinBarlineWidth: '5%',
+    thickBarlineWidth: '20%',
+    barlineSep: '20%',
+    barlineRadius: '6.6%',
 
     accidentalFontSize: '70%',
     accidentalShift: '30%',
@@ -65,12 +73,16 @@ var musje = musje || {};
     typebarOffset: '30%',   // 1 - - -
     typebarLength: '60%',   // off len sep len sep len (dot) ext
     typebarSep: '40%',      // 1 -
-    typebarExt: '30%',      // off len (dot) ext
+    typebarExt: '20%',      // off len (dot) ext
     underbarSep: '17%',
 
     dotOffset: '60%',       // for type = 2
     dotRadius: '6.6%',      // 1 - . .
-    dotSep: '60%'           // off len dotOff . dotSep . ext
+    dotSep: '60%',          // off len dotOff . dotSep . ext
+    t4DotOffset: '15%',
+    t4DotSep: '50%',
+    t4DotExt: '25%',
+    t4DotBaselineShift: '20%'
   };
 
   var fontSize = layoutOptions.fontSize;

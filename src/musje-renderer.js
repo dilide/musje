@@ -41,6 +41,8 @@ var musje = musje || {};
   // =====================================================================
 
   // @constructor
+  // The `PitchDef` is defined by properties: a s o u
+  // accidental step octave underbar
   function PitchDef(svg, id, pitch, underbar, lo) {
     var
       el = this.el = svg.g().attr('id', id),
@@ -64,6 +66,7 @@ var musje = musje || {};
     el.toDefs();
 
     objExtend(this, {
+      matrix: matrix,
       width: pbbox.width,
       height: -pbbox.y,
       stepY: sbbox.y,
@@ -131,6 +134,97 @@ var musje = musje || {};
   };
 
   // @constructor
+  function DurationDef(svg, id, duration, lo) {
+    this._svg = svg;
+    this._lo = lo;
+
+    // only make def el for:
+    // id = d10, d11, d12, d20, d21, d20, d41, d40
+    switch (duration.type) {
+    case 1:   // whole note
+      return this._makeType1(id, duration.dot);
+    case 2:   // half note
+      return this._makeType2(id, duration.dot);
+    default:  // other note types type quarter note def
+      return this._makeType4(id, duration.dot);
+    }
+  }
+  DurationDef.prototype._addDot = function (el, x, dot, type) {
+    var lo = this._lo;
+
+    if (dot > 0) {
+      x += lo.dotOffset * (type === 1 ? 1.2 : 1);
+      el.circle(x, 0, lo.dotRadius);
+    }
+    if (dot > 1) {
+      x += lo.dotSep * (type === 1 ? 1.2 : 1);
+      el.circle(x, 0, lo.dotRadius);
+    }
+    return x + lo.typebarExt;
+  };
+  DurationDef.prototype._makeType1 = function (id, dot) {
+    var
+      lo = this._lo,
+      el = this._svg.g().attr('id', id).toDefs(),
+      width;
+
+    el.path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
+      off: lo.typebarOffset,
+      w: lo.typebarLength,
+      sep: lo.typebarSep
+    })).attr({
+      stroke: 'black',
+      strokeWidth: lo.typeStrokeWidth,
+      fill: 'none'
+    });
+
+    width = this._addDot(el, lo.typebarOffset + 3 * lo.typebarLength +
+                             2 * lo.typebarSep, dot, 2);
+
+    return objExtend(this, {
+      el: el,
+      width: width,
+      minWidth: width,
+      maxWidth: width
+    });
+  };
+  DurationDef.prototype._makeType2 = function (id, dot) {
+    var
+      lo = this._lo,
+      el = this._svg.g().attr('id', id).toDefs(),
+      x = lo.typebarOffset + lo.typebarLength,
+      width;
+
+    el.line(lo.typebarOffset, 0, x, 0)
+      .attr('stroke-width', lo.typeStrokeWidth);
+
+    width = this._addDot(el, x, dot, 2);
+
+    return objExtend({
+      el: el,
+      width: width,
+      minWidth: width,
+      maxWidth: width
+    });
+  };
+  DurationDef.prototype._makeType4 = function (id, dot) {
+    if (dot === 0) { return objExtend(this, { width: 0 }); }
+
+    var
+      lo = this._lo,
+      el = this._svg.g().attr('id', id).toDefs(),
+      x = lo.t4DotOffset;
+
+    el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
+    if (dot > 1) {
+      el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
+    }
+    return objExtend(this, { el: el, width: x + lo.t4DotExt });
+  };
+
+
+
+  // @constructor
   function Defs(svg, layoutOptions) {
     this._svg = svg;
     this._lo = layoutOptions;
@@ -176,78 +270,8 @@ var musje = musje || {};
       height: -bb.y
     };
   };
-  var addDot = function (el, x, dot, type, lo) {
-    if (dot > 0) {
-      x += lo.dotOffset * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
-    }
-    if (dot > 1) {
-      x += lo.dotSep * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
-    }
-    return x + lo.typebarExt;
-  };
-  Defs.prototype._makeT1Duration = function (id, dot, type) {
-    var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      width;
-
-    el.path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
-      off: lo.typebarOffset,
-      w: lo.typebarLength,
-      sep: lo.typebarSep
-    })).attr({
-      stroke: 'black',
-      strokeWidth: lo.typeStrokeWidth,
-      fill: 'none'
-    });
-
-    width = addDot(el, lo.typebarOffset + 3 * lo.typebarLength + 2 * lo.typebarSep, dot, type, lo);
-
-    return {
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    };
-  };
-  Defs.prototype._makeT2Duration = function (id, dot, type) {
-    var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      x = lo.typebarOffset + lo.typebarLength,
-      width;
-
-    el.line(lo.typebarOffset, 0, x, 0)
-      .attr('stroke-width', lo.typeStrokeWidth);
-
-    width = addDot(el, x, dot, type, lo);
-
-    return {
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    };
-  };
   Defs.prototype._makeDuration = function (id, duration) {
-
-    // only make def el for:
-    // id = d41, d42, d20, d21, d20, d40, d41, d40
-    switch (duration.type) {
-    case 4:   // quartor note
-      // TODO
-      break;
-    case 2:   // half note
-      return this._makeT2Duration(id, duration.dot, 2);
-    case 1:   // whole note
-      return this._makeT1Duration(id, duration.dot, 1);
-    default:   // other note types
-      // TODO
-    }
-
-    return { width: 0 };
+    return new DurationDef(this._svg, id, duration, this._lo);
   };
   Defs.prototype._makeNote = function (id, note) {
     var
@@ -341,9 +365,15 @@ var musje = musje || {};
     });
   }
 
+  // function toTimeWise(score) {
+  //   console.log(score);
+
+  //   return score;
+  // }
 
 
   musje.render = function (score, svg, lo) {
+    // score = toTimeWise(score);
     lo = objExtend(musje.layoutOptions, lo);
     svg = Snap(svg).attr({ width: lo.width, height: lo.height });
     svg.clear();
@@ -360,7 +390,7 @@ var musje = musje || {};
 
     //================================================
 
-    var x = 0, baseline = 30;
+    var x = 0, baseline = 30, m = 0;
 
     function renderTime(time) {
       var def = defs.get(time);
@@ -376,6 +406,7 @@ var musje = musje || {};
       var useEl = content.use(pitchDef.el).attr({ x: x, y: baseline });
       // drawMusicDataBolder(useEl, def);
       var underbar = note.duration.underbar;
+      var durationWidth = durationDef.width;
 
       x += pitchDef.width;
 
@@ -384,16 +415,49 @@ var musje = musje || {};
           x: x,
           y: baseline + pitchDef.stepCy
         });
-      } else if (underbar) {
-        var y = baseline, x0 = x - pitchDef.width;
-        for (var i = 0; i < underbar; i++) {
-          content.line(x0, y, x, y)
-            .attr('stroke-width', lo.typeStrokeWidth);
-          y -= lo.underbarSep;
+      } else {
+        if (note.duration.dot) {
+          content.g().transform(Snap.matrix().translate(x, baseline))
+            .use(durationDef.el).transform(pitchDef.matrix);
+        }
+        if (underbar) {
+          var y = baseline, x0 = x - pitchDef.width;
+          durationWidth = durationDef.width * pitchDef.matrix.split().scalex;
+          for (var i = 0; i < underbar; i++) {
+            content.line(x0, y, x + durationWidth, y)
+              .attr('stroke-width', lo.typeStrokeWidth);
+            y -= lo.underbarSep;
+          }
         }
       }
-      x += durationDef.width + lo.musicDataSep;
+      x += durationWidth + lo.musicDataSep;
     }
+
+    function renderBar(bar) {
+      x += lo.measurePaddingRight - lo.musicDataSep;
+      switch (bar.value) {
+      case 'single':
+        x += lo.thinBarlineWidth / 2;
+        content.line(x, baseline - 25, x, baseline + 5)
+          .attr({ strokeWidth: lo.thinBarlineWidth });
+        x += lo.thinBarlineWidth / 2;
+        break;
+      case 'end':
+        x += lo.thinBarlineWidth / 2;
+        content.line(x, baseline - 25, x, baseline + 5)
+          .attr({ strokeWidth: lo.thinBarlineWidth });
+        x +=  lo.thinBarlineWidth / 2 + lo.barlineSep +
+              lo.thickBarlineWidth / 2;
+        content.line(x, baseline - 25, x, baseline + 5)
+          .attr({ strokeWidth: lo.thickBarlineWidth });
+        x += lo.thickBarlineWidth / 2;
+        break;
+      }
+      x += lo.measurePaddingLeft;
+      m ++;
+      if (m % 4 === 0) { x = 0; baseline += 55; }
+    }
+
 
     content.line(x, baseline, content.width, baseline).addClass('ref-line');
 
@@ -404,6 +468,9 @@ var musje = musje || {};
         break;
       case 'time':
         renderTime(data);
+        break;
+      case 'bar':
+        renderBar(data);
         break;
       }
     });
