@@ -71,8 +71,8 @@ var musje = musje || {};
 
     typeStrokeWidth: '5%',
     typebarOffset: '30%',   // 1 - - -
-    typebarLength: '60%',   // off len sep len sep len (dot) ext
-    typebarSep: '40%',      // 1 -
+    typebarLength: '55%',   // off len sep len sep len (dot) ext
+    typebarSep: '45%',      // 1 -
     typebarExt: '20%',      // off len (dot) ext
     underbarSep: '17%',
 

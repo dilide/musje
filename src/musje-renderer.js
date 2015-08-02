@@ -47,35 +47,20 @@ var musje = musje || {};
     var
       lo = defs._lo,
       el = this.el = defs._svg.g().attr('id', id),
-      pathData = svgPaths[accidental],
-      matrix = Snap.matrix(),
-      bb, ratio, shift, path;
+      accKey = accidental.replace(/bb/, 'b'), // double flat to be synthesized
+      pathData = svgPaths[accKey],
+      ratio = svgPaths.ACCIDENTAL_RATIOS[accKey],
+      shift = svgPaths.ACCIDENTAL_SHIFTS[accKey],
+      path = el.path(pathData),
+      bb = el.getBBox();
 
-    switch (accidental) {
-      case '#':
-        ratio = 0.043; shift = 1;
-        break;
-      case 'n':
-        ratio = 0.023; shift = 2;
-        break;
-      case '##':
-        ratio = 0.062; shift = -4;
-        break;
-      case 'bb':
-        pathData = svgPaths.b;
-      case 'b':   // fall through
-        ratio = 0.057; shift = 0;
-        break;
-    }
-    path = el.path(pathData);
-    bb = el.getBBox();
-
-    matrix
+    path.transform(Snap.matrix()
       .translate(0.1 * lo.accidentalShift, -lo.accidentalShift)
       .scale(ratio * lo.accidentalFontSize)
-      .translate(-bb.x, shift - bb.y2);
-    path.transform(matrix);
+      .translate(-bb.x, shift - bb.y2)
+    );
 
+    // Double flat
     if (accidental === 'bb') {
       el.use(path).attr('x', lo.accidentalFontSize * 0.24);
       el.transform('scale(0.9,1)');
@@ -84,7 +69,6 @@ var musje = musje || {};
     bb = el.getBBox();
     el.toDefs();
     this.width = bb.width * 1.2;
-    this.height = bb.height;
   }
 
 
@@ -134,8 +118,8 @@ var musje = musje || {};
       id = 'a' + accidental.replace(/#/g, 's'),
       defs = this._defs,
       accDef = defs[id] || (defs[id] = new AccidentalDef(id, accidental, defs));
-    this.el.use(accDef.el)
-      .attr('y', -this._lo.accidentalShift);
+
+    this.el.use(accDef.el).attr('y', -this._lo.accidentalShift);
     this._accidentalEndX = accDef.width;
   };
 
