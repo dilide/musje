@@ -60,8 +60,8 @@ var musje = musje || {};
     barlineSep: '20%',
     barlineRadius: '6.6%',
 
-    accidentalFontSize: '70%',
-    accidentalShift: '30%',
+    accidentalFontSize: '95%',
+    accidentalShift: '10%',
 
     octaveRadius: '6.6%',
     octaveOffset: '0%',

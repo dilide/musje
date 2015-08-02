@@ -5,7 +5,9 @@ var musje = musje || {};
 (function (Snap) {
   'use strict';
 
-  var objExtend = musje.objExtend;
+  var
+    objExtend = musje.objExtend,
+    svgPaths = musje.svgPaths;
 
   function near(a, b, epsilon) {
     epsilon = epsilon || 0.00001;
@@ -41,22 +43,70 @@ var musje = musje || {};
   // =====================================================================
 
   // @constructor
+  function AccidentalDef(id, accidental, defs) {
+    var
+      lo = defs._lo,
+      el = this.el = defs._svg.g().attr('id', id),
+      pathData = svgPaths[accidental],
+      matrix = Snap.matrix(),
+      bb, ratio, shift, path;
+
+    switch (accidental) {
+      case '#':
+        ratio = 0.043; shift = 1;
+        break;
+      case 'n':
+        ratio = 0.023; shift = 2;
+        break;
+      case '##':
+        ratio = 0.062; shift = -4;
+        break;
+      case 'bb':
+        pathData = svgPaths.b;
+      case 'b':   // fall through
+        ratio = 0.057; shift = 0;
+        break;
+    }
+    path = el.path(pathData);
+    bb = el.getBBox();
+
+    matrix
+      .translate(0.1 * lo.accidentalShift, -lo.accidentalShift)
+      .scale(ratio * lo.accidentalFontSize)
+      .translate(-bb.x, shift - bb.y2);
+    path.transform(matrix);
+
+    if (accidental === 'bb') {
+      el.use(path).attr('x', lo.accidentalFontSize * 0.24);
+      el.transform('scale(0.9,1)');
+    }
+
+    bb = el.getBBox();
+    el.toDefs();
+    this.width = bb.width * 1.2;
+    this.height = bb.height;
+  }
+
+
+  // @constructor
   // The `PitchDef` is defined by properties: a s o u
   // accidental step octave underbar
-  function PitchDef(svg, id, pitch, underbar, lo) {
+  function PitchDef(id, pitch, underbar, defs) {
     var
+      svg = this._svg = defs._svg,
       el = this.el = svg.g().attr('id', id),
-      accidentalUnicode = pitch.accidentalUnicode,
+      accidental = pitch.accidental,
       matrix,
       sbbox,
       pbbox;
 
-    this._lo = lo;
-    this._addAccidental(accidentalUnicode);
+    this._defs = defs;
+    this._lo = defs._lo;
+    this._addAccidental(accidental);
     this._addStep(pitch.step);
     this._addOctave(pitch.octave);
 
-    matrix = this._getTransformMatrix(accidentalUnicode, pitch.octave, underbar);
+    matrix = this._getTransformMatrix(accidental, pitch.octave, underbar);
     el.transform(matrix);
 
     sbbox = this._sbbox;
@@ -74,12 +124,19 @@ var musje = musje || {};
       stepY2: sbbox.y2
     });
   }
-  PitchDef.prototype._addAccidental = function (accidentalUnicode) {
-    this._accidentalEndX = !accidentalUnicode ? 0 :
-            this.el
-              .text(0, -this._lo.accidentalShift, accidentalUnicode)
-              .attr('font-size', this._lo.accidentalFontSize)
-              .getBBox().x2;
+  PitchDef.prototype._addAccidental = function (accidental) {
+    if (!accidental) {
+      this._accidentalEndX = 0;
+      return;
+    }
+
+    var
+      id = 'a' + accidental.replace(/#/g, 's'),
+      defs = this._defs,
+      accDef = defs[id] || (defs[id] = new AccidentalDef(id, accidental, defs));
+    this.el.use(accDef.el)
+      .attr('y', -this._lo.accidentalShift);
+    this._accidentalEndX = accDef.width;
   };
 
   PitchDef.prototype._addStep = function (step) {
@@ -223,7 +280,6 @@ var musje = musje || {};
   };
 
 
-
   // @constructor
   function Defs(svg, layoutOptions) {
     this._svg = svg;
@@ -273,6 +329,10 @@ var musje = musje || {};
   Defs.prototype._makeDuration = function (id, duration) {
     return new DurationDef(this._svg, id, duration, this._lo);
   };
+  Defs.prototype._getPitch = function (id, pitch, underbar) {
+    return this[id] ||
+        (this[id] = new PitchDef(id, pitch, underbar, this));
+  };
   Defs.prototype._makeNote = function (id, note) {
     var
       pitch = note.pitch,
@@ -289,10 +349,6 @@ var musje = musje || {};
       minWidth: pitchDef.width + durationDef.minWidth,
       maxWidth: pitchDef.width + durationDef.maxWidth
     };
-  };
-  Defs.prototype._getPitch = function (id, pitch, underbar) {
-    return this[id] ||
-        (this[id] = new PitchDef(this._svg, id, pitch, underbar, this._lo));
   };
   Defs.prototype._makeRest = function(id, rest) {
     var
@@ -388,7 +444,10 @@ var musje = musje || {};
   musje.render = function (score, svg, lo) {
     // score = toTimeWise(score);
     lo = objExtend(musje.layoutOptions, lo);
-    svg = Snap(svg).attr({ width: lo.width, height: lo.height });
+    svg = Snap(svg).attr({
+      fontFamily: lo.fontFamily,
+      width: lo.width, height: lo.height
+    });
     svg.clear();
 
     var

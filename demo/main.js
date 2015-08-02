@@ -1,5 +1,31 @@
 /*global musje*/
 
+// TODO: implement <select> for different fonts
+var fonts = {
+  serif: [
+    'Georgia, serif',
+    '"Palatino Linotype", "Book Antiqua", Palatino, serif',
+    '"Times New Roman", Times, serif'
+  ],
+  'sans-serif': [
+    'Arial, Helvetica, sans-serif',
+    '"Arial Black", Gadget, sans-serif',
+    '"Arial Narrow", sans-serif',
+    '"Comic Sans MS", cursive, sans-serif',
+    'Century Gothic, sans-serif',
+    'Impact, Charcoal, sans-serif',
+    '"Lucida Sans Unicode", "Lucida Grande", sans-serif',
+    'Tahoma, Geneva, sans-serif',
+    '"Trebuchet MS", Helvetica, sans-serif',
+    'Verdana, Geneva, sans-serif',
+    'Copperplate, "Copperplate Gothic Light", sans-serif',
+  ],
+  monospace: [
+    '"Courier New", Courier, monospace',
+    '"Lucida Console", Monaco, monospace'
+  ]
+};
+
 (function ($) {
   'use strict';
 
@@ -46,26 +72,31 @@
     }
 
     var run = debounce(function() {
-      // try {
+      try {
         score = musje.parse($source.val());
         score = musje.score(score);
         $measureCount.html(score ? score.parts[0].measures.length : 0);
+        $result.text('');
         // $result.text(JSON.stringify(score, null, "  "));
         // $result.removeClass('error');
         // $('#converted').text(score);
 
-        $validate.text('Valid: ' + musje.validate(score.stringify()) +
+        $validate.text('Valid: ' +
+          musje.validate(score.stringify()) +
           '\nValidation Error: ' +
           JSON.stringify(musje.validate.error, null, '  ') +
           '\nValidation Missing: ' +
-          JSON.stringify(musje.validate.missing, null, '  '));
+          JSON.stringify(musje.validate.missing, null, '  ')
+        );
+      } catch (e) {
+        $measureCount.html('N/A');
+        $result.text(e);
+        $result.addClass('error');
+      }
 
-        musje.render(score, svgSelector);
-      // } catch (e) {
-      //   $measureCount.html('N/A');
-      //   $result.text(e);
-      //   $result.addClass('error');
-      // }
+      musje.render(score, svgSelector, {
+        fontFamily: fonts.palatino
+      });
     }, 300);
 
     run();

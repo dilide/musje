@@ -298,12 +298,6 @@ var musje = musje || {};
     TEMPO = 80,
     STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
     ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, 'n': 0, 'b' : -1, 'bb': -2 },
-    // Convert from accidental src to unicode.
-    // Double sharp and double flat are in astral plane.
-    ACCIDENTAL_TO_UNICODE = {
-      '#': '\u266f', b: '\u266d', n: '\u266e',
-      '##': 'x', bb: '\u266d\u266d' // to be changed
-    },
     TYPE_TO_STRING = { 1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_', 64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '====' },
     // Convert from duration type to number of underbars.
     TYPE_TO_UNDERBAR = {
@@ -389,11 +383,6 @@ var musje = musje || {};
           type: 'string',
           enum: ['#', 'b', '', '##', 'bb'],
           default: ''
-        },
-        accidentalUnicode: {
-          get: function () {
-            return ACCIDENTAL_TO_UNICODE[this.accidental];
-          }
         },
         midiNumber: {
           get: function () {
