@@ -1,25 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="musjeDemo">
   <head>
     <meta charset="UTF-8">
     <title>Musje</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="musje.css">
-    <script src="lib/jquery-1.10.2.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
   </head>
 
-  <body>
-    <textarea id="source">                        &lt;&lt;&lt;望春風&gt;&gt;&gt;                    鄧雨賢
-4/4 5,.5,_ (6, 1) | 2 (1_2_)  3 - | (5. 3_) (3_2_)1| 2 - - - |
- (3. 5_) 5 (3_5_) | (1.  2_)  2 - | (5,.3_) (3  2) | 1 - - - |
-  2. 2_  3 (2_1_) | 6,(5,_6,_) 1- | (6,.1_) (2  3) | 5 - - - |
-  5. 5_  6 (5_3_) | 3 (2_1_)  6,- |  5,. 3_ (3  2) | 1 - - -|]
-</textarea>
-    <pre id="result">[result]</pre>
-    <p><button id="playButton">Play</button> Total measures: <span id="measure-count"></span></p>
+  <body ng-controller="MusjeDemoCtrl">
+    <textarea class="source" ng-model="src" ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
+    <pre ng-class="{ error: hasError }">{{result}}</pre>
+    <p>
+      <button id="playButton">Play</button>
+      Total measures: {{totalMeasures}},
+      Font: <select ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-change="run()"></select>
+    </p>
     <svg></svg>
-    <pre id="schema">[JSON Schema]</pre>
-    <pre id="validate">[validate]</pre>
-    <pre id="converted">[converted]</pre>
+    <pre>{{schema}}</pre>
+    <pre class="validate">{{validate}}</pre>
+    <pre>{{converted}}</pre>
 
     <script src="lib/snap.svg-min.js"></script>
     <script src="lib/tv4.min.js"></script>

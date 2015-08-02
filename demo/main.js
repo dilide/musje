@@ -1,107 +1,69 @@
-/*global musje*/
+/*global angular,musje*/
 
-// TODO: implement <select> for different fonts
-var fonts = {
-  serif: [
-    'Georgia, serif',
-    '"Palatino Linotype", "Book Antiqua", Palatino, serif',
-    '"Times New Roman", Times, serif'
-  ],
-  'sans-serif': [
-    'Arial, Helvetica, sans-serif',
-    '"Arial Black", Gadget, sans-serif',
-    '"Arial Narrow", sans-serif',
-    '"Comic Sans MS", cursive, sans-serif',
-    'Century Gothic, sans-serif',
-    'Impact, Charcoal, sans-serif',
-    '"Lucida Sans Unicode", "Lucida Grande", sans-serif',
-    'Tahoma, Geneva, sans-serif',
-    '"Trebuchet MS", Helvetica, sans-serif',
-    'Verdana, Geneva, sans-serif',
-    'Copperplate, "Copperplate Gothic Light", sans-serif',
-  ],
-  monospace: [
-    '"Courier New", Courier, monospace',
-    '"Lucida Console", Monaco, monospace'
-  ]
-};
-
-(function ($) {
+(function () {
   'use strict';
 
-  $(function () {
-    var
-      $source = $('#source'),
-      $result = $('#result'),
-      $validate = $('#validate'),
-      $measureCount = $('#measure-count'),
-      svgSelector = 'svg',
-      score;
+  var fonts = [
+    { type: 'serif', name: 'Georgia, serif' },
+    { type: 'serif', name: '"Palatino Linotype", "Book Antiqua", Palatino, serif' },
+    { type: 'serif', name: '"Times New Roman", Times, serif' },
+    { type: 'sans-serif', name: 'Arial, Helvetica, sans-serif' },
+    { type: 'sans-serif', name: '"Arial Black", Gadget, sans-serif' },
+    { type: 'sans-serif', name: '"Arial Narrow", sans-serif' },
+    { type: 'sans-serif', name: '"Comic Sans MS", cursive, sans-serif' },
+    { type: 'sans-serif', name: 'Century Gothic, sans-serif' },
+    { type: 'sans-serif', name: 'Impact, Charcoal, sans-serif' },
+    { type: 'sans-serif', name: '"Lucida Sans Unicode", "Lucida Grande", sans-serif' },
+    { type: 'sans-serif', name: 'Tahoma, Geneva, sans-serif' },
+    { type: 'sans-serif', name: '"Trebuchet MS", Helvetica, sans-serif' },
+    { type: 'sans-serif', name: 'Verdana, Geneva, sans-serif' },
+    { type: 'sans-serif', name: 'Copperplate, "Copperplate Gothic Light", sans-serif' },
+    { type: 'monospace', name: '"Courier New", Courier, monospace' },
+    { type: 'monospace', name: '"Lucida Console", Monaco, monospace' }
+  ];
 
-    // $('#schema').text(JSON.stringify(musje.JSONSchema, null, 2));
+  var src = '                        <<<望春風>>>                    鄧雨賢\n' +
+            '4/4 5,.5,_ (6, 1) | 2 (1_2_)  3 - | (5. 3_) (3_2_)1| 2 - - - |\n' +
+            ' (3. 5_) 5 (3_5_) | (1.  2_)  2 - | (5,.3_) (3  2) | 1 - - - |\n' +
+            '  2. 2_  3 (2_1_) | 6,(5,_6,_) 1- | (6,.1_) (2  3) | 5 - - - |\n' +
+            '  5. 5_  6 (5_3_) | 3 (2_1_)  6,- |  5,. 3_ (3  2) | 1 - - -|]';
 
-    // Debounce -- Copy from underscore.js
-    function debounce(func, wait) {
-      var timeout, args, context, timestamp, result;
+  var demo = angular.module('musjeDemo', []);
 
-      function now() { return new Date().getTime(); }
-
-      function later() {
-        var last = now() - timestamp;
-
-        if (last < wait && last >= 0) {
-          timeout = setTimeout(later, wait - last);
-        } else {
-          timeout = null;
-          result = func.apply(context, args);
-          if (!timeout) { context = args = null; }
-        }
-      }
-
-      return function() {
-        context = this;
-        args = arguments;
-        timestamp = now();
-        if (!timeout) {
-          timeout = setTimeout(later, wait);
-          result = func.apply(context, args);
-          context = args = null;
-        }
-        return result;
-      };
-    }
-
-    var run = debounce(function() {
+  demo.controller('MusjeDemoCtrl', function ($scope, $document) {
+    function run() {
+      var score;
       try {
-        score = musje.parse($source.val());
+        score = musje.parse($scope.src);
         score = musje.score(score);
-        $measureCount.html(score ? score.parts[0].measures.length : 0);
-        $result.text('');
-        // $result.text(JSON.stringify(score, null, "  "));
-        // $result.removeClass('error');
-        // $('#converted').text(score);
+        $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
+        $scope.hasError = false;
+        $scope.result = '';
+        // $scope.result = JSON.stringify(score, null, "  ");
+        // $scope.converted = '' + scosre;
 
-        $validate.text('Valid: ' +
-          musje.validate(score.stringify()) +
+        $scope.validate = 'Valid: ' + musje.validate(score.stringify()) +
           '\nValidation Error: ' +
           JSON.stringify(musje.validate.error, null, '  ') +
           '\nValidation Missing: ' +
-          JSON.stringify(musje.validate.missing, null, '  ')
-        );
-      } catch (e) {
-        $measureCount.html('N/A');
-        $result.text(e);
-        $result.addClass('error');
+          JSON.stringify(musje.validate.missing, null, '  ');
+      } catch (err) {
+        $scope.totalMeasures = 'N/A';
+        $scope.result = '' + err;
+        $scope.hasError = true;
       }
 
-      musje.render(score, svgSelector, {
-        fontFamily: fonts.palatino
+      musje.render(score, 'svg', {
+        fontFamily: $scope.selectedFont.name
       });
-    }, 300);
+    }
 
-    run();
+    $scope.fonts = fonts;
+    $scope.selectedFont = $scope.fonts[6];
+    $scope.src = src;
+    $scope.run = run;
 
-    $source.on('input propertychange', run);
-    $('#playButton').on('click', function () { score.play(); });
+    $document.ready(run);
   });
-}(jQuery));
+
+}());

@@ -30,7 +30,7 @@ var musje = musje || {};
 
   // TODO: To be implemented without dependency...
   function objDeepClone(obj) {
-    return $.extend(true, {}, obj);
+    return angular.copy(obj);
   }
 
 

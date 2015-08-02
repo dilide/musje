@@ -1,5 +1,6 @@
 body {
-  margin: 10px;
+  margin: 10px 20px;
+  font-size: 16px;
 }
 
 pre {
@@ -9,15 +10,16 @@ pre {
   white-space: -o-pre-wrap;    /* Opera 7 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
-#source {
+.source {
   width: 100%;
   height: 200px;
   line-height: 180%;
+  font-family: "Lucida Console", Monaco, monospace;
 }
 .error {
   color: red;
 }
-#validate {
+.validate {
   color: blue;
 }
 
