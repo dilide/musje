@@ -1,4 +1,4 @@
-/*global angular,musje*/
+/*global angular,musje,MIDI*/
 
 (function () {
   'use strict';
@@ -31,11 +31,12 @@
   var demo = angular.module('musjeDemo', []);
 
   demo.controller('MusjeDemoCtrl', function ($scope, $document) {
+    var score;
     function run() {
-      var score;
       try {
         score = musje.parse($scope.src);
         score = musje.score(score);
+        $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
         $scope.hasError = false;
         $scope.result = '';
@@ -58,12 +59,34 @@
       });
     }
 
+    // $scope.playDisabled = true;
+    $scope.pauseDisabled = true;
+    // $scope.stopDisabled = true;
+
     $scope.fonts = fonts;
-    $scope.selectedFont = $scope.fonts[6];
+    $scope.selectedFont = $scope.fonts[11];
     $scope.src = src;
     $scope.run = run;
+    $scope.play = function () {
+      score.play();
+      // $scope.playDisabled = true;
+      // $scope.stopDisabled = false;
+    };
+    $scope.stop = function () {
+      score.stop();
+    };
 
-    $document.ready(run);
+    $document.ready(function () {
+      run();
+      MIDI.loadPlugin({
+        soundfontUrl: "./soundfont/",
+        instrument: "acoustic_grand_piano", // or multiple instruments
+        onsuccess: function () {
+          $scope.playDisabled = false;
+        }
+      });
+    });
+
   });
 
 }());

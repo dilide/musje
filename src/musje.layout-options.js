@@ -7,7 +7,7 @@ var musje = musje || {};
   var layoutOptions = musje.layoutOptions = {
     mode: 'block', // inline | block | paper
     width: 650,
-    height: 300,
+    height: 500,
     marginTop: 25,
     marginRight: 30,
     marginBottom: 25,

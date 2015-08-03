@@ -10,20 +10,54 @@
   </head>
 
   <body ng-controller="MusjeDemoCtrl">
-    <textarea class="source" ng-model="src" ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
-    <pre ng-class="{ error: hasError }">{{result}}</pre>
-    <p>
-      <button id="playButton">Play</button>
-      Total measures: {{totalMeasures}},
-      Font: <select ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-change="run()"></select>
-    </p>
-    <svg></svg>
-    <pre>{{schema}}</pre>
-    <pre class="validate">{{validate}}</pre>
-    <pre>{{converted}}</pre>
+
+    <!-- =========================== navbar ============================== -->
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">
+            <span><img alt="Brand" src="../src/images/musje-logo.svg" height="30">
+            Musje</span>
+          </a>
+          <form class="navbar-form navbar-left">
+            <div class="btn-group">
+              <button type="button" class="btn btn-default" aria-label="Play" ng-disabled="playDisabled" ng-click="play()">
+                <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="btn btn-default" aria-label="Pause" ng-disabled="pauseDisabled">
+                <span class="glyphicon glyphicon-pause" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="btn btn-default" aria-label="Stop" ng-disabled="stopDisabled" ng-click="stop()">
+                <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="form-group">
+              <label for="font-select">Font:</label>
+              <select id="font-select" class="form-control" ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-model-options="{ debounce: 500 }" ng-change="run()" style="width:150px"></select>
+            </div>
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <!-- =========================== content =============================-->
+    <div class="container-fluid">
+      <textarea class="source" ng-model="src" ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
+      <pre ng-class="{ error: hasError }">{{result}}</pre>
+      <p>
+        Total measures: {{totalMeasures}}
+      </p>
+      <svg></svg>
+      <pre>{{schema}}</pre>
+      <pre class="validate">{{validate}}</pre>
+      <pre>{{converted}}</pre>
+    </div>
+
+    <!-- =============================================================== -->
 
     <script src="lib/snap.svg-min.js"></script>
     <script src="lib/tv4.min.js"></script>
+    <script src="lib/MIDI.min.js"></script>
 
     <script src="../musje.js"></script>
     <script src="../src/musje.model.js"></script>
