@@ -10,6 +10,14 @@ pre {
   white-space: -o-pre-wrap;    /* Opera 7 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
+
+footer {
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+  padding: 15px 0 25px;
+  background: linear-gradient(#eee, #fff);
+}
+
 .source {
   width: 100%;
   height: 200px;
@@ -23,9 +31,8 @@ pre {
   color: blue;
 }
 
-svg {
+.mus-score {
   border: dotted 1px gray;
-  font-family: Helvetica, Arial, sans-serif;
 }
 
 line {

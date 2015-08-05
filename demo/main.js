@@ -34,8 +34,8 @@
     var score;
     function run() {
       try {
-        score = musje.parse($scope.src);
-        score = musje.score(score);
+        score =  musje.parse($scope.src);
+        score = $scope.score = musje.score(score);
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
         $scope.hasError = false;
@@ -53,10 +53,7 @@
         $scope.result = '' + err;
         $scope.hasError = true;
       }
-
-      musje.render(score, 'svg', {
-        fontFamily: $scope.selectedFont.name
-      });
+      $scope.render();
     }
 
     // $scope.playDisabled = true;
@@ -66,6 +63,12 @@
     $scope.fonts = fonts;
     $scope.selectedFont = $scope.fonts[11];
     $scope.src = src;
+
+    $scope.render = function () {
+      musje.render($scope.score, '.mus-score', {
+        fontFamily: $scope.selectedFont.name
+      });
+    };
     $scope.run = run;
     $scope.play = function () {
       score.play();

@@ -11,7 +11,7 @@
 
   <body ng-controller="MusjeDemoCtrl">
 
-    <!-- =========================== navbar ============================== -->
+    <!-- ============================= navbar ============================ -->
     <nav class="navbar navbar-default navbar-fixed-top">
       <div class="container-fluid">
         <div class="navbar-header">
@@ -33,27 +33,34 @@
             </div>
             <div class="form-group">
               <label for="font-select">Font:</label>
-              <select id="font-select" class="form-control" ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-model-options="{ debounce: 500 }" ng-change="run()" style="width:150px"></select>
+              <select id="font-select" class="form-control" ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-model-options="{ debounce: 500 }" ng-change="render()" style="width:150px"></select>
             </div>
           </form>
         </div>
       </div>
     </nav>
 
-    <!-- =========================== content =============================-->
+    <!-- ============================ content =============================-->
     <div class="container-fluid">
       <textarea class="source" ng-model="src" ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
-      <pre ng-class="{ error: hasError }">{{result}}</pre>
+      <pre ng-class="{ error: hasError }" ng-show="result">{{result}}</pre>
       <p>
         Total measures: {{totalMeasures}}
       </p>
-      <svg></svg>
-      <pre>{{schema}}</pre>
-      <pre class="validate">{{validate}}</pre>
-      <pre>{{converted}}</pre>
+      <svg class="mus-score"></svg>
+      <pre ng-show="schema">{{schema}}</pre>
+      <pre class="validate" ng-show="validate">{{validate}}</pre>
+      <pre ng-show="converted">{{converted}}</pre>
     </div>
 
-    <!-- =============================================================== -->
+    <!-- ============================= footer ============================= -->
+    <footer class="container-fluid">
+      <iframe src="https://ghbtns.com/github-btn.html?user=jianpu&amp;repo=musje&amp;type=star&amp;count=true" frameborder="0" scrolling="0" width="92px" height="20px"></iframe>
+      <iframe src="https://ghbtns.com/github-btn.html?user=jianpu&amp;repo=musje&amp;type=watch&amp;count=true&amp;v=2" frameborder="0" scrolling="0" width="105px" height="20px"></iframe>
+      <iframe src="https://ghbtns.com/github-btn.html?user=jianpu&amp;repo=musje&amp;type=fork&amp;count=true" frameborder="0" scrolling="0" width="110px" height="20px"></iframe>
+    </footer>
+
+    <!-- ================================================================== -->
 
     <script src="lib/snap.svg-min.js"></script>
     <script src="lib/tv4.min.js"></script>
