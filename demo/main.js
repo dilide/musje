@@ -22,19 +22,12 @@
     { type: 'monospace', name: '"Lucida Console", Monaco, monospace' }
   ];
 
-  var src = '                        <<<望春風>>>                    鄧雨賢\n' +
-            '4/4 5,.5,_ (6, 1) | 2 (1_2_)  3 - | (5. 3_) (3_2_)1| 2 - - - |\n' +
-            ' (3. 5_) 5 (3_5_) | (1.  2_)  2 - | (5,.3_) (3  2) | 1 - - - |\n' +
-            '  2. 2_  3 (2_1_) | 6,(5,_6,_) 1- | (6,.1_) (2  3) | 5 - - - |\n' +
-            '  5. 5_  6 (5_3_) | 3 (2_1_)  6,- |  5,. 3_ (3  2) | 1 - - -|]';
-
   var demo = angular.module('musjeDemo', []);
 
-  demo.controller('MusjeDemoCtrl', function ($scope, $document) {
-    var score;
-    function run() {
+  demo.controller('MusjeDemoCtrl', function ($scope, $http, $document) {
+    $scope.run = function () {
       try {
-        score =  musje.parse($scope.src);
+        var score =  musje.parse($scope.src);
         score = $scope.score = musje.score(score);
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
@@ -54,42 +47,52 @@
         $scope.hasError = true;
       }
       $scope.render();
-    }
+    };
 
-    // $scope.playDisabled = true;
+    $scope.playDisabled = true;
     $scope.pauseDisabled = true;
     // $scope.stopDisabled = true;
 
     $scope.fonts = fonts;
     $scope.selectedFont = $scope.fonts[11];
-    $scope.src = src;
+
+    $http.get('score-samples/望春風.txt').success(function (data) {
+      $scope.src = data;
+      $scope.run();
+    });
 
     $scope.render = function () {
       musje.render($scope.score, '.mus-score', {
         fontFamily: $scope.selectedFont.name
       });
     };
-    $scope.run = run;
     $scope.play = function () {
-      score.play();
+      $scope.score.play();
       // $scope.playDisabled = true;
       // $scope.stopDisabled = false;
     };
     $scope.stop = function () {
-      score.stop();
+      $scope.score.stop();
     };
 
     $document.ready(function () {
-      run();
       MIDI.loadPlugin({
         soundfontUrl: "./soundfont/",
         instrument: "acoustic_grand_piano", // or multiple instruments
         onsuccess: function () {
           $scope.playDisabled = false;
+          $scope.$digest();
         }
       });
     });
 
+  });
+
+  demo.directive('demoFooter', function () {
+    return {
+      restrict: 'A',
+      templateUrl: 'demo-footer.html'
+    };
   });
 
 }());

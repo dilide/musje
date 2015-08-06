@@ -381,7 +381,7 @@ var musje = musje || {};
         },
         accidental: {
           type: 'string',
-          enum: ['#', 'b', '', '##', 'bb'],
+          enum: ['#', 'b', '', 'n', '##', 'bb'],
           default: ''
         },
         midiNumber: {
