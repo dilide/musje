@@ -324,6 +324,22 @@ var musje = musje || {};
       score: {
         head: { $ref: '#/objects/scoreHead' },
         parts: { $ref: '#/arrays/parts' },
+
+        // A cell is identically a measure in a part or a part in a measure.
+        walkCells: function (callback) {
+          this.parts.forEach(function (part, partIdx) {
+            part.measures.forEach(function (cell, measureIdx) {
+              callback(cell, measureIdx, partIdx);
+            });
+          });
+        },
+        walkMusicData: function (callback) {
+          this.walkCells(function (cell, measureIdx, partIdx) {
+            cell.forEach(function (musicData, musicDataIdx) {
+              callback(musicData, musicDataIdx, measureIdx, partIdx);
+            });
+          });
+        },
         toString: function () {
           return this.head + this.parts.map(function (part) {
             return part.toString();

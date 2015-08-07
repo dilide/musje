@@ -50,6 +50,7 @@ var musje = musje || {};
     timeFontWeight: 'bold',
 
     headerSep: '100%',
+    systemSep: '100%',
     musicDataSep: '50%',
 
     measurePaddingLeft: '60%',
