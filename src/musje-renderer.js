@@ -14,6 +14,30 @@ var musje = musje || {};
     return Math.abs(a - b) < epsilon;
   }
 
+  // A cell is either a measure in a part or a part in a measure.
+  function walkCells(score, callback) {
+    score.parts.forEach(function (part, partIdx) {
+      part.measures.forEach(function (cell, measureIdx) {
+        callback(cell, measureIdx, partIdx);
+      });
+    });
+  }
+
+  function walkMusicData(score, callback) {
+    walkCells(score, function (cell, measureIdx, partIdx) {
+      cell.forEach(function (musicData, musicDataIdx) {
+        callback(musicData, musicDataIdx, measureIdx, partIdx);
+      });
+    });
+  }
+
+  // function toTimeWise(score) {
+  //   console.log(score);
+
+  //   return score;
+  // }
+
+
   function getBBoxAfterTransform(container, bbox, matrix) {
     var
       rect = container.rect(bbox.x, bbox.y, bbox.width, bbox.height),
@@ -348,7 +372,88 @@ var musje = musje || {};
     };
   };
 
+  // @param cell {Array} either a measure in a part, or a part in a measure.
+  // @param groupDur {number} Duration of a beam group in quarter.
+  function findBeamGroup(cell, groupDur) {
+    var counter = 0, group = [], groups = [];
 
+    function inGroup() {
+      return counter < groupDur && !near(counter, groupDur);
+    }
+    function putGroup() {
+      if (group.length > 1) { groups.push(group); }
+      group = [];
+    }
+
+    cell.forEach(function (musicData) {
+      if (musicData.__name__ !== 'note' && musicData.__name__ !== 'rest') {
+        return;
+      }
+      var
+        duration = musicData.duration,
+        dur = duration.quarter;
+
+      counter += dur;
+
+      if (inGroup()) {
+        if (duration.underbar) { group.push(musicData); }
+      } else if (near(counter, groupDur)) {
+        group.push(musicData);
+        putGroup();
+        counter = 0;
+      } else {
+        putGroup();
+        counter %= groupDur;
+      }
+    });
+    putGroup();
+
+    return groups;
+  }
+
+
+  // @param cell {Array} either a measure in a part, or a part in a measure.
+  // @param groupDur {number} Duration of a beam group in quarter.
+  function makeBeam(cell, groupDur) {
+
+    findBeamGroup(cell, groupDur).forEach(function (group) {
+      var beamLevel = {};
+
+      function hasNeighborUnderbar(index, underbar) {
+        return group[index] && group[index].duration.underbar >= underbar;
+      }
+
+      group.forEach(function(musicData, g) {
+        var
+          underbar = musicData.duration.underbar,
+          i;
+        for (i = 1; i <= underbar; i++) {
+          if (hasNeighborUnderbar(g + 1, i)) {
+            musicData.beam = musicData.beam || {};
+            if (beamLevel[i]) {
+              musicData.beam[i] = 'continue';
+            } else {
+              beamLevel[i] = true;
+              musicData.beam[i] = 'begin';
+            }
+          } else {
+            if (beamLevel[i]) {
+              musicData.beam = musicData.beam || {};
+              musicData.beam[i] = 'end';
+              delete beamLevel[i];
+            }
+          }
+        }
+      });
+    });
+  }
+
+var cell = musje.score(musje.parse('1=2=3=4=5_67=0=')).parts[0].measures[0];
+console.log(findBeamGroup(cell, 1).join(' : '));
+makeBeam(cell, 1);
+console.log(cell.map(function (data) {
+  return JSON.stringify(data.beam);
+}))
 
   // ======================================================================
 
@@ -408,22 +513,68 @@ var musje = musje || {};
     });
   }
 
-  function walkMusicData(score, callback) {
-    score.parts.forEach(function (part, partIdx) {
-      part.measures.forEach(function (measure, measureIdx) {
-        measure.forEach(function (musicData, musicDataIdx) {
-          callback(musicData, musicDataIdx, measureIdx, partIdx);
-        });
-      });
+  function setMusicDataDef(score, svg, lo) {
+    var defs = new Defs(svg, lo);
+
+    walkCells(score, function (cell) {
+      findBeamGroup(cell, 1);
+    });
+
+    walkMusicData(score, function (data) {
+      switch (data.__name__) {
+      case 'rest':  // fall through
+      case 'note':
+        data.def = defs.get(data);
+        break;
+      case 'time':
+        data.def = defs.get(data);
+        break;
+      case 'bar':
+        break;
+      }
     });
   }
 
-  // function toTimeWise(score) {
-  //   console.log(score);
+  function layout(score, svg, lo) {
 
-  //   return score;
-  // }
+    var
+      body = makeBody(svg, lo),
+      header = renderHeader(score, body, lo),
+      content = makeContent(body, header, lo);
 
+    // drawBoxBolder(body);
+    // drawBoxBolder(header);
+    // drawBoxBolder(content);
+
+    var x = 0, baseline = 30, m = 0;
+
+    setMusicDataDef(score, svg, lo);
+
+    walkMusicData(score, function (data) {
+      switch (data.__name__) {
+      case 'rest':  // fall through
+      case 'note':
+        data.pos = { x: x, y: baseline };
+        x += data.def.width + lo.musicDataSep;
+        break;
+      case 'time':
+        data.pos = { x: x, y: baseline };
+        x += data.def.width + lo.musicDataSep;
+        break;
+      case 'bar':
+        x += lo.measurePaddingRight - lo.musicDataSep;
+        data.pos = { x: x, y: baseline };
+        x += lo.measurePaddingLeft;
+        m ++;
+        if (m % 4 === 0) { x = 0; baseline += 55; }
+        break;
+      }
+    });
+
+    // console.log(defs['n1010'].durationDef.el.attr('id'))
+
+    return content;
+  }
 
   musje.render = function (score, svg, lo) {
     // score = toTimeWise(score);
@@ -434,50 +585,35 @@ var musje = musje || {};
     });
     svg.clear();
 
-    var
-      defs = new Defs(svg, lo),
-      body = makeBody(svg, lo),
-      header = renderHeader(score, body, lo),
-      content = makeContent(body, header, lo);
-
-    // drawBoxBolder(body);
-    // drawBoxBolder(header);
-    // drawBoxBolder(content);
+    var content = layout(score, svg, lo);
 
     //================================================
 
-    var x = 0, baseline = 30, m = 0;
+    function renderDuration(note) {
 
-    function renderTime(time) {
-      var def = defs.get(time);
-      var useEl = content.use(def.el).attr({ x: x, y: baseline });
-      // drawMusicDataBolder(useEl, el);
-      x += def.width + lo.musicDataSep;
-    }
+      // Render duration..........
+      var durationDef = note.def.durationDef;
+      var pitchDef = note.def.pitchDef;
 
-    function renderNote(note) {
-      var def = defs.get(note);
-      var pitchDef = def.pitchDef;
-      var durationDef = def.durationDef;
-      var useEl = content.use(pitchDef.el).attr({ x: x, y: baseline });
-      // drawMusicDataBolder(useEl, def);
       var underbar = note.duration.underbar;
       var durationWidth = durationDef.width;
+      var x = note.pos.x + pitchDef.width;
 
-      x += pitchDef.width;
-
+      // Whole and half notes
       if (note.duration.type < 4) {
         content.use(durationDef.el).attr({
           x: x,
-          y: baseline + pitchDef.stepCy
+          y: note.pos.y + pitchDef.stepCy
         });
       } else {
+        // Dots for quarter or shorter notes
         if (note.duration.dot) {
-          content.g().transform(Snap.matrix().translate(x, baseline))
+          content.g().transform(Snap.matrix().translate(x, note.pos.y))
             .use(durationDef.el).transform(pitchDef.matrix);
         }
+        // Eigth or shorter notes
         if (underbar) {
-          var y = baseline, x0 = x - pitchDef.width;
+          var y = note.pos.y, x0 = x - pitchDef.width;
           durationWidth = durationDef.width * pitchDef.matrix.split().scalex;
           for (var i = 0; i < underbar; i++) {
             content.line(x0, y, x + durationWidth, y)
@@ -486,11 +622,11 @@ var musje = musje || {};
           }
         }
       }
-      x += durationWidth + lo.musicDataSep;
     }
 
     function renderBar(bar) {
-      x += lo.measurePaddingRight - lo.musicDataSep;
+      var x = bar.pos.x, baseline = bar.pos.y;
+
       switch (bar.value) {
       case 'single':
         x += lo.thinBarlineWidth / 2;
@@ -502,18 +638,14 @@ var musje = musje || {};
         x += lo.thinBarlineWidth / 2;
         content.line(x, baseline - 25, x, baseline + 5)
           .attr({ strokeWidth: lo.thinBarlineWidth });
-        x +=  lo.thinBarlineWidth / 2 + lo.barlineSep +
-              lo.thickBarlineWidth / 2;
+        x += lo.thinBarlineWidth / 2 + lo.barlineSep +
+             lo.thickBarlineWidth / 2;
         content.line(x, baseline - 25, x, baseline + 5)
           .attr({ strokeWidth: lo.thickBarlineWidth });
         x += lo.thickBarlineWidth / 2;
         break;
       }
-      x += lo.measurePaddingLeft;
-      m ++;
-      if (m % 4 === 0) { x = 0; baseline += 55; }
     }
-
 
     // content.line(x, baseline, content.width, baseline).addClass('ref-line');
 
@@ -521,19 +653,19 @@ var musje = musje || {};
       switch (data.__name__) {
       case 'rest':  // fall through
       case 'note':
-        renderNote(data);
+        data.el = content.use(data.def.pitchDef.el).attr(data.pos);
+        // drawMusicDataBolder(data.el, data.def);
+        renderDuration(data);
         break;
       case 'time':
-        renderTime(data);
+        data.el = content.use(data.def.el).attr(data.pos);
+        // drawMusicDataBolder(data.el, data.def);
         break;
       case 'bar':
         renderBar(data);
         break;
       }
     });
-
-    // console.log(defs['n1010'].durationDef.el.attr('id'))
-
   };
 
 }(Snap));

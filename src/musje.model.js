@@ -414,11 +414,16 @@ var musje = musje || {};
           maximum: 2,
           default: 0
         },
-        second: {
+        quarter: {
           get: function () {
-            var d = 60 / TEMPO * 4 / this.type;
+            var d = 4 / this.type;
             return this.dot === 0 ? d :
                    this.dot === 1 ? d * 1.5 : d * 1.75;
+          }
+        },
+        second: {
+          get: function () {
+            return this.quarter * 60 / TEMPO;
           }
         },
         underbar: {
