@@ -340,6 +340,15 @@ var musje = musje || {};
             });
           });
         },
+        prepareTimewise: function () {
+          var measures = this.measures = [];
+          this.walkCells(function (cell, measureIdx, partIdx) {
+            measures[measureIdx] = measures[measureIdx] || [];
+            var measure = measures[measureIdx];
+            measure.parts = measure.parts || [];
+            measure.parts[partIdx] = cell;
+          });
+        },
         toString: function () {
           return this.head + this.parts.map(function (part) {
             return part.toString();

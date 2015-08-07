@@ -62,7 +62,7 @@
     });
 
     $scope.render = function () {
-      musje.render($scope.score, '.mus-score', {
+      $scope.score.render('.mus-score', {
         fontFamily: $scope.selectedFont.name
       });
     };
