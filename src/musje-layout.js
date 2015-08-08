@@ -5,9 +5,6 @@ var musje = musje || {};
 (function (Snap) {
   'use strict';
 
-  var
-    objExtend = musje.objExtend;
-
   function near(a, b, epsilon) {
     epsilon = epsilon || 0.00001;
     return Math.abs(a - b) < epsilon;
@@ -15,7 +12,7 @@ var musje = musje || {};
 
   // =====================================================================
 
-  function findBeamGroup(cell, groupDur) {
+  function getBeamedGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
 
     function inGroup() {
@@ -56,31 +53,33 @@ var musje = musje || {};
   // @param groupDur {number} Duration of a beam group in quarter.
   function makeBeam(cell, groupDur) {
 
-    findBeamGroup(cell, groupDur).forEach(function (group) {
+    getBeamedGroups(cell, groupDur).forEach(function (group) {
+      // beamLevel starts from 0 while underbar starts from 1
       var beamLevel = {};
 
-      function hasNeighborUnderbar(index, underbar) {
-        return group[index] && group[index].duration.underbar >= underbar;
+      function nextHasSameBeamlevel(index, level) {
+        var next = group[index + 1];
+        return next && next.duration.underbar > level;
       }
 
-      group.forEach(function(musicData, g) {
+      group.forEach(function(musicData, i) {
         var
           underbar = musicData.duration.underbar,
-          i;
-        for (i = 1; i <= underbar; i++) {
-          if (hasNeighborUnderbar(g + 1, i)) {
-            musicData.beam = musicData.beam || {};
-            if (beamLevel[i]) {
-              musicData.beam[i] = 'continue';
+          level;
+        for (level = 0; level < underbar; level++) {
+          if (nextHasSameBeamlevel(i, level)) {
+            musicData.beams = musicData.beams || {};
+            if (beamLevel[level]) {
+              musicData.beams[level] = 'continue';
             } else {
-              beamLevel[i] = true;
-              musicData.beam[i] = 'begin';
+              beamLevel[level] = true;
+              musicData.beams[level] = 'begin';
             }
           } else {
-            if (beamLevel[i]) {
-              musicData.beam = musicData.beam || {};
-              musicData.beam[i] = 'end';
-              delete beamLevel[i];
+            if (beamLevel[level]) {
+              musicData.beams = musicData.beams || {};
+              musicData.beams[level] = 'end';
+              delete beamLevel[level];
             }
           }
         }
@@ -272,7 +271,6 @@ var musje = musje || {};
 
   musje.Score.prototype.layout = function (svg, lo) {
     var score = this;
-    lo = objExtend(musje.layoutOptions, lo);
     svg = makeSvg(svg, lo);
 
     var

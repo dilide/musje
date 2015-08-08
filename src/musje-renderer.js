@@ -5,33 +5,57 @@ var musje = musje || {};
 (function (Snap) {
   'use strict';
 
-  function renderDuration(cellEl, note, lo) {
+  function findEndBeamedNote(cell, begin, beamLevel) {
+    var i = begin + 1,
+      next = cell[i];
+    while (next && next.beams && next.beams[beamLevel] !== 'end') {
+      i++;
+      next = cell[i];
+    }
+    return next;
+  }
+
+  function endX(note) {
+    var def = note.def;
+    return note.pos.x + def.pitchDef.width +
+           def.durationDef.width * def.pitchDef.matrix.split().scalex;
+  }
+
+  function renderDuration(cell, note, noteIdx, lo) {
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 
     var underbar = note.duration.underbar;
-    var durationWidth = durationDef.width;
-    var x = note.pos.x + pitchDef.width;
+    var x = note.pos.x;
+    var y = note.pos.y;
+
+    function renderUnderbar(note) {
+      cell.el.line(x, y, endX(note), y)
+        .attr('stroke-width', lo.typeStrokeWidth);
+    }
 
     // Whole and half notes
     if (note.duration.type < 4) {
-      cellEl.use(durationDef.el).attr({
-        x: x,
-        y: note.pos.y + pitchDef.stepCy
+      cell.el.use(durationDef.el).attr({
+        x: x + pitchDef.width,
+        y: y + pitchDef.stepCy
       });
     } else {
       // Dots for quarter or shorter notes
       if (note.duration.dot) {
-        cellEl.g().transform(Snap.matrix().translate(x, note.pos.y))
+        cell.el.g().transform(Snap.matrix().translate(x + pitchDef.width, y))
           .use(durationDef.el).transform(pitchDef.matrix);
       }
       // Eigth or shorter notes
       if (underbar) {
-        var y = note.pos.y, x0 = x - pitchDef.width;
-        durationWidth = durationDef.width * pitchDef.matrix.split().scalex;
         for (var i = 0; i < underbar; i++) {
-          cellEl.line(x0, y, x + durationWidth, y)
-            .attr('stroke-width', lo.typeStrokeWidth);
+          if (note.beams && note.beams[i]) {
+            if (note.beams[i] === 'begin') {
+              renderUnderbar(findEndBeamedNote(cell, noteIdx, i));
+            }
+          } else {
+            renderUnderbar(note);
+          }
           y -= lo.underbarSep;
         }
       }
@@ -65,22 +89,21 @@ var musje = musje || {};
   }
 
   musje.Score.prototype.render = function (svg, lo) {
+    lo = musje.objExtend(musje.layoutOptions, lo);
     var systems = this.layout(svg, lo);
 
     systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
         measure.parts.forEach(function (cell) {
-          cell.forEach(function (data) {
+          cell.forEach(function (data, dataIdx) {
             switch (data.__name__) {
             case 'rest':  // fall through
             case 'note':
               data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
-              // drawMusicDataBolder(data.el, data.def);
-              renderDuration(cell.el, data, lo);
+              renderDuration(cell, data, dataIdx, lo);
               break;
             case 'time':
               data.el = cell.el.use(data.def.el).attr(data.pos);
-              // drawMusicDataBolder(data.el, data.def);
               break;
             case 'bar':
               renderBar(cell.el, data, lo);
