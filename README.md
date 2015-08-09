@@ -36,3 +36,14 @@ npm install
 ```
 gulp
 ```
+
+## License
+
+[MIT License](http://en.wikipedia.org/wiki/MIT_License)
+
+
+[npm-url]: https://npmjs.org/package/musje
+[npm-image]: https://badge.fury.io/js/musje.png
+
+[depstat-url]: https://david-dm.org/malcomwu/musje
+[depstat-image]: https://david-dm.org/malcomwu/musje.png
