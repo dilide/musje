@@ -1,0 +1,11 @@
+.DS_Store
+.gitattributes
+.gitignore
+.jshintrc
+.tmp/
+node_modules/
+/gulpfile.js
+/demo/
+/ignore/
+/src/
+gulpfile.js
