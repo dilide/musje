@@ -1,7 +1,6 @@
+/*global musje*/
 
-var musje = musje || {};
-
-(function () {
+(function (musje) {
   'use strict';
 
   var layoutOptions = musje.layoutOptions = {
@@ -106,4 +105,4 @@ var musje = musje || {};
       break;
     }
   });
-}());
+}(musje));

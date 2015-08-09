@@ -5,7 +5,7 @@
 
 var musje = musje || {};
 
-(function () {
+(function (musje) {
   'use strict';
 
   var push = Array.prototype.push;
@@ -33,7 +33,9 @@ var musje = musje || {};
     return angular.copy(obj);
   }
 
-
+  musje.near = function (a, b) {
+    return Math.abs(a - b) < 0.00001;
+  };
 
   function makeSchema(model) {
     var schema = objExtend({
@@ -594,4 +596,4 @@ var musje = musje || {};
     return new musje.Score(src);
   };
 
-}());
+}(musje));

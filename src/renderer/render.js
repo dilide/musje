@@ -1,8 +1,6 @@
-/*global Snap*/
+/*global musje, Snap*/
 
-var musje = musje || {};
-
-(function (Snap) {
+(function (musje, Snap) {
   'use strict';
 
   function findEndBeamedNote(cell, begin, beamLevel) {
@@ -115,4 +113,4 @@ var musje = musje || {};
     });
   };
 
-}(Snap));
+}(musje, Snap));

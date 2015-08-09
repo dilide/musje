@@ -1,7 +1,6 @@
+/*global musje*/
 
-var musje = musje || {};
-
-(function () {
+(function (musje) {
   'use strict';
 
   musje.svgPaths = {
@@ -22,4 +21,4 @@ var musje = musje || {};
     ACCIDENTAL_SHIFTS: { '#': 1, 'n': 2, '##': -4, b: 0 }
 
   };
-}());
+}(musje));

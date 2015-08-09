@@ -1,6 +1,6 @@
 /*global musje,MIDI*/
 
-(function () {
+(function (musje, MIDI) {
   'use strict';
 
   if (!musje.Score) { return; }
@@ -71,4 +71,4 @@
     timeouts = [];
   };
 
-}());
+}(musje, MIDI));

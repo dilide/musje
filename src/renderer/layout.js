@@ -1,16 +1,9 @@
-/*global Snap*/
+/*global musje, Snap*/
 
-var musje = musje || {};
-
-(function (Snap) {
+(function (musje, Snap) {
   'use strict';
 
-  function near(a, b, epsilon) {
-    epsilon = epsilon || 0.00001;
-    return Math.abs(a - b) < epsilon;
-  }
-
-  // =====================================================================
+  var near = musje.near;
 
   function getBeamedGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
@@ -318,4 +311,4 @@ var musje = musje || {};
     return systems;
   };
 
-}(Snap));
+}(musje, Snap));
