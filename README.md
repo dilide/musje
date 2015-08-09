@@ -1,5 +1,4 @@
-musje
-=====
+# musje [![NPM version][npm-image]][npm-url] [![Dependency Status][depstat-image]][depstat-url]
 
 Musje - 123 jianpu music processor.
 
