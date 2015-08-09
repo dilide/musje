@@ -1,6 +1,6 @@
-/*global angular,musje,MIDI*/
+/* global musje, angular, tv4, MIDI */
 
-(function () {
+(function (musje, angular, tv4, MIDI) {
   'use strict';
 
   var fonts = [
@@ -25,22 +25,23 @@
   var demo = angular.module('musjeDemo', []);
 
   demo.controller('MusjeDemoCtrl', function ($scope, $http, $document) {
+    var JSONSchema = musje.makeJSONSchema(musje.model);
+
     $scope.run = function () {
       try {
-        var score =  musje.parse($scope.src);
-        score = $scope.score = musje.score(score);
+        var score = $scope.score = musje.parse($scope.src);
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
         $scope.hasError = false;
         $scope.result = '';
         // $scope.result = JSON.stringify(score, null, "  ");
-        // $scope.converted = '' + scosre;
+        // $scope.converted = '' + score;
 
-        $scope.validate = 'Valid: ' + musje.validate(score.stringify()) +
+        $scope.validate = 'Valid: ' + tv4.validate(JSON.parse(score.stringify()), JSONSchema) +
           '\nValidation Error: ' +
-          JSON.stringify(musje.validate.error, null, '  ') +
+          JSON.stringify(tv4.error, null, '  ') +
           '\nValidation Missing: ' +
-          JSON.stringify(musje.validate.missing, null, '  ');
+          JSON.stringify(tv4.missing, null, '  ');
       } catch (err) {
         $scope.totalMeasures = 'N/A';
         $scope.result = '' + err;
@@ -95,4 +96,4 @@
     };
   });
 
-}());
+}(musje, angular, tv4, MIDI));

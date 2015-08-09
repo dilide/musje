@@ -1,19 +1,10 @@
 /* description: Musje 123 language */
 
 %{
-  // Polyfill
-  if (!String.prototype.trim) {
-    String.prototype.trim = function () {
-      return this.replace(/^\s+|\s+$/gm, '');
-    };
-  }
+
+  var objExtend = musje.objExtend;
 
   function lastItem(arr) { return arr[arr.length - 1]; }
-
-  function extend(target, ext) {
-    for (var key in ext) { target[key] = ext[key]; }
-    return target;
-  }
 
   function onlyProperty(obj) {
     for (var key in obj) {}
@@ -26,8 +17,11 @@
   }
 
   function removeLastEmptyMeasure(score) {
-    var parts = score.parts,
-      lastMeasure;
+    var
+      parts = score.parts,
+      lastMeasure,
+      i;
+
     for (i = 0; i < parts.length; i++) {
       lastMeasure = lastItem(parts[i].measures);
       if (lastMeasure.length === 0) {
@@ -35,6 +29,7 @@
       }
     }
   }
+
 %}
 
 /* lexical grammar */
@@ -54,8 +49,8 @@ BEATS         {SMALL_INT}\/
 \/\*([\s\S]*?)\*\/      return 'S'
 \/\*[\s\S]*             return 'S'
 
-"<<<"                   { this.begin('title'); }
-<title>.*">>>"          { yytext = yytext.substr(0, yyleng - 3).trim();
+"<<"                   { this.begin('title'); }
+<title>.*">>"          { yytext = yytext.substr(0, yyleng - 2).trim();
                           return 'TITLE'; }
 <title>{S}*{NL}         { this.begin('INITIAL'); }
 <title>.*               { this.begin('INITIAL');
@@ -108,7 +103,7 @@ BEATS         {SMALL_INT}\/
 %% /* Musje grammar rules */
 e
   : maybe_musje EOF
-    { return $1; }
+    { return musje.score($1); }
   ;
 
 maybe_musje
@@ -215,7 +210,7 @@ slurable
   | '(' pitchful maybe_duration
     {
       $$ = $2;
-      extend(onlyProperty($2), {
+      objExtend(onlyProperty($2), {
         duration: $3,
         slur: ['begin']
       });
@@ -223,7 +218,7 @@ slurable
   | pitchful maybe_duration ')'
     {
       $$ = $1;
-      extend(onlyProperty($1), {
+      objExtend(onlyProperty($1), {
         duration: $2,
         slur: ['end']
       });

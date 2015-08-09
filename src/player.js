@@ -1,4 +1,4 @@
-/*global musje,MIDI*/
+/* global musje, MIDI */
 
 (function (musje, MIDI) {
   'use strict';

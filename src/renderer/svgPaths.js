@@ -1,4 +1,4 @@
-/*global musje*/
+/* global musje */
 
 (function (musje) {
   'use strict';

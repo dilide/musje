@@ -1,7 +1,7 @@
 {
   "name": "musje",
-  "version": "0.0.1",
-  "description": "123 music language",
+  "version": "0.0.2",
+  "description": "123 jianpu music processor",
   "main": "musje.js",
   "scripts": {
     "test": "make test"
@@ -14,6 +14,8 @@
     "123",
     "jianpu",
     "music",
+    "sheet music",
+    "music score",
     "notation"
   ],
   "author": "Malcom Wu",
@@ -22,5 +24,10 @@
     "url": "https://github.com/jianpu/musje/issues"
   },
   "homepage": "https://github.com/jianpu/musje",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-jison-cli": "^0.1.5"
+  }
 }

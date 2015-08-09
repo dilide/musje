@@ -1,4 +1,4 @@
-/*global musje, Snap*/
+/* global musje, Snap */
 
 (function (musje, Snap) {
   'use strict';
