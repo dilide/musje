@@ -5,6 +5,7 @@
 var gulp = require('gulp');
 var jisonCli = require('gulp-jison-cli');
 var concat = require('gulp-concat');
+var sourcemaps = require('gulp-sourcemaps');
 
 gulp.task('jison', function () {
   return gulp.src('./src/parser/parser.jison')
@@ -43,8 +44,10 @@ gulp.task('build', ['parser'], function () {
     './src/renderer/render/render.js',
     './src/player.js'
     ])
-    .pipe(concat('musje.js'))
+    .pipe(sourcemaps.init())
+      .pipe(concat('musje.js'))
+    .pipe(sourcemaps.write('./.tmp/'))
     .pipe(gulp.dest('./'));
-});
+  });
 
 gulp.task('default', ['build']);

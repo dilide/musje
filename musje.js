@@ -2517,3 +2517,5 @@ return new Parser;
   };
 
 }(musje, MIDI));
+
+//# sourceMappingURL=.tmp/musje.js.map
