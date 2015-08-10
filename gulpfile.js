@@ -36,8 +36,8 @@ gulp.task('concat', function () {
       './src/renderer/layout/layoutOptions.js',
       './src/renderer/layout/Layout.js',
       './src/renderer/layout/Layout.makeSystems.js',
-      './src/renderer/render/renderDuration.js',
-      './src/renderer/render/render.js',
+      './src/renderer/Renderer.js',
+      './src/renderer/Renderer.renderDuration.js',
       './src/player.js'
     ])
     .pipe(sourcemaps.init())

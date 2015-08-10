@@ -2122,6 +2122,8 @@ return new Parser;
 (function (musje, Snap) {
   'use strict';
 
+  var defineProperty = Object.defineProperty;
+
   function makeCells(system) {
     var
       xOffset = 0,
@@ -2171,20 +2173,146 @@ return new Parser;
   }
 
 
-  var Layout = musje.Layout = function (score, svg, lo) {
-    this._score = score;
+  function Svg(svg, lo) {
+    this.el = Snap(svg).attr({
+        fontFamily: lo.fontFamily
+      })
+      .addClass('musje');
+    this.el.clear();
+    this.width = lo.width;
+    // this.height = lo.height;
+  }
+  defineProperty(Svg.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+      this.el.attr('width', w);
+    }
+  });
+
+  defineProperty(Svg.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this.el.attr('height', h);
+    }
+  });
+
+  function Body(svg, lo) {
     this._svg = svg;
     this._lo = lo;
-    this.flow();
+    this.el = svg.el.g()
+        .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
+        .addClass('mus-body');
+    this.width = lo.width - lo.marginLeft - lo.marginRight;
+    // this.height = lo.height - lo.marginTop - lo.marginBottom;
+  }
+
+  defineProperty(Body.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Body.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._svg.height = h + this._lo.marginTop + this._lo.marginBottom;
+    }
+  });
+
+  function Header(layout) {
+    this._content = layout.content;
+    this.el = layout.body.el.g().addClass('mus-header');
+    this.width = layout.body.width;
+  }
+  defineProperty(Header.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Header.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this._content.offset = h ? h + this._lo.headerSep : 0;
+    }
+  });
+
+  function Content(body, header, lo) {
+    this._body = body;
+    this._header = header;
+    this._lo = lo;
+    this.el = body.el.g().addClass('mus-content');
+    this.width = body.width;
+    this.height = 0;
+    this.offset = 0;
+  }
+
+  Content.prototype._resizeBody = function () {
+    var lo = this._lo, headerHeight = this._header.height;
+    this._body.height = this.height +
+              (headerHeight ? headerHeight + lo.headerSep : 0);
+  };
+
+  defineProperty(Content.prototype, 'offset', {
+    get: function () {
+      return this._o;
+    },
+    set: function (o) {
+      this._o = o;
+      this.el.transform(Snap.matrix().translate(0, o));
+      this._resizeBody();
+    }
+  });
+
+  defineProperty(Content.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Content.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this._resizeBody();
+    }
+  });
+
+
+  var Layout = musje.Layout = function (score, svg, lo) {
+    this._score = score;
+    this._lo = lo;
+
+    this.svg = new Svg(svg, lo);
+    this.body = new Body(this.svg, lo);
+    this.header = new Header(this);
+    this.content = new Content(this.body, this.header, lo);
   };
 
   Layout.prototype.flow = function () {
     var score = this._score;
-
-    this.makeSvg();
-    this.makeBody();
-    this.renderHeader();
-    this.makeContent();
 
     score.prepareTimewise();
     score.extractBars();
@@ -2197,70 +2325,8 @@ return new Parser;
     this.layoutSystems();
   };
 
-  Layout.prototype.makeSvg = function () {
-    var lo = this._lo;
-
-    this._svg = Snap(this._svg).attr({
-      fontFamily: lo.fontFamily,
-      width: lo.width,
-      height: lo.height
-    });
-    this._svg.clear();
-  };
-
-  Layout.prototype.makeBody = function () {
-    var lo = this._lo;
-    this.body = {
-      el: this._svg.g()
-          .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
-          .addClass('mus-body'),
-      width: lo.width - lo.marginLeft - lo.marginRight,
-      height: lo.height - lo.marginTop - lo.marginBottom
-    };
-  };
-
-  Layout.prototype.renderHeader = function () {
-    var
-      lo = this._lo,
-      el = this.body.el.g().addClass('mus-header'),
-      width = this.body.width;
-
-    el.text(width / 2, lo.titleFontSize, this._score.head.title)
-      .attr({
-        fontSize: lo.titleFontSize,
-        fontWeight: lo.titleFontWeight,
-        textAnchor: 'middle'
-      });
-    el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
-      .attr({
-        fontSize: lo.composerFontSize,
-        fontWeight: lo.composerFontWeight,
-        textAnchor: 'end'
-      });
-
-    this.header = {
-      el: el,
-      width: width,
-      height: el.getBBox().height
-    };
-  };
-
-  Layout.prototype.makeContent = function () {
-    var
-      body = this.body,
-      yOffset = this.header.height + this._lo.headerSep;
-
-    this.content = {
-      el: body.el.g()
-          .transform(Snap.matrix().translate(0, yOffset))
-          .addClass('mus-content'),
-      width: body.width,
-      height: body.height - yOffset
-    };
-  };
-
   Layout.prototype.setMusicDataDef = function () {
-    var defs = new musje.Defs(this._svg, this._lo);
+    var defs = new musje.Defs(this.svg.el, this._lo);
 
     this._score.walkMusicData(function (data) {
       switch (data.__name__) {
@@ -2355,13 +2421,116 @@ return new Parser;
         };
       }
     });
+
+    this.content.height = (i + 1) * height + i * lo.systemSep;
+
   };
 
 }(musje, Snap));
 
+/*global musje*/
+
+(function (musje) {
+  'use strict';
+
+  function renderBar(systemEl, bar, lo) {
+    // var
+    //   x = bar.pos.x,
+    //   y = bar.pos.y,
+    //   y2 = y - bar.def.height;
+
+    // switch (bar.value) {
+    // case 'single':
+    //   x += lo.thinBarlineWidth / 2;
+    //   systemEl.line(x, y2, x, y)
+    //     .attr({ strokeWidth: lo.thinBarlineWidth });
+    //   x += lo.thinBarlineWidth / 2;
+    //   break;
+    // case 'end':
+    //   x += lo.thinBarlineWidth / 2;
+    //   systemEl.line(x, y2, x, y)
+    //     .attr({ strokeWidth: lo.thinBarlineWidth });
+    //   x += lo.thinBarlineWidth / 2 + lo.barlineSep +
+    //        lo.thickBarlineWidth / 2;
+    //   systemEl.line(x, y2, x, y)
+    //     .attr({ strokeWidth: lo.thickBarlineWidth });
+    //   x += lo.thickBarlineWidth / 2;
+    //   break;
+    // }
+  }
+
+
+
+
+
+
+
+  //   el.text(width / 2, lo.titleFontSize, this._score.head.title)
+  //     .attr({
+  //       fontSize: lo.titleFontSize,
+  //       fontWeight: lo.titleFontWeight,
+  //       textAnchor: 'middle'
+  //     });
+  //   el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
+  //     .attr({
+  //       fontSize: lo.composerFontSize,
+  //       fontWeight: lo.composerFontWeight,
+  //       textAnchor: 'end'
+  //     });
+
+  //   this.header = {
+  //     el: el,
+  //     width: width,
+  //     height: el.getBBox().height
+  //   };
+  // };
+
+
+
+
+
+  var Renderer = musje.Renderer = function (score, svg, lo) {
+    this._lo = musje.objExtend(musje.layoutOptions, lo);
+    this.layout = new musje.Layout(score, svg, this._lo);
+  };
+
+  Renderer.prototype.render = function () {
+    var lo = this._lo, that = this;
+
+    this.layout.flow();
+
+    this.layout.systems.forEach(function (system) {
+      system.measures.forEach(function (measure) {
+        measure.parts.forEach(function (cell) {
+          cell.forEach(function (data, dataIdx) {
+            switch (data.__name__) {
+            case 'rest':  // fall through
+            case 'note':
+              data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
+              that.renderDuration(data, dataIdx, cell);
+              break;
+            case 'time':
+              data.el = cell.el.use(data.def.el).attr(data.pos);
+              break;
+            case 'bar':
+              renderBar(cell.el, data, lo);
+              break;
+            }
+          });
+        });
+      });
+    });
+  };
+
+  musje.Score.prototype.render = function (svg, lo) {
+    new Renderer(this, svg, lo).render();
+  };
+
+}(musje));
+
 /*global musje, Snap*/
 
-(function (musje, Snap) {
+(function (Renderer, Snap) {
   'use strict';
 
   function findEndBeamedNote(cell, begin, beamLevel) {
@@ -2385,7 +2554,8 @@ return new Parser;
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  function renderDuration(note, noteIdx, cell, lo) {
+  Renderer.prototype.renderDuration = function (note, noteIdx, cell) {
+    var lo = this._lo;
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 
@@ -2419,73 +2589,9 @@ return new Parser;
         }
       }
     }
-  }
-
-  musje.renderDuration = renderDuration;
-
-}(musje, Snap));
-
-/*global musje*/
-
-(function (musje) {
-  'use strict';
-
-  var renderDuration = musje.renderDuration;
-
-  function renderBar(systemEl, bar, lo) {
-    // var
-    //   x = bar.pos.x,
-    //   y = bar.pos.y,
-    //   y2 = y - bar.def.height;
-
-    // switch (bar.value) {
-    // case 'single':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2;
-    //   break;
-    // case 'end':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2 + lo.barlineSep +
-    //        lo.thickBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thickBarlineWidth });
-    //   x += lo.thickBarlineWidth / 2;
-    //   break;
-    // }
-  }
-
-  musje.Score.prototype.render = function (svg, lo) {
-    lo = musje.objExtend(musje.layoutOptions, lo);
-    var layout = new musje.Layout(this, svg, lo);
-
-    layout.systems.forEach(function (system) {
-      system.measures.forEach(function (measure) {
-        measure.parts.forEach(function (cell) {
-          cell.forEach(function (data, dataIdx) {
-            switch (data.__name__) {
-            case 'rest':  // fall through
-            case 'note':
-              data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
-              renderDuration(data, dataIdx, cell, lo);
-              break;
-            case 'time':
-              data.el = cell.el.use(data.def.el).attr(data.pos);
-              break;
-            case 'bar':
-              renderBar(cell.el, data, lo);
-              break;
-            }
-          });
-        });
-      });
-    });
   };
 
-}(musje));
+}(musje.Renderer, Snap));
 
 /* global musje, MIDI */
 

@@ -3,8 +3,6 @@
 (function (musje) {
   'use strict';
 
-  var renderDuration = musje.renderDuration;
-
   function renderBar(systemEl, bar, lo) {
     // var
     //   x = bar.pos.x,
@@ -31,11 +29,47 @@
     // }
   }
 
-  musje.Score.prototype.render = function (svg, lo) {
-    lo = musje.objExtend(musje.layoutOptions, lo);
-    var layout = new musje.Layout(this, svg, lo);
 
-    layout.systems.forEach(function (system) {
+
+
+
+
+
+  //   el.text(width / 2, lo.titleFontSize, this._score.head.title)
+  //     .attr({
+  //       fontSize: lo.titleFontSize,
+  //       fontWeight: lo.titleFontWeight,
+  //       textAnchor: 'middle'
+  //     });
+  //   el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
+  //     .attr({
+  //       fontSize: lo.composerFontSize,
+  //       fontWeight: lo.composerFontWeight,
+  //       textAnchor: 'end'
+  //     });
+
+  //   this.header = {
+  //     el: el,
+  //     width: width,
+  //     height: el.getBBox().height
+  //   };
+  // };
+
+
+
+
+
+  var Renderer = musje.Renderer = function (score, svg, lo) {
+    this._lo = musje.objExtend(musje.layoutOptions, lo);
+    this.layout = new musje.Layout(score, svg, this._lo);
+  };
+
+  Renderer.prototype.render = function () {
+    var lo = this._lo, that = this;
+
+    this.layout.flow();
+
+    this.layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
@@ -43,7 +77,7 @@
             case 'rest':  // fall through
             case 'note':
               data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
-              renderDuration(data, dataIdx, cell, lo);
+              that.renderDuration(data, dataIdx, cell);
               break;
             case 'time':
               data.el = cell.el.use(data.def.el).attr(data.pos);
@@ -56,6 +90,10 @@
         });
       });
     });
+  };
+
+  musje.Score.prototype.render = function (svg, lo) {
+    new Renderer(this, svg, lo).render();
   };
 
 }(musje));

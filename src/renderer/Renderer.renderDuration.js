@@ -1,6 +1,6 @@
 /*global musje, Snap*/
 
-(function (musje, Snap) {
+(function (Renderer, Snap) {
   'use strict';
 
   function findEndBeamedNote(cell, begin, beamLevel) {
@@ -24,7 +24,8 @@
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  function renderDuration(note, noteIdx, cell, lo) {
+  Renderer.prototype.renderDuration = function (note, noteIdx, cell) {
+    var lo = this._lo;
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 
@@ -58,8 +59,6 @@
         }
       }
     }
-  }
+  };
 
-  musje.renderDuration = renderDuration;
-
-}(musje, Snap));
+}(musje.Renderer, Snap));
