@@ -32,20 +32,19 @@
         var score = $scope.score = musje.parse($scope.src);
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
-        $scope.hasError = false;
-        $scope.result = '';
         // $scope.result = JSON.stringify(score, null, "  ");
         // $scope.converted = '' + score;
 
-        $scope.validate = 'Valid: ' + tv4.validate(JSON.parse(score.stringify()), JSONSchema) +
-          '\nValidation Error: ' +
-          JSON.stringify(tv4.error, null, '  ') +
-          '\nValidation Missing: ' +
-          JSON.stringify(tv4.missing, null, '  ');
+        if (!tv4.validate(JSON.parse(score.stringify()), JSONSchema)) {
+          $scope.error =
+                'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
+              '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
+        } else {
+          $scope.error = false;
+        }
       } catch (err) {
         $scope.totalMeasures = 'N/A';
-        $scope.result = '' + err;
-        $scope.hasError = true;
+        $scope.error = '' + err;
       }
       $scope.render();
     };

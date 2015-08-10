@@ -42,14 +42,12 @@
 
     <!-- ============================ content =============================-->
     <div class="container-fluid">
-      <textarea class="source" ng-model="src" ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
-      <pre ng-class="{ error: hasError }" ng-show="result">{{result}}</pre>
-      <p>
-        Total measures: {{totalMeasures}}
-      </p>
+      <textarea class="source" ng-model="src"
+          ng-model-options="{ debounce: 500 }" ng-change="run()"></textarea>
+      <pre class="error" ng-show="error">{{error}}</pre>
+      <p>Total measures: {{totalMeasures}}</p>
       <svg class="mus-score"></svg>
       <pre ng-show="schema">{{schema}}</pre>
-      <pre class="validate" ng-show="validate">{{validate}}</pre>
       <pre ng-show="converted">{{converted}}</pre>
     </div>
 

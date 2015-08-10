@@ -10,8 +10,8 @@ Musje consists of
 - player
 
 
-Usage
------
+## Usage
+
 ```js
 var score = musje.parse(musjeString);
 score.render(svgSelector, layoutOptions);
@@ -19,8 +19,8 @@ score.play();
 score.stop();
 ```
 
-Build
------
+
+## Develop
 
 ### Install
 Install node.js first and install gulp globally
@@ -34,8 +34,15 @@ npm install
 
 ### Build
 ```
-gulp
+gulp build
 ```
+or ```gulp``` will run the build by default.
+
+### Demo
+```
+gulp demo
+```
+
 
 ## License
 
@@ -45,5 +52,5 @@ gulp
 [npm-url]: https://npmjs.org/package/musje
 [npm-image]: https://badge.fury.io/js/musje.png
 
-[depstat-url]: https://david-dm.org/malcomwu/musje
-[depstat-image]: https://david-dm.org/malcomwu/musje.png
+[depstat-url]: https://david-dm.org/jianpu/musje
+[depstat-image]: https://david-dm.org/jianpu/musje.png

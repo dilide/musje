@@ -1,4 +1,8 @@
-var musje = musje || {};
+var musje = {};
+
+if (typeof exports !== 'undefined') {
+  exports = musje;
+}
 
 (function (musje) {
   'use strict';
