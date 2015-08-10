@@ -23,6 +23,7 @@ gulp.task('concat', function () {
       './src/model/makeClasses.js',
       './src/model/makeJSONSchema.js',  // only for development
       './src/model/model.js',
+      './src/model/Score.makeBeams.js',
       './src/parser/pre-parser.js',
       './.tmp/parser.js',
       './src/parser/post-parser.js',
@@ -33,7 +34,8 @@ gulp.task('concat', function () {
       './src/renderer/defs/DurationDef.js',
       './src/renderer/defs/Defs.js',
       './src/renderer/layout/layoutOptions.js',
-      './src/renderer/layout/layout.js',
+      './src/renderer/layout/Layout.js',
+      './src/renderer/layout/Layout.makeSystems.js',
       './src/renderer/render/renderDuration.js',
       './src/renderer/render/render.js',
       './src/player.js'

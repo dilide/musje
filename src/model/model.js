@@ -32,7 +32,7 @@
 
   musje.model = {
     title: 'Musje',
-    description: '123 Music score',
+    description: '123 jianpu music score',
 
     root: {
       score: {
@@ -54,6 +54,7 @@
             });
           });
         },
+
         prepareTimewise: function () {
           var measures = this.measures = [];
           this.walkCells(function (cell, measureIdx, partIdx) {
@@ -63,6 +64,28 @@
             measure.parts[partIdx] = cell;
           });
         },
+
+        // Extract bars in each cell out into the measure.
+        extractBars: function () {
+          var measures = this.measures;
+          measures.forEach(function (measure, i) {
+            measure.parts.forEach(function (cell) {
+              if (cell[cell.length - 1].__name__ === 'bar') {
+                measure.rightBar = cell.pop();
+              }
+              if (cell[0].__name__ === 'bar') {
+                measure.leftBar = cell.shift();
+              } else {
+                if (i === 0) {
+                  measure.leftBar = new musje.Bar('single');
+                } else {
+                  measure.leftBar = measures[i - 1].rightBar;
+                }
+              }
+            });
+          });
+        },
+
         toString: function () {
           return this.head + this.parts.map(function (part) {
             return part.toString();

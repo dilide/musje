@@ -33,9 +33,9 @@
 
   musje.Score.prototype.render = function (svg, lo) {
     lo = musje.objExtend(musje.layoutOptions, lo);
-    var systems = this.layout(svg, lo);
+    var layout = new musje.Layout(this, svg, lo);
 
-    systems.forEach(function (system) {
+    layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
