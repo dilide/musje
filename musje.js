@@ -2016,7 +2016,7 @@ return new Parser;
   var layoutOptions = musje.layoutOptions = {
     mode: 'block', // inline | block | paper
     width: 650,
-    height: 600,
+    // height: 600,
     marginTop: 25,
     marginRight: 30,
     marginBottom: 25,
@@ -2122,8 +2122,6 @@ return new Parser;
 (function (musje, Snap) {
   'use strict';
 
-  var defineProperty = Object.defineProperty;
-
   function makeCells(system) {
     var
       xOffset = 0,
@@ -2172,143 +2170,14 @@ return new Parser;
     });
   }
 
-
-  function Svg(svg, lo) {
-    this.el = Snap(svg).attr({
-        fontFamily: lo.fontFamily
-      })
-      .addClass('musje');
-    this.el.clear();
-    this.width = lo.width;
-    // this.height = lo.height;
-  }
-  defineProperty(Svg.prototype, 'width', {
-    get: function () {
-      return this._w;
-    },
-    set: function (w) {
-      this._w = w;
-      this.el.attr('width', w);
-    }
-  });
-
-  defineProperty(Svg.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._h = h;
-      this.el.attr('height', h);
-    }
-  });
-
-  function Body(svg, lo) {
-    this._svg = svg;
-    this._lo = lo;
-    this.el = svg.el.g()
-        .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
-        .addClass('mus-body');
-    this.width = lo.width - lo.marginLeft - lo.marginRight;
-    // this.height = lo.height - lo.marginTop - lo.marginBottom;
-  }
-
-  defineProperty(Body.prototype, 'width', {
-    get: function () {
-      return this._w;
-    },
-    set: function (w) {
-      this._w = w;
-    }
-  });
-
-  defineProperty(Body.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._svg.height = h + this._lo.marginTop + this._lo.marginBottom;
-    }
-  });
-
-  function Header(layout) {
-    this._content = layout.content;
-    this.el = layout.body.el.g().addClass('mus-header');
-    this.width = layout.body.width;
-  }
-  defineProperty(Header.prototype, 'width', {
-    get: function () {
-      return this._w;
-    },
-    set: function (w) {
-      this._w = w;
-    }
-  });
-
-  defineProperty(Header.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._h = h;
-      this._content.offset = h ? h + this._lo.headerSep : 0;
-    }
-  });
-
-  function Content(body, header, lo) {
-    this._body = body;
-    this._header = header;
-    this._lo = lo;
-    this.el = body.el.g().addClass('mus-content');
-    this.width = body.width;
-    this.height = 0;
-    this.offset = 0;
-  }
-
-  Content.prototype._resizeBody = function () {
-    var lo = this._lo, headerHeight = this._header.height;
-    this._body.height = this.height +
-              (headerHeight ? headerHeight + lo.headerSep : 0);
-  };
-
-  defineProperty(Content.prototype, 'offset', {
-    get: function () {
-      return this._o;
-    },
-    set: function (o) {
-      this._o = o;
-      this.el.transform(Snap.matrix().translate(0, o));
-      this._resizeBody();
-    }
-  });
-
-  defineProperty(Content.prototype, 'width', {
-    get: function () {
-      return this._w;
-    },
-    set: function (w) {
-      this._w = w;
-    }
-  });
-
-  defineProperty(Content.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._h = h;
-      this._resizeBody();
-    }
-  });
-
-
   var Layout = musje.Layout = function (score, svg, lo) {
     this._score = score;
     this._lo = lo;
 
-    this.svg = new Svg(svg, lo);
-    this.body = new Body(this.svg, lo);
-    this.header = new Header(this);
-    this.content = new Content(this.body, this.header, lo);
+    this.svg = new Layout.Svg(svg, lo);
+    this.body = new Layout.Body(this.svg, lo);
+    this.header = new Layout.Header(this, lo);
+    this.content = new Layout.Content(this.body, this.header, lo);
   };
 
   Layout.prototype.flow = function () {
@@ -2375,6 +2244,169 @@ return new Parser;
   };
 
 }(musje, Snap));
+
+/* global musje, Snap */
+
+(function (Layout, Snap) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  var Svg = Layout.Svg = function (svg, lo) {
+    this.el = Snap(svg).attr({
+        fontFamily: lo.fontFamily
+      }).addClass('musje');
+    this.el.clear();
+    this.width = lo.width;
+  };
+
+  defineProperty(Svg.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+      this.el.attr('width', w);
+    }
+  });
+
+  defineProperty(Svg.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this.el.attr('height', h);
+    }
+  });
+
+}(musje.Layout, Snap));
+
+/* global musje, Snap */
+
+(function (Layout, Snap) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  var Body = Layout.Body = function (svg, lo) {
+    this._svg = svg;
+    this._lo = lo;
+    this.el = svg.el.g()
+        .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
+        .addClass('mus-body');
+    this.width = lo.width - lo.marginLeft - lo.marginRight;
+  };
+
+  defineProperty(Body.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Body.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._svg.height = h + this._lo.marginTop + this._lo.marginBottom;
+    }
+  });
+
+}(musje.Layout, Snap));
+
+/* global musje */
+
+(function (Layout) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  var Header = Layout.Header = function (layout, lo) {
+    this._lo = lo;
+    this._layout = layout;
+    this.el = layout.body.el.g().addClass('mus-header');
+    this.width = layout.body.width;
+  };
+
+  defineProperty(Header.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Header.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this._layout.content.offset = h ? h + this._lo.headerSep : 0;
+    }
+  });
+
+}(musje.Layout));
+
+/* global musje, Snap */
+
+(function (Layout, Snap) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  var Content = Layout.Content = function (body, header, lo) {
+    this._body = body;
+    this._header = header;
+    this._lo = lo;
+    this.el = body.el.g().addClass('mus-content');
+    this.width = body.width;
+    this.height = 0;
+    this.offset = 0;
+  };
+
+  Content.prototype._resizeBody = function () {
+    var lo = this._lo, headerHeight = this._header.height;
+    this._body.height = this.height +
+              (headerHeight ? headerHeight + lo.headerSep : 0);
+  };
+
+  defineProperty(Content.prototype, 'offset', {
+    get: function () {
+      return this._o;
+    },
+    set: function (o) {
+      this._o = o;
+      this.el.transform(Snap.matrix().translate(0, o));
+      this._resizeBody();
+    }
+  });
+
+  defineProperty(Content.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Content.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+      this._resizeBody();
+    }
+  });
+
+}(musje.Layout, Snap));
 
 /* global musje, Snap */
 
@@ -2465,41 +2497,21 @@ return new Parser;
 
 
 
-  //   el.text(width / 2, lo.titleFontSize, this._score.head.title)
-  //     .attr({
-  //       fontSize: lo.titleFontSize,
-  //       fontWeight: lo.titleFontWeight,
-  //       textAnchor: 'middle'
-  //     });
-  //   el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
-  //     .attr({
-  //       fontSize: lo.composerFontSize,
-  //       fontWeight: lo.composerFontWeight,
-  //       textAnchor: 'end'
-  //     });
-
-  //   this.header = {
-  //     el: el,
-  //     width: width,
-  //     height: el.getBBox().height
-  //   };
-  // };
-
-
-
-
 
   var Renderer = musje.Renderer = function (score, svg, lo) {
+    this._score = score;
     this._lo = musje.objExtend(musje.layoutOptions, lo);
-    this.layout = new musje.Layout(score, svg, this._lo);
+    this._layout = new musje.Layout(score, svg, this._lo);
   };
 
   Renderer.prototype.render = function () {
     var lo = this._lo, that = this;
 
-    this.layout.flow();
+    this._layout.flow();
 
-    this.layout.systems.forEach(function (system) {
+    this.renderHeader();
+
+    this._layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
@@ -2520,6 +2532,29 @@ return new Parser;
         });
       });
     });
+  };
+
+  Renderer.prototype.renderHeader = function () {
+    var
+      lo = this._lo,
+      header = this._layout.header,
+      el = header.el,
+      width = header.width;
+
+    el.text(width / 2, lo.titleFontSize, this._score.head.title)
+      .attr({
+        fontSize: lo.titleFontSize,
+        fontWeight: lo.titleFontWeight,
+        textAnchor: 'middle'
+      });
+    el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
+      .attr({
+        fontSize: lo.composerFontSize,
+        fontWeight: lo.composerFontWeight,
+        textAnchor: 'end'
+      });
+
+    header.height = el.getBBox().height;
   };
 
   musje.Score.prototype.render = function (svg, lo) {

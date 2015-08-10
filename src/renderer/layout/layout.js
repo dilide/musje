@@ -51,21 +51,18 @@
     });
   }
 
-
   var Layout = musje.Layout = function (score, svg, lo) {
     this._score = score;
-    this._svg = svg;
     this._lo = lo;
-    this.flow();
+
+    this.svg = new Layout.Svg(svg, lo);
+    this.body = new Layout.Body(this.svg, lo);
+    this.header = new Layout.Header(this, lo);
+    this.content = new Layout.Content(this.body, this.header, lo);
   };
 
   Layout.prototype.flow = function () {
     var score = this._score;
-
-    this.makeSvg();
-    this.makeBody();
-    this.renderHeader();
-    this.makeContent();
 
     score.prepareTimewise();
     score.extractBars();
@@ -78,70 +75,8 @@
     this.layoutSystems();
   };
 
-  Layout.prototype.makeSvg = function () {
-    var lo = this._lo;
-
-    this._svg = Snap(this._svg).attr({
-      fontFamily: lo.fontFamily,
-      width: lo.width,
-      height: lo.height
-    });
-    this._svg.clear();
-  };
-
-  Layout.prototype.makeBody = function () {
-    var lo = this._lo;
-    this.body = {
-      el: this._svg.g()
-          .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
-          .addClass('mus-body'),
-      width: lo.width - lo.marginLeft - lo.marginRight,
-      height: lo.height - lo.marginTop - lo.marginBottom
-    };
-  };
-
-  Layout.prototype.renderHeader = function () {
-    var
-      lo = this._lo,
-      el = this.body.el.g().addClass('mus-header'),
-      width = this.body.width;
-
-    el.text(width / 2, lo.titleFontSize, this._score.head.title)
-      .attr({
-        fontSize: lo.titleFontSize,
-        fontWeight: lo.titleFontWeight,
-        textAnchor: 'middle'
-      });
-    el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
-      .attr({
-        fontSize: lo.composerFontSize,
-        fontWeight: lo.composerFontWeight,
-        textAnchor: 'end'
-      });
-
-    this.header = {
-      el: el,
-      width: width,
-      height: el.getBBox().height
-    };
-  };
-
-  Layout.prototype.makeContent = function () {
-    var
-      body = this.body,
-      yOffset = this.header.height + this._lo.headerSep;
-
-    this.content = {
-      el: body.el.g()
-          .transform(Snap.matrix().translate(0, yOffset))
-          .addClass('mus-content'),
-      width: body.width,
-      height: body.height - yOffset
-    };
-  };
-
   Layout.prototype.setMusicDataDef = function () {
-    var defs = new musje.Defs(this._svg, this._lo);
+    var defs = new musje.Defs(this.svg.el, this._lo);
 
     this._score.walkMusicData(function (data) {
       switch (data.__name__) {

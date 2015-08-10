@@ -35,41 +35,21 @@
 
 
 
-  //   el.text(width / 2, lo.titleFontSize, this._score.head.title)
-  //     .attr({
-  //       fontSize: lo.titleFontSize,
-  //       fontWeight: lo.titleFontWeight,
-  //       textAnchor: 'middle'
-  //     });
-  //   el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
-  //     .attr({
-  //       fontSize: lo.composerFontSize,
-  //       fontWeight: lo.composerFontWeight,
-  //       textAnchor: 'end'
-  //     });
-
-  //   this.header = {
-  //     el: el,
-  //     width: width,
-  //     height: el.getBBox().height
-  //   };
-  // };
-
-
-
-
 
   var Renderer = musje.Renderer = function (score, svg, lo) {
+    this._score = score;
     this._lo = musje.objExtend(musje.layoutOptions, lo);
-    this.layout = new musje.Layout(score, svg, this._lo);
+    this._layout = new musje.Layout(score, svg, this._lo);
   };
 
   Renderer.prototype.render = function () {
     var lo = this._lo, that = this;
 
-    this.layout.flow();
+    this._layout.flow();
 
-    this.layout.systems.forEach(function (system) {
+    this.renderHeader();
+
+    this._layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
@@ -90,6 +70,29 @@
         });
       });
     });
+  };
+
+  Renderer.prototype.renderHeader = function () {
+    var
+      lo = this._lo,
+      header = this._layout.header,
+      el = header.el,
+      width = header.width;
+
+    el.text(width / 2, lo.titleFontSize, this._score.head.title)
+      .attr({
+        fontSize: lo.titleFontSize,
+        fontWeight: lo.titleFontWeight,
+        textAnchor: 'middle'
+      });
+    el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
+      .attr({
+        fontSize: lo.composerFontSize,
+        fontWeight: lo.composerFontWeight,
+        textAnchor: 'end'
+      });
+
+    header.height = el.getBBox().height;
   };
 
   musje.Score.prototype.render = function (svg, lo) {

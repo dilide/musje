@@ -43,6 +43,9 @@
         };
       }
     });
+
+    this.content.height = (i + 1) * height + i * lo.systemSep;
+
   };
 
 }(musje, Snap));

@@ -6,7 +6,7 @@
   var layoutOptions = musje.layoutOptions = {
     mode: 'block', // inline | block | paper
     width: 650,
-    height: 600,
+    // height: 600,
     marginTop: 25,
     marginRight: 30,
     marginBottom: 25,
