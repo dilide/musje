@@ -9,6 +9,7 @@ Musje consists of
 - renderer
 - player
 
+Checkout http://jianpu.github.io/musje/demo/ for demo.
 
 ## Usage
 
