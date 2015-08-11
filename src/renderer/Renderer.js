@@ -13,20 +13,18 @@
 
     switch (bar.value) {
     case 'single':
-      x += lo.thinBarlineWidth / 2;
+      x -= lo.thinBarlineWidth / 2;
       measureEl.line(x, y2, x, y)
         .attr({ strokeWidth: lo.thinBarlineWidth });
-      x += lo.thinBarlineWidth / 2;
       break;
     case 'end':
-      x += lo.thinBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-      x += lo.thinBarlineWidth / 2 + lo.barlineSep +
-           lo.thickBarlineWidth / 2;
+      x -= lo.thickBarlineWidth / 2;
       measureEl.line(x, y2, x, y)
         .attr({ strokeWidth: lo.thickBarlineWidth });
-      x += lo.thickBarlineWidth / 2;
+      x -= lo.thinBarlineWidth / 2 + lo.barlineSep +
+           lo.thickBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thinBarlineWidth });
       break;
     }
   }
