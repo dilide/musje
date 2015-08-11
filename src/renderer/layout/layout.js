@@ -1,42 +1,7 @@
-/* global musje, Snap */
+/* global musje */
 
-(function (musje, Snap) {
+(function (musje) {
   'use strict';
-
-  // var Cell = Layout.Cell = function (system) {
-  //   var
-  //     xOffset = 0,
-  //     ratio = system.width / system.minWidth,
-  //     width;
-
-  //   this.el = system.el.g()
-  //     .transform(Snap.matrix().translate(xOffset, 0))
-  //     .addClass('mus-cell');
-  //   this.height = system.height;
-  //   // this.width = cell.minWidth * ratio;
-  //   xOffset += width;
-  // };
-
-  function makeCells(system) {
-    var
-      xOffset = 0,
-      ratio = system.width / system.minWidth,
-      width;
-
-    system.measures.forEach(function (measure) {
-      measure.parts.forEach(function (cell) {
-        cell.el = system.el.g()
-          .transform(Snap.matrix().translate(xOffset, 0))
-          .addClass('mus-cell');
-        cell.height = system.height;
-        width = cell.width = cell.minWidth * ratio;
-        xOffset += width;
-
-        cell.el.rect(0, -cell.height, cell.width, cell.height)
-          .addClass('bbox');
-      });
-    });
-  }
 
   function layoutMusicData(system, lo) {
     system.measures.forEach(function (measure) {
@@ -76,7 +41,7 @@
   };
 
   Layout.prototype.flow = function () {
-    var score = this._score;
+    var score = this._score, lo = this._lo;
 
     score.prepareTimewise();
     score.extractBars();
@@ -86,7 +51,11 @@
     this.setMinWidthOfMeasures();
 
     this.makeSystems();
-    this.layoutSystems();
+
+    this.systems.forEach(function (system) {
+      Layout.layoutCells(system);
+      layoutMusicData(system, lo);
+    });
   };
 
   Layout.prototype.setMusicDataDef = function () {
@@ -130,12 +99,4 @@
     });
   };
 
-  Layout.prototype.layoutSystems = function () {
-    var lo = this._lo;
-    this.systems.forEach(function (system) {
-      makeCells(system);
-      layoutMusicData(system, lo);
-    });
-  };
-
-}(musje, Snap));
+}(musje));

@@ -2118,45 +2118,10 @@ return new Parser;
   });
 }(musje));
 
-/* global musje, Snap */
+/* global musje */
 
-(function (musje, Snap) {
+(function (musje) {
   'use strict';
-
-  // var Cell = Layout.Cell = function (system) {
-  //   var
-  //     xOffset = 0,
-  //     ratio = system.width / system.minWidth,
-  //     width;
-
-  //   this.el = system.el.g()
-  //     .transform(Snap.matrix().translate(xOffset, 0))
-  //     .addClass('mus-cell');
-  //   this.height = system.height;
-  //   // this.width = cell.minWidth * ratio;
-  //   xOffset += width;
-  // };
-
-  function makeCells(system) {
-    var
-      xOffset = 0,
-      ratio = system.width / system.minWidth,
-      width;
-
-    system.measures.forEach(function (measure) {
-      measure.parts.forEach(function (cell) {
-        cell.el = system.el.g()
-          .transform(Snap.matrix().translate(xOffset, 0))
-          .addClass('mus-cell');
-        cell.height = system.height;
-        width = cell.width = cell.minWidth * ratio;
-        xOffset += width;
-
-        cell.el.rect(0, -cell.height, cell.width, cell.height)
-          .addClass('bbox');
-      });
-    });
-  }
 
   function layoutMusicData(system, lo) {
     system.measures.forEach(function (measure) {
@@ -2196,7 +2161,7 @@ return new Parser;
   };
 
   Layout.prototype.flow = function () {
-    var score = this._score;
+    var score = this._score, lo = this._lo;
 
     score.prepareTimewise();
     score.extractBars();
@@ -2206,7 +2171,11 @@ return new Parser;
     this.setMinWidthOfMeasures();
 
     this.makeSystems();
-    this.layoutSystems();
+
+    this.systems.forEach(function (system) {
+      Layout.layoutCells(system);
+      layoutMusicData(system, lo);
+    });
   };
 
   Layout.prototype.setMusicDataDef = function () {
@@ -2250,15 +2219,7 @@ return new Parser;
     });
   };
 
-  Layout.prototype.layoutSystems = function () {
-    var lo = this._lo;
-    this.systems.forEach(function (system) {
-      makeCells(system);
-      layoutMusicData(system, lo);
-    });
-  };
-
-}(musje, Snap));
+}(musje));
 
 /* global musje, Snap */
 
@@ -2507,6 +2468,62 @@ return new Parser;
 
     this.content.height = y();
 
+  };
+
+}(musje.Layout, Snap));
+
+/* global musje, Snap */
+
+(function (Layout, Snap) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  // Extend layout functionality to cell.
+  // @param cell {Array} An array of musicData
+  function layoutCell(cell, system) {
+    var x, width;
+
+    defineProperty(cell, 'width', {
+      get: function () {
+        return width;
+      },
+      set: function (w) {
+        width = w;
+      }
+    });
+
+    defineProperty(cell, 'x', {
+      get: function () {
+        return x;
+      },
+      set: function (v) {
+        x = v;
+        cell.el.transform(Snap.matrix().translate(x, 0));
+      }
+    });
+
+    cell.el = system.el.g().addClass('mus-cell');
+    cell.height = system.height;
+  }
+
+  Layout.layoutCells = function (system) {
+    var
+      ratio = system.width / system.minWidth,
+      x = 0,
+      width;
+
+    system.measures.forEach(function (measure) {
+      measure.parts.forEach(function (cell) {
+        layoutCell(cell, system);
+        cell.x = x;
+        cell.width = width = cell.minWidth * ratio;
+        x += width;
+
+        cell.el.rect(0, -cell.height, cell.width, cell.height)
+          .addClass('bbox');
+      });
+    });
   };
 
 }(musje.Layout, Snap));
