@@ -43,8 +43,8 @@ gulp.task('concat', function () {
       './src/renderer/layout/Layout.Body.js',
       './src/renderer/layout/Layout.Header.js',
       './src/renderer/layout/Layout.Content.js',
+      './src/renderer/layout/Layout.Systems.js',
       './src/renderer/layout/Layout.System.js',
-      './src/renderer/layout/Layout.makeSystems.js',
       './src/renderer/layout/Layout.layoutCells.js',
 
       './src/renderer/Renderer.js',

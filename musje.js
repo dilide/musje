@@ -2055,7 +2055,7 @@ return new Parser;
     this.setMinDimensionOfCells();
     this.setMinWidthOfMeasures();
 
-    this.makeSystems();
+    this.systems = new Layout.Systems(score, this.content, lo);
 
     this.systems.forEach(function (system) {
       Layout.layoutCells(system, lo);
@@ -2376,6 +2376,69 @@ return new Parser;
 
 }(musje.Layout, Snap));
 
+/* global musje */
+
+(function (Layout) {
+  'use strict';
+
+  var Systems = Layout.Systems = function (score, content, lo) {
+    this._score = score;
+    this._content = content;
+    this._lo = lo;
+    this.width = content.width;
+    this.height = 25;
+
+    this.init();
+  };
+
+  // Divide measures in timewise score into the systems.
+  // Assign y, height, minWdith, and measures to each system.
+  Systems.prototype.init = function () {
+    var
+      content = this._content,
+      lo = this._lo,
+      width = this.width,
+      height = this.height,
+      i = 0,
+      x = 0,
+      system,
+      result;
+
+    function y() {
+      return i * (height + lo.systemSep);
+    }
+
+    system = new Layout.System(content, lo);
+    system.y = 0;
+    system.height = height;
+    result = this._value = [system];
+
+    this._score.measures.forEach(function (measure) {
+      x += measure.minWidth + lo.measurePaddingRight;
+      if (x < width) {
+        system.measures.push(measure);
+        system.minWidth = x;
+        x += lo.measurePaddingLeft;
+      } else {
+        x = measure.minWidth + lo.measurePaddingRight;
+        i++;
+        system = result[i] = new Layout.System(content, lo);
+        system.y = y();
+        system.height = height;
+        system.measures.push(measure);
+      }
+    });
+
+    content.height = y() + height;
+
+  };
+
+  Systems.prototype.forEach = function (callback) {
+    this._value.forEach(callback);
+  };
+
+}(musje.Layout));
+
 /* global musje, Snap */
 
 (function (Layout, Snap) {
@@ -2418,50 +2481,38 @@ return new Parser;
     }
   });
 
-}(musje.Layout, Snap));
-
-/* global musje, Snap */
-
-(function (Layout) {
-  'use strict';
-
-
-  Layout.prototype.makeSystems = function () {
+  System.prototype.tuneMeasureWidths = function () {
     var
-      lo = this._lo,
-      content = this.content,
-      width = content.width,
-      height = 25,
-      system = new Layout.System(content, lo),
-      systems = this.systems = [system],
+      systemWidth = this.width,
+      pairs = this.measures.map(function (measure) {
+          return {
+            width: measure.minWidth,
+            measure: measure
+          };
+        }).sort(function (a, b) {
+          return b.width - a.width;   // sort descending
+        }),
+      length = pairs.length,
+      itemLeft = length,
+      widthLeft = systemWidth,
       i = 0,
-      x = 0;
+      width;
 
-    function y() {
-      return i * (height + lo.systemSep);
-    }
-
-    system.y = y();
-    system.height = height;
-
-    this._score.measures.forEach(function (measure) {
-      x += measure.minWidth + lo.measurePaddingRight;
-      if (x < width) {
-        system.measures.push(measure);
-        system.minWidth = x;
-        x += lo.measurePaddingLeft;
+    while (i < length) {
+      if (widthLeft >= pairs[i].width * itemLeft) {
+        width = widthLeft / itemLeft;
+        do {
+          pairs[i].measure.width = width;
+          i++;
+        } while (i < length);
+        break;
       } else {
-        x = measure.minWidth + lo.measurePaddingRight;
+        pairs[i].measure.width = pairs[i].width;
+        widthLeft -= pairs[i].width;
         i++;
-        system = systems[i] = new Layout.System(content, lo);
-        system.y = y();
-        system.height = height;
-        system.measures.push(measure);
+        itemLeft--;
       }
-    });
-
-    this.content.height = y() + height;
-
+    }
   };
 
 }(musje.Layout, Snap));

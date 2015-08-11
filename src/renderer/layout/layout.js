@@ -44,7 +44,7 @@
     this.setMinDimensionOfCells();
     this.setMinWidthOfMeasures();
 
-    this.makeSystems();
+    this.systems = new Layout.Systems(score, this.content, lo);
 
     this.systems.forEach(function (system) {
       Layout.layoutCells(system, lo);

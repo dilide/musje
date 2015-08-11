@@ -40,4 +40,38 @@
     }
   });
 
+  System.prototype.tuneMeasureWidths = function () {
+    var
+      systemWidth = this.width,
+      pairs = this.measures.map(function (measure) {
+          return {
+            width: measure.minWidth,
+            measure: measure
+          };
+        }).sort(function (a, b) {
+          return b.width - a.width;   // sort descending
+        }),
+      length = pairs.length,
+      itemLeft = length,
+      widthLeft = systemWidth,
+      i = 0,
+      width;
+
+    while (i < length) {
+      if (widthLeft >= pairs[i].width * itemLeft) {
+        width = widthLeft / itemLeft;
+        do {
+          pairs[i].measure.width = width;
+          i++;
+        } while (i < length);
+        break;
+      } else {
+        pairs[i].measure.width = pairs[i].width;
+        widthLeft -= pairs[i].width;
+        i++;
+        itemLeft--;
+      }
+    }
+  };
+
 }(musje.Layout, Snap));
