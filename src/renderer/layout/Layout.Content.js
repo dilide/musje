@@ -11,8 +11,6 @@
     this._lo = lo;
     this.el = body.el.g().addClass('mus-content');
     this.width = body.width;
-    this.height = 0;
-    this.offset = 0;
   };
 
   Content.prototype._resizeBody = function () {

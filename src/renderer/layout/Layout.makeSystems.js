@@ -1,30 +1,26 @@
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Layout) {
   'use strict';
 
-  function makeSystem(content, systemIndex, height, lo) {
-    var yOffset = (systemIndex + 1) * height + systemIndex * lo.systemSep;
-    return content.el.g()
-        .transform(Snap.matrix().translate(0, yOffset))
-        .addClass('mus-system');
-  }
 
-  musje.Layout.prototype.makeSystems = function () {
+  Layout.prototype.makeSystems = function () {
     var
       lo = this._lo,
       content = this.content,
       width = content.width,
       height = 40,
-      system = {
-        width: width,
-        height: height,
-        el: makeSystem(content, 0, height, lo),
-        measures: []
-      },
+      system = new Layout.System(content, lo),
       systems = this.systems = [system],
       i = 0,
       x = 0;
+
+    function offset() {
+      return (i + 1) * height + i * lo.systemSep;
+    }
+
+    system.offset = offset();
+    system.height = height;
 
     this._score.measures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
@@ -35,17 +31,15 @@
       } else {
         x = measure.minWidth + lo.measurePaddingRight;
         i++;
-        system = systems[i] = {
-          width: width,
-          height: height,
-          el: makeSystem(content, i, height, lo),
-          measures: [measure]
-        };
+        system = systems[i] = new Layout.System(content, lo);
+        system.offset = offset();
+        system.height = height;
+        system.measures.push(measure);
       }
     });
 
-    this.content.height = (i + 1) * height + i * lo.systemSep;
+    this.content.height = offset();
 
   };
 
-}(musje, Snap));
+}(musje.Layout, Snap));

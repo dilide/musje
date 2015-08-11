@@ -42,6 +42,7 @@ if (typeof exports !== 'undefined') {
   'use strict';
 
   var
+    defineProperty = Object.defineProperty,
     push = Array.prototype.push,
     objForEach = musje.objForEach,
     camel = musje.camel;
@@ -65,7 +66,7 @@ if (typeof exports !== 'undefined') {
     Constructor = musje[type];
     if (!Constructor) { throw new Error('Undefined type: musje.' + type); }
 
-    Object.defineProperty(obj, propName, {
+    defineProperty(obj, propName, {
       get: function () {
         if (this[varName] === undefined) {
           this[varName] = new Constructor();
@@ -92,7 +93,7 @@ if (typeof exports !== 'undefined') {
 
       // ES5 accessor property
       if (descriptor.get || descriptor.set) {
-        Object.defineProperty(proto, propName, descriptor);
+        defineProperty(proto, propName, descriptor);
 
       // Default value of primitive types
       } else if (descriptor.default !== undefined) {
@@ -2366,8 +2367,6 @@ return new Parser;
     this._lo = lo;
     this.el = body.el.g().addClass('mus-content');
     this.width = body.width;
-    this.height = 0;
-    this.offset = 0;
   };
 
   Content.prototype._resizeBody = function () {
@@ -2410,31 +2409,71 @@ return new Parser;
 
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Layout, Snap) {
   'use strict';
 
-  function makeSystem(content, systemIndex, height, lo) {
-    var yOffset = (systemIndex + 1) * height + systemIndex * lo.systemSep;
-    return content.el.g()
-        .transform(Snap.matrix().translate(0, yOffset))
-        .addClass('mus-system');
-  }
+  var defineProperty = Object.defineProperty;
 
-  musje.Layout.prototype.makeSystems = function () {
+  var System = Layout.System = function (content, lo) {
+    this._lo = lo;
+    this.el = content.el.g().addClass('mus-system');
+    this.width = content.width;
+    this.measures = [];
+  };
+
+  defineProperty(System.prototype, 'offset', {
+    get: function () {
+      return this._o;
+    },
+    set: function (o) {
+      this._o = o;
+      this.el.transform(Snap.matrix().translate(0, o));
+    }
+  });
+
+  defineProperty(System.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(System.prototype, 'height', {
+    get: function () {
+      return this._h;
+    },
+    set: function (h) {
+      this._h = h;
+    }
+  });
+
+}(musje.Layout, Snap));
+
+/* global musje, Snap */
+
+(function (Layout) {
+  'use strict';
+
+
+  Layout.prototype.makeSystems = function () {
     var
       lo = this._lo,
       content = this.content,
       width = content.width,
       height = 40,
-      system = {
-        width: width,
-        height: height,
-        el: makeSystem(content, 0, height, lo),
-        measures: []
-      },
+      system = new Layout.System(content, lo),
       systems = this.systems = [system],
       i = 0,
       x = 0;
+
+    function offset() {
+      return (i + 1) * height + i * lo.systemSep;
+    }
+
+    system.offset = offset();
+    system.height = height;
 
     this._score.measures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
@@ -2445,20 +2484,18 @@ return new Parser;
       } else {
         x = measure.minWidth + lo.measurePaddingRight;
         i++;
-        system = systems[i] = {
-          width: width,
-          height: height,
-          el: makeSystem(content, i, height, lo),
-          measures: [measure]
-        };
+        system = systems[i] = new Layout.System(content, lo);
+        system.offset = offset();
+        system.height = height;
+        system.measures.push(measure);
       }
     });
 
-    this.content.height = (i + 1) * height + i * lo.systemSep;
+    this.content.height = offset();
 
   };
 
-}(musje, Snap));
+}(musje.Layout, Snap));
 
 /*global musje*/
 

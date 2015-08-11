@@ -4,6 +4,7 @@
   'use strict';
 
   var
+    defineProperty = Object.defineProperty,
     push = Array.prototype.push,
     objForEach = musje.objForEach,
     camel = musje.camel;
@@ -27,7 +28,7 @@
     Constructor = musje[type];
     if (!Constructor) { throw new Error('Undefined type: musje.' + type); }
 
-    Object.defineProperty(obj, propName, {
+    defineProperty(obj, propName, {
       get: function () {
         if (this[varName] === undefined) {
           this[varName] = new Constructor();
@@ -54,7 +55,7 @@
 
       // ES5 accessor property
       if (descriptor.get || descriptor.set) {
-        Object.defineProperty(proto, propName, descriptor);
+        defineProperty(proto, propName, descriptor);
 
       // Default value of primitive types
       } else if (descriptor.default !== undefined) {
