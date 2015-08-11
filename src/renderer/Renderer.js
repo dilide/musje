@@ -3,30 +3,32 @@
 (function (musje) {
   'use strict';
 
-  function renderBar(systemEl, bar, lo) {
-    // var
-    //   x = bar.pos.x,
-    //   y = bar.pos.y,
-    //   y2 = y - bar.def.height;
+  function renderBar(measure, lo) {
+    var
+      bar = measure.rightBar,
+      measureEl = measure.el,
+      x = measure.width,
+      y = 0,
+      y2 = measure.height;
 
-    // switch (bar.value) {
-    // case 'single':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2;
-    //   break;
-    // case 'end':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2 + lo.barlineSep +
-    //        lo.thickBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thickBarlineWidth });
-    //   x += lo.thickBarlineWidth / 2;
-    //   break;
-    // }
+    switch (bar.value) {
+    case 'single':
+      x += lo.thinBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thinBarlineWidth });
+      x += lo.thinBarlineWidth / 2;
+      break;
+    case 'end':
+      x += lo.thinBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thinBarlineWidth });
+      x += lo.thinBarlineWidth / 2 + lo.barlineSep +
+           lo.thickBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thickBarlineWidth });
+      x += lo.thickBarlineWidth / 2;
+      break;
+    }
   }
 
 
@@ -45,6 +47,9 @@
 
     this._layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
+
+        renderBar(measure, lo);
+
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
             switch (data.__name__) {
@@ -55,9 +60,6 @@
               break;
             case 'time':
               data.el = cell.el.use(data.def.el).attr(data.pos);
-              break;
-            case 'bar':
-              renderBar(cell.el, data, lo);
               break;
             }
           });

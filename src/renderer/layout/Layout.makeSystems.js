@@ -9,14 +9,14 @@
       lo = this._lo,
       content = this.content,
       width = content.width,
-      height = 40,
+      height = 25,
       system = new Layout.System(content, lo),
       systems = this.systems = [system],
       i = 0,
       x = 0;
 
     function y() {
-      return (i + 1) * height + i * lo.systemSep;
+      return i * (height + lo.systemSep);
     }
 
     system.y = y();
@@ -38,7 +38,7 @@
       }
     });
 
-    this.content.height = y();
+    this.content.height = y() + height;
 
   };
 

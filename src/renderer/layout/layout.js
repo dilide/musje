@@ -18,12 +18,6 @@
             data.pos = { x: x, y: 0 };
             x += data.def.width + lo.musicDataSep;
             break;
-          case 'bar':
-            x += lo.measurePaddingRight - lo.musicDataSep;
-            data.pos = { x: x, y: 0 };
-            data.def = { height: 25 };
-            x += lo.measurePaddingLeft;
-            break;
           }
         });
       });
@@ -53,7 +47,7 @@
     this.makeSystems();
 
     this.systems.forEach(function (system) {
-      Layout.layoutCells(system);
+      Layout.layoutCells(system, lo);
       layoutMusicData(system, lo);
     });
   };

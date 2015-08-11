@@ -2029,12 +2029,6 @@ return new Parser;
             data.pos = { x: x, y: 0 };
             x += data.def.width + lo.musicDataSep;
             break;
-          case 'bar':
-            x += lo.measurePaddingRight - lo.musicDataSep;
-            data.pos = { x: x, y: 0 };
-            data.def = { height: 25 };
-            x += lo.measurePaddingLeft;
-            break;
           }
         });
       });
@@ -2064,7 +2058,7 @@ return new Parser;
     this.makeSystems();
 
     this.systems.forEach(function (system) {
-      Layout.layoutCells(system);
+      Layout.layoutCells(system, lo);
       layoutMusicData(system, lo);
     });
   };
@@ -2163,7 +2157,7 @@ return new Parser;
     timeFontWeight: 'bold',
 
     headerSep: '100%',
-    systemSep: '100%',
+    systemSep: '150%',
     musicDataSep: '50%',
 
     measurePaddingLeft: '60%',
@@ -2437,14 +2431,14 @@ return new Parser;
       lo = this._lo,
       content = this.content,
       width = content.width,
-      height = 40,
+      height = 25,
       system = new Layout.System(content, lo),
       systems = this.systems = [system],
       i = 0,
       x = 0;
 
     function y() {
-      return (i + 1) * height + i * lo.systemSep;
+      return i * (height + lo.systemSep);
     }
 
     system.y = y();
@@ -2466,7 +2460,7 @@ return new Parser;
       }
     });
 
-    this.content.height = y();
+    this.content.height = y() + height;
 
   };
 
@@ -2481,8 +2475,8 @@ return new Parser;
 
   // Extend layout functionality to cell.
   // @param cell {Array} An array of musicData
-  function layoutCell(cell, system) {
-    var x, width;
+  function layoutCell(cell, measure, lo) {
+    var y2, width;
 
     defineProperty(cell, 'width', {
       get: function () {
@@ -2493,36 +2487,68 @@ return new Parser;
       }
     });
 
-    defineProperty(cell, 'x', {
+    defineProperty(cell, 'y2', {
+      get: function () {
+        return y2;
+      },
+      set: function (v) {
+        y2 = v;
+        cell.el.transform(Snap.matrix().translate(cell.x, y2));
+      }
+    });
+
+    cell.el = measure.el.g().addClass('mus-cell');
+    cell.x = lo.measurePaddingRight;
+    cell.height = measure.height;
+  }
+
+
+  function layoutMeasure(measure, system) {
+    var x, width;
+
+    defineProperty(measure, 'width', {
+      get: function () {
+        return width;
+      },
+      set: function (w) {
+        width = w;
+      }
+    });
+
+    defineProperty(measure, 'x', {
       get: function () {
         return x;
       },
       set: function (v) {
         x = v;
-        cell.el.transform(Snap.matrix().translate(x, 0));
+        measure.el.transform(Snap.matrix().translate(x, 0));
       }
     });
 
-    cell.el = system.el.g().addClass('mus-cell');
-    cell.height = system.height;
+    measure.el = system.el.g().addClass('mus-measure');
+    measure.height = system.height;
   }
 
-  Layout.layoutCells = function (system) {
+  Layout.layoutCells = function (system, lo) {
     var
       ratio = system.width / system.minWidth,
-      x = 0,
-      width;
+      x = 0;
 
     system.measures.forEach(function (measure) {
+      layoutMeasure(measure, system);
       measure.parts.forEach(function (cell) {
-        layoutCell(cell, system);
-        cell.x = x;
-        cell.width = width = cell.minWidth * ratio;
-        x += width;
+        layoutCell(cell, measure, lo);
+        measure.x = x;
+        cell.y2 = system.height;
+        cell.width = cell.minWidth * ratio;
+        measure.width = cell.width + lo.measurePaddingRight + lo.measurePaddingLeft;
+        x += measure.width;
 
-        cell.el.rect(0, -cell.height, cell.width, cell.height)
-          .addClass('bbox');
+        // cell.el.rect(0, -cell.height, cell.width, cell.height)
+        //   .addClass('bbox');
       });
+      // measure.el.rect(0, 0, measure.width, measure.height)
+      //     .attr({ stroke: 'green', fill: 'none' });
     });
   };
 
@@ -2533,30 +2559,32 @@ return new Parser;
 (function (musje) {
   'use strict';
 
-  function renderBar(systemEl, bar, lo) {
-    // var
-    //   x = bar.pos.x,
-    //   y = bar.pos.y,
-    //   y2 = y - bar.def.height;
+  function renderBar(measure, lo) {
+    var
+      bar = measure.rightBar,
+      measureEl = measure.el,
+      x = measure.width,
+      y = 0,
+      y2 = measure.height;
 
-    // switch (bar.value) {
-    // case 'single':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2;
-    //   break;
-    // case 'end':
-    //   x += lo.thinBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thinBarlineWidth });
-    //   x += lo.thinBarlineWidth / 2 + lo.barlineSep +
-    //        lo.thickBarlineWidth / 2;
-    //   systemEl.line(x, y2, x, y)
-    //     .attr({ strokeWidth: lo.thickBarlineWidth });
-    //   x += lo.thickBarlineWidth / 2;
-    //   break;
-    // }
+    switch (bar.value) {
+    case 'single':
+      x += lo.thinBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thinBarlineWidth });
+      x += lo.thinBarlineWidth / 2;
+      break;
+    case 'end':
+      x += lo.thinBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thinBarlineWidth });
+      x += lo.thinBarlineWidth / 2 + lo.barlineSep +
+           lo.thickBarlineWidth / 2;
+      measureEl.line(x, y2, x, y)
+        .attr({ strokeWidth: lo.thickBarlineWidth });
+      x += lo.thickBarlineWidth / 2;
+      break;
+    }
   }
 
 
@@ -2575,6 +2603,9 @@ return new Parser;
 
     this._layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
+
+        renderBar(measure, lo);
+
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
             switch (data.__name__) {
@@ -2585,9 +2616,6 @@ return new Parser;
               break;
             case 'time':
               data.el = cell.el.use(data.def.el).attr(data.pos);
-              break;
-            case 'bar':
-              renderBar(cell.el, data, lo);
               break;
             }
           });
