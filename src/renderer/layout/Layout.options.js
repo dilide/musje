@@ -3,7 +3,7 @@
 (function (musje) {
   'use strict';
 
-  var layoutOptions = musje.layoutOptions = {
+  var options = musje.Layout.options = {
     mode: 'block', // inline | block | paper
     width: 650,
     // height: 600,
@@ -85,9 +85,9 @@
     t4DotBaselineShift: '20%'
   };
 
-  var fontSize = layoutOptions.fontSize;
+  var fontSize = options.fontSize;
 
-  musje.objForEach(layoutOptions, function (value, key) {
+  musje.objForEach(options, function (value, key) {
     if (typeof value !== 'string') { return; }
 
     var unit = value.replace(/[\d\.]+/, '');
@@ -95,11 +95,11 @@
 
     switch (unit) {
     case '%':
-      layoutOptions[key] = fontSize * value / 100;
+      options[key] = fontSize * value / 100;
       break;
     case '': // fall through
     case 'px':
-      layoutOptions[key] = value;
+      options[key] = value;
       break;
     case 'others to be implemented':
       break;

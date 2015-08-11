@@ -20,21 +20,25 @@ gulp.task('jison', function () {
 gulp.task('concat', function () {
   return gulp.src([
       './src/utilities.js',
+
       './src/model/makeClasses.js',
       './src/model/makeJSONSchema.js',  // only for development
       './src/model/model.js',
       './src/model/Score.makeBeams.js',
+
       './src/parser/pre-parser.js',
       './.tmp/parser.js',
       './src/parser/post-parser.js',
+
       './src/renderer/svgPaths.js',
       './src/renderer/defs/TimeDef.js',
       './src/renderer/defs/AccidentalDef.js',
       './src/renderer/defs/PitchDef.js',
       './src/renderer/defs/DurationDef.js',
       './src/renderer/defs/Defs.js',
-      './src/renderer/layout/layoutOptions.js',
+
       './src/renderer/layout/Layout.js',
+      './src/renderer/layout/Layout.options.js',
       './src/renderer/layout/Layout.Svg.js',
       './src/renderer/layout/Layout.Body.js',
       './src/renderer/layout/Layout.Header.js',
@@ -42,8 +46,10 @@ gulp.task('concat', function () {
       './src/renderer/layout/Layout.System.js',
       './src/renderer/layout/Layout.makeSystems.js',
       './src/renderer/layout/Layout.layoutCells.js',
+
       './src/renderer/Renderer.js',
       './src/renderer/Renderer.renderDuration.js',
+
       './src/player.js'
     ])
     .pipe(sourcemaps.init())

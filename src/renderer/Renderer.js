@@ -30,15 +30,9 @@
   }
 
 
-
-
-
-
-
-
   var Renderer = musje.Renderer = function (score, svg, lo) {
     this._score = score;
-    this._lo = musje.objExtend(musje.layoutOptions, lo);
+    this._lo = musje.objExtend(musje.Layout.options, lo);
     this._layout = new musje.Layout(score, svg, this._lo);
   };
 
