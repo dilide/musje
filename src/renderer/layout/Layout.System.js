@@ -12,13 +12,13 @@
     this.measures = [];
   };
 
-  defineProperty(System.prototype, 'offset', {
+  defineProperty(System.prototype, 'y', {
     get: function () {
-      return this._o;
+      return this._y;
     },
-    set: function (o) {
-      this._o = o;
-      this.el.transform(Snap.matrix().translate(0, o));
+    set: function (y) {
+      this._y = y;
+      this.el.transform(Snap.matrix().translate(0, y));
     }
   });
 

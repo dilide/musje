@@ -41,27 +41,27 @@
 
         // A cell is identically a measure in a part or a part in a measure.
         walkCells: function (callback) {
-          this.parts.forEach(function (part, partIdx) {
-            part.measures.forEach(function (cell, measureIdx) {
-              callback(cell, measureIdx, partIdx);
+          this.parts.forEach(function (part, p) {
+            part.measures.forEach(function (cell, m) {
+              callback(cell, m, p);
             });
           });
         },
         walkMusicData: function (callback) {
-          this.walkCells(function (cell, measureIdx, partIdx) {
-            cell.forEach(function (musicData, musicDataIdx) {
-              callback(musicData, musicDataIdx, measureIdx, partIdx);
+          this.walkCells(function (cell, m, p) {
+            cell.forEach(function (musicData, md) {
+              callback(musicData, md, m, p);
             });
           });
         },
 
         prepareTimewise: function () {
           var measures = this.measures = [];
-          this.walkCells(function (cell, measureIdx, partIdx) {
-            measures[measureIdx] = measures[measureIdx] || [];
-            var measure = measures[measureIdx];
+          this.walkCells(function (cell, m, p) {
+            measures[m] = measures[m] || [];
+            var measure = measures[m];
             measure.parts = measure.parts || [];
-            measure.parts[partIdx] = cell;
+            measure.parts[p] = cell;
           });
         },
 

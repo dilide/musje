@@ -27,7 +27,7 @@
     },
     set: function (h) {
       this._h = h;
-      this._layout.content.offset = h ? h + this._lo.headerSep : 0;
+      this._layout.content.y = h ? h + this._lo.headerSep : 0;
     }
   });
 

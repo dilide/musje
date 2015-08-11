@@ -3,6 +3,20 @@
 (function (musje, Snap) {
   'use strict';
 
+  // var Cell = Layout.Cell = function (system) {
+  //   var
+  //     xOffset = 0,
+  //     ratio = system.width / system.minWidth,
+  //     width;
+
+  //   this.el = system.el.g()
+  //     .transform(Snap.matrix().translate(xOffset, 0))
+  //     .addClass('mus-cell');
+  //   this.height = system.height;
+  //   // this.width = cell.minWidth * ratio;
+  //   xOffset += width;
+  // };
+
   function makeCells(system) {
     var
       xOffset = 0,

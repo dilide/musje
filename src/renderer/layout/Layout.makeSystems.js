@@ -15,11 +15,11 @@
       i = 0,
       x = 0;
 
-    function offset() {
+    function y() {
       return (i + 1) * height + i * lo.systemSep;
     }
 
-    system.offset = offset();
+    system.y = y();
     system.height = height;
 
     this._score.measures.forEach(function (measure) {
@@ -32,13 +32,13 @@
         x = measure.minWidth + lo.measurePaddingRight;
         i++;
         system = systems[i] = new Layout.System(content, lo);
-        system.offset = offset();
+        system.y = y();
         system.height = height;
         system.measures.push(measure);
       }
     });
 
-    this.content.height = offset();
+    this.content.height = y();
 
   };
 

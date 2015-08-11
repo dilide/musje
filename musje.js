@@ -366,27 +366,27 @@ if (typeof exports !== 'undefined') {
 
         // A cell is identically a measure in a part or a part in a measure.
         walkCells: function (callback) {
-          this.parts.forEach(function (part, partIdx) {
-            part.measures.forEach(function (cell, measureIdx) {
-              callback(cell, measureIdx, partIdx);
+          this.parts.forEach(function (part, p) {
+            part.measures.forEach(function (cell, m) {
+              callback(cell, m, p);
             });
           });
         },
         walkMusicData: function (callback) {
-          this.walkCells(function (cell, measureIdx, partIdx) {
-            cell.forEach(function (musicData, musicDataIdx) {
-              callback(musicData, musicDataIdx, measureIdx, partIdx);
+          this.walkCells(function (cell, m, p) {
+            cell.forEach(function (musicData, md) {
+              callback(musicData, md, m, p);
             });
           });
         },
 
         prepareTimewise: function () {
           var measures = this.measures = [];
-          this.walkCells(function (cell, measureIdx, partIdx) {
-            measures[measureIdx] = measures[measureIdx] || [];
-            var measure = measures[measureIdx];
+          this.walkCells(function (cell, m, p) {
+            measures[m] = measures[m] || [];
+            var measure = measures[m];
             measure.parts = measure.parts || [];
-            measure.parts[partIdx] = cell;
+            measure.parts[p] = cell;
           });
         },
 
@@ -2123,6 +2123,20 @@ return new Parser;
 (function (musje, Snap) {
   'use strict';
 
+  // var Cell = Layout.Cell = function (system) {
+  //   var
+  //     xOffset = 0,
+  //     ratio = system.width / system.minWidth,
+  //     width;
+
+  //   this.el = system.el.g()
+  //     .transform(Snap.matrix().translate(xOffset, 0))
+  //     .addClass('mus-cell');
+  //   this.height = system.height;
+  //   // this.width = cell.minWidth * ratio;
+  //   xOffset += width;
+  // };
+
   function makeCells(system) {
     var
       xOffset = 0,
@@ -2348,7 +2362,7 @@ return new Parser;
     },
     set: function (h) {
       this._h = h;
-      this._layout.content.offset = h ? h + this._lo.headerSep : 0;
+      this._layout.content.y = h ? h + this._lo.headerSep : 0;
     }
   });
 
@@ -2375,13 +2389,13 @@ return new Parser;
               (headerHeight ? headerHeight + lo.headerSep : 0);
   };
 
-  defineProperty(Content.prototype, 'offset', {
+  defineProperty(Content.prototype, 'y', {
     get: function () {
-      return this._o;
+      return this._y;
     },
-    set: function (o) {
-      this._o = o;
-      this.el.transform(Snap.matrix().translate(0, o));
+    set: function (y) {
+      this._y = y;
+      this.el.transform(Snap.matrix().translate(0, y));
       this._resizeBody();
     }
   });
@@ -2421,13 +2435,13 @@ return new Parser;
     this.measures = [];
   };
 
-  defineProperty(System.prototype, 'offset', {
+  defineProperty(System.prototype, 'y', {
     get: function () {
-      return this._o;
+      return this._y;
     },
-    set: function (o) {
-      this._o = o;
-      this.el.transform(Snap.matrix().translate(0, o));
+    set: function (y) {
+      this._y = y;
+      this.el.transform(Snap.matrix().translate(0, y));
     }
   });
 
@@ -2468,11 +2482,11 @@ return new Parser;
       i = 0,
       x = 0;
 
-    function offset() {
+    function y() {
       return (i + 1) * height + i * lo.systemSep;
     }
 
-    system.offset = offset();
+    system.y = y();
     system.height = height;
 
     this._score.measures.forEach(function (measure) {
@@ -2485,13 +2499,13 @@ return new Parser;
         x = measure.minWidth + lo.measurePaddingRight;
         i++;
         system = systems[i] = new Layout.System(content, lo);
-        system.offset = offset();
+        system.y = y();
         system.height = height;
         system.measures.push(measure);
       }
     });
 
-    this.content.height = offset();
+    this.content.height = y();
 
   };
 
