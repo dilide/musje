@@ -1,6 +1,6 @@
 {
   "name": "musje",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "123 jianpu music processor",
   "main": "musje.js",
   "scripts": {
