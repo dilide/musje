@@ -2057,7 +2057,9 @@ return new Parser;
 
     this.systems = new Layout.Systems(score, this.content, lo);
 
+    // TODO: to be cleaned up...
     this.systems.forEach(function (system) {
+      system.layoutMeasures();
       Layout.layoutCells(system, lo);
       layoutMusicData(system, lo);
     });
@@ -2481,21 +2483,67 @@ return new Parser;
     }
   });
 
-  System.prototype.tuneMeasureWidths = function () {
+  function layoutMeasure(measure, system) {
+    var x, width;
+
+    defineProperty(measure, 'width', {
+      get: function () {
+        return width;
+      },
+      set: function (w) {
+        width = w;
+      }
+    });
+
+    defineProperty(measure, 'x', {
+      get: function () {
+        return x;
+      },
+      set: function (v) {
+        x = v;
+        measure.el.transform(Snap.matrix().translate(x, 0));
+      }
+    });
+
+    measure.el = system.el.g().addClass('mus-measure');
+    measure.height = system.height;
+  }
+
+  System.prototype.layoutMeasures = function () {
+    var
+      system = this,
+      x = 0;
+
+    this.measures.forEach(function (measure) {
+      layoutMeasure(measure, system);
+    });
+    this.tuneMeasuresWidths();
+    this.measures.forEach(function (measure) {
+      measure.x = x;
+      x += measure.width;
+    });
+  };
+
+
+  function getPairs(measures) {
+    return measures.map(function (measure) {
+      return {
+        width: measure.minWidth,
+        measure: measure
+      };
+    }).sort(function (a, b) {
+      return b.width - a.width;   // descending sort
+    });
+  }
+
+  System.prototype.tuneMeasuresWidths = function () {
     var
       systemWidth = this.width,
-      pairs = this.measures.map(function (measure) {
-          return {
-            width: measure.minWidth,
-            measure: measure
-          };
-        }).sort(function (a, b) {
-          return b.width - a.width;   // sort descending
-        }),
+      pairs = getPairs(this.measures),
       length = pairs.length,
-      itemLeft = length,
       widthLeft = systemWidth,
-      i = 0,
+      itemLeft = length,
+      i = 0,    // i + itemLeft === length
       width;
 
     while (i < length) {
@@ -2507,12 +2555,19 @@ return new Parser;
         } while (i < length);
         break;
       } else {
-        pairs[i].measure.width = pairs[i].width;
-        widthLeft -= pairs[i].width;
+        width = pairs[i].width;
+        pairs[i].measure.width = width;
+        widthLeft -= width;
         i++;
         itemLeft--;
       }
     }
+
+    // this.measures.forEach(function (measure) {
+    //   measure.el.rect(0, 0, measure.width, measure.height)
+    //         .attr({ stroke: 'green', fill: 'none' });
+    // });
+
   };
 
 }(musje.Layout, Snap));
@@ -2553,53 +2608,17 @@ return new Parser;
     cell.height = measure.height;
   }
 
-
-  function layoutMeasure(measure, system) {
-    var x, width;
-
-    defineProperty(measure, 'width', {
-      get: function () {
-        return width;
-      },
-      set: function (w) {
-        width = w;
-      }
-    });
-
-    defineProperty(measure, 'x', {
-      get: function () {
-        return x;
-      },
-      set: function (v) {
-        x = v;
-        measure.el.transform(Snap.matrix().translate(x, 0));
-      }
-    });
-
-    measure.el = system.el.g().addClass('mus-measure');
-    measure.height = system.height;
-  }
-
   Layout.layoutCells = function (system, lo) {
-    var
-      ratio = system.width / system.minWidth,
-      x = 0;
 
     system.measures.forEach(function (measure) {
-      layoutMeasure(measure, system);
       measure.parts.forEach(function (cell) {
         layoutCell(cell, measure, lo);
-        measure.x = x;
         cell.y2 = system.height;
-        cell.width = cell.minWidth * ratio;
-        measure.width = cell.width + lo.measurePaddingRight + lo.measurePaddingLeft;
-        x += measure.width;
+        cell.width = cell.minWidth;
 
         // cell.el.rect(0, -cell.height, cell.width, cell.height)
         //   .addClass('bbox');
       });
-      // measure.el.rect(0, 0, measure.width, measure.height)
-      //     .attr({ stroke: 'green', fill: 'none' });
     });
   };
 

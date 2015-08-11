@@ -46,7 +46,9 @@
 
     this.systems = new Layout.Systems(score, this.content, lo);
 
+    // TODO: to be cleaned up...
     this.systems.forEach(function (system) {
+      system.layoutMeasures();
       Layout.layoutCells(system, lo);
       layoutMusicData(system, lo);
     });
