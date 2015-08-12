@@ -1,6 +1,6 @@
-/* global musje, Snap */
+/* global musje */
 
-(function (Layout, Snap) {
+(function (Layout) {
   'use strict';
 
   var Measures = Layout.Measures = function (system) {
@@ -8,10 +8,14 @@
     this._value = [];
   };
 
-  Measures.prototype.init = function () {
+  Measures.prototype.flow = function () {
     var x = 0;
-    this.tuneWidths();
+    this._tuneWidths();
     this.forEach(function (measure) {
+      measure.layoutCells();
+      measure.parts.forEach(function (cell) {
+        cell.layoutMusicData();
+      });
       measure.x = x;
       x += measure.width;
     });
@@ -40,7 +44,7 @@
     });
   };
 
-  Measures.prototype.tuneWidths = function () {
+  Measures.prototype._tuneWidths = function () {
     var
       systemWidth = this._system.width,
       pairs = this._getPairs(),
@@ -74,4 +78,4 @@
 
   };
 
-}(musje.Layout, Snap));
+}(musje.Layout));

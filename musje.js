@@ -2062,27 +2062,6 @@ console.log(defs._lo)
 (function (musje) {
   'use strict';
 
-  function layoutMusicData(system, lo) {
-    system.measures.forEach(function (measure) {
-      measure.parts.forEach(function (cell) {
-        var x = 0;
-        cell.forEach(function (data) {
-          switch (data.__name__) {
-          case 'rest':  // fall through
-          case 'note':
-            data.pos = { x: x, y: 0 };
-            x += data.def.width + lo.musicDataSep;
-            break;
-          case 'time':
-            data.pos = { x: x, y: 0 };
-            x += data.def.width + lo.musicDataSep;
-            break;
-          }
-        });
-      });
-    });
-  }
-
   var Layout = musje.Layout = function (score, svg, lo) {
     this._score = score;
     this._lo = lo;
@@ -2091,12 +2070,13 @@ console.log(defs._lo)
     this.body = new Layout.Body(this.svg, lo);
     this.header = new Layout.Header(this, lo);
     this.content = new Layout.Content(this.body, this.header, lo);
+    this.systems = new Layout.Systems(score, this.content, lo);
 
     this.defs = new musje.Defs(this.svg.el, this._lo);
   };
 
   Layout.prototype.flow = function () {
-    var score = this._score, lo = this._lo;
+    var score = this._score;
 
     score.prepareTimewise();
     score.extractBars();
@@ -2105,14 +2085,7 @@ console.log(defs._lo)
     this.setMinDimensionOfCells();
     this.setMinWidthOfMeasures();
 
-    this.systems = new Layout.Systems(score, this.content, lo);
-
-    // TODO: to be cleaned up...
-    this.systems.forEach(function (system) {
-      system.measures.init();
-      Layout.layoutCells(system, lo);
-      layoutMusicData(system, lo);
-    });
+    this.systems.flow();
   };
 
   Layout.prototype.setMusicDataDef = function () {
@@ -2443,13 +2416,11 @@ console.log(defs._lo)
     this._lo = lo;
     this.width = content.width;
     this.height = 25;
-
-    this.init();
   };
 
   // Divide measures in timewise score into the systems.
   // Assign y, height, minWdith, and measures to each system.
-  Systems.prototype.init = function () {
+  Systems.prototype.flow = function () {
     var
       content = this._content,
       lo = this._lo,
@@ -2472,7 +2443,7 @@ console.log(defs._lo)
     this._score.measures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
       if (x < width) {
-        system.measures.push(new Layout.Measure(measure, system));
+        system.measures.push(new Layout.Measure(measure, system, lo));
         system.minWidth = x;
         x += lo.measurePaddingLeft;
       } else {
@@ -2481,11 +2452,15 @@ console.log(defs._lo)
         system = result[i] = new Layout.System(content, lo);
         system.y = y();
         system.height = height;
-        system.measures.push(new Layout.Measure(measure, system));
+        system.measures.push(new Layout.Measure(measure, system, lo));
       }
     });
 
     content.height = y() + height;
+
+    this._value.forEach(function (system) {
+      system.measures.flow();
+    });
 
   };
 
@@ -2539,9 +2514,9 @@ console.log(defs._lo)
 
 }(musje.Layout, Snap));
 
-/* global musje, Snap */
+/* global musje */
 
-(function (Layout, Snap) {
+(function (Layout) {
   'use strict';
 
   var Measures = Layout.Measures = function (system) {
@@ -2549,10 +2524,14 @@ console.log(defs._lo)
     this._value = [];
   };
 
-  Measures.prototype.init = function () {
+  Measures.prototype.flow = function () {
     var x = 0;
-    this.tuneWidths();
+    this._tuneWidths();
     this.forEach(function (measure) {
+      measure.layoutCells();
+      measure.parts.forEach(function (cell) {
+        cell.layoutMusicData();
+      });
       measure.x = x;
       x += measure.width;
     });
@@ -2581,7 +2560,7 @@ console.log(defs._lo)
     });
   };
 
-  Measures.prototype.tuneWidths = function () {
+  Measures.prototype._tuneWidths = function () {
     var
       systemWidth = this._system.width,
       pairs = this._getPairs(),
@@ -2615,7 +2594,7 @@ console.log(defs._lo)
 
   };
 
-}(musje.Layout, Snap));
+}(musje.Layout));
 
 /* global musje, Snap */
 
@@ -2624,12 +2603,28 @@ console.log(defs._lo)
 
   var
     defineProperty = Object.defineProperty,
-    objExtend = musje.objExtend;
+    objExtend = musje.objExtend,
+    Layout = musje.Layout;
 
-  var Measure = musje.Layout.Measure = function (measure, system) {
+  var Measure = Layout.Measure = function (measure, system, lo) {
+    this._system = system;
+    this._lo = lo;
     this.el = system.el.g().addClass('mus-measure');
     this.height = system.height;
     objExtend(this, measure);
+  };
+
+  Measure.prototype.layoutCells = function () {
+    var that = this, system = this._system;
+    this.parts = this.parts.map(function (cell) {
+      cell = new Layout.Cell(cell, that, that._lo);
+      cell.y2 = system.height;
+      cell.width = cell.minWidth;
+
+      // cell.el.rect(0, -cell.height, cell.width, cell.height)
+      //   .addClass('bbox');
+      return cell;
+    });
   };
 
   defineProperty(Measure.prototype, 'width', {
@@ -2660,48 +2655,58 @@ console.log(defs._lo)
 
   var defineProperty = Object.defineProperty;
 
-  // Extend layout functionality to cell.
-  // @param cell {Array} An array of musicData
-  function layoutCell(cell, measure, lo) {
-    var y2, width;
+  var Cell = Layout.Cell = function (cell, measure, lo) {
+    this._lo = lo;
+    this._value = cell;
+    this.el = measure.el.g().addClass('mus-cell');
+    this.x = lo.measurePaddingRight;
+    this.height = measure.height;
+  };
 
-    defineProperty(cell, 'width', {
-      get: function () {
-        return width;
-      },
-      set: function (w) {
-        width = w;
+  Cell.prototype.forEach = function (cb) {
+    this._value.forEach(cb);
+  };
+
+  Cell.prototype.get = function (i) {
+    return this._value[i];
+  };
+
+  Cell.prototype.layoutMusicData = function () {
+    var lo = this._lo, x = 0;
+
+    this.forEach(function (data) {
+      switch (data.__name__) {
+      case 'rest':  // fall through
+      case 'note':
+        data.pos = { x: x, y: 0 };
+        x += data.def.width + lo.musicDataSep;
+        break;
+      case 'time':
+        data.pos = { x: x, y: 0 };
+        x += data.def.width + lo.musicDataSep;
+        break;
       }
-    });
-
-    defineProperty(cell, 'y2', {
-      get: function () {
-        return y2;
-      },
-      set: function (v) {
-        y2 = v;
-        cell.el.transform(Snap.matrix().translate(cell.x, y2));
-      }
-    });
-
-    cell.el = measure.el.g().addClass('mus-cell');
-    cell.x = lo.measurePaddingRight;
-    cell.height = measure.height;
-  }
-
-  Layout.layoutCells = function (system, lo) {
-
-    system.measures.forEach(function (measure) {
-      measure.parts.forEach(function (cell) {
-        layoutCell(cell, measure, lo);
-        cell.y2 = system.height;
-        cell.width = cell.minWidth;
-
-        // cell.el.rect(0, -cell.height, cell.width, cell.height)
-        //   .addClass('bbox');
-      });
     });
   };
+
+  defineProperty(Cell.prototype, 'width', {
+    get: function () {
+      return this._w;
+    },
+    set: function (w) {
+      this._w = w;
+    }
+  });
+
+  defineProperty(Cell.prototype, 'y2', {
+    get: function () {
+      return this._y2;
+    },
+    set: function (y2) {
+      this._y2 = y2;
+      this.el.transform(Snap.matrix().translate(this.x, y2));
+    }
+  });
 
 }(musje.Layout, Snap));
 
@@ -2810,10 +2815,10 @@ console.log(defs._lo)
 
   function findEndBeamedNote(cell, begin, beamLevel) {
     var i = begin + 1,
-      next = cell[i];
+      next = cell.get(i);
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
-      next = cell[i];
+      next = cell.get(i);
     }
     return next;
   }

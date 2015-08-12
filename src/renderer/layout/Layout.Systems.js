@@ -9,13 +9,11 @@
     this._lo = lo;
     this.width = content.width;
     this.height = 25;
-
-    this.init();
   };
 
   // Divide measures in timewise score into the systems.
   // Assign y, height, minWdith, and measures to each system.
-  Systems.prototype.init = function () {
+  Systems.prototype.flow = function () {
     var
       content = this._content,
       lo = this._lo,
@@ -38,7 +36,7 @@
     this._score.measures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
       if (x < width) {
-        system.measures.push(new Layout.Measure(measure, system));
+        system.measures.push(new Layout.Measure(measure, system, lo));
         system.minWidth = x;
         x += lo.measurePaddingLeft;
       } else {
@@ -47,11 +45,15 @@
         system = result[i] = new Layout.System(content, lo);
         system.y = y();
         system.height = height;
-        system.measures.push(new Layout.Measure(measure, system));
+        system.measures.push(new Layout.Measure(measure, system, lo));
       }
     });
 
     content.height = y() + height;
+
+    this._value.forEach(function (system) {
+      system.measures.flow();
+    });
 
   };
 
