@@ -1835,7 +1835,8 @@ console.log(defs._lo)
 
   var
     objExtend = musje.objExtend,
-    near = musje.near;
+    near = musje.near,
+    Defs = musje.Defs;
 
   function getBBoxAfterTransform(container, bbox, matrix) {
     var
@@ -1852,7 +1853,7 @@ console.log(defs._lo)
   // SVG definition for pitch.
   // The `PitchDef` is defined by properties: a s o u
   // accidental step octave underbar
-  var PitchDef = musje.Defs.PitchDef = function (id, pitch, underbar, defs) {
+  var PitchDef = Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
       svg = this._svg = defs._svg,
       el = this.el = svg.g().attr('id', id),
@@ -1895,7 +1896,8 @@ console.log(defs._lo)
     var
       id = 'a' + accidental.replace(/#/g, 's'),
       defs = this._defs,
-      accDef = defs[id] || (defs[id] = new musje.AccidentalDef(id, accidental, defs));
+      accDef = defs[id] || (defs[id] =
+                    new Defs.AccidentalDef(id, accidental, defs));
 
     this.el.use(accDef.el).attr('y', -this._lo.accidentalShift);
     this._accidentalEndX = accDef.width;
