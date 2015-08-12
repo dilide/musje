@@ -32,6 +32,8 @@
     this.body = new Layout.Body(this.svg, lo);
     this.header = new Layout.Header(this, lo);
     this.content = new Layout.Content(this.body, this.header, lo);
+
+    this.defs = new musje.Defs(this.svg.el, this._lo);
   };
 
   Layout.prototype.flow = function () {
@@ -48,14 +50,14 @@
 
     // TODO: to be cleaned up...
     this.systems.forEach(function (system) {
-      system.layoutMeasures();
+      system.measures.init();
       Layout.layoutCells(system, lo);
       layoutMusicData(system, lo);
     });
   };
 
   Layout.prototype.setMusicDataDef = function () {
-    var defs = new musje.Defs(this.svg.el, this._lo);
+    var defs = this.defs;
 
     this._score.walkMusicData(function (data) {
       switch (data.__name__) {
@@ -86,12 +88,16 @@
   };
 
   Layout.prototype.setMinWidthOfMeasures = function () {
+    var
+      lo = this._lo,
+      padding = lo.measurePaddingLeft + lo.measurePaddingRight;
+
     this._score.measures.forEach(function (measure) {
       var minWidth = 0;
       measure.parts.forEach(function (cell) {
         minWidth = Math.max(minWidth, cell.minWidth);
       });
-      measure.minWidth = minWidth;
+      measure.minWidth = minWidth + padding;
     });
   };
 

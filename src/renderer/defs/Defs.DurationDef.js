@@ -7,7 +7,7 @@
 
   // @constructor DurationDef
   // SVG Definition for duration.
-  function DurationDef(svg, id, duration, lo) {
+  var DurationDef = musje.Defs.DurationDef = function (svg, id, duration, lo) {
     this._svg = svg;
     this._lo = lo;
 
@@ -21,7 +21,7 @@
     default:  // other note types type quarter note def
       return this._makeType4(id, duration.dot);
     }
-  }
+  };
 
   DurationDef.prototype._addDot = function (el, x, dot, type) {
     var lo = this._lo;
@@ -98,7 +98,5 @@
     }
     return objExtend(this, { el: el, width: x + lo.t4DotExt });
   };
-
-  musje.DurationDef = DurationDef;
 
 }(musje, Snap));

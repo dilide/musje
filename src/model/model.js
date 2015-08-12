@@ -11,15 +11,21 @@
     A4_MIDI_NUMBER = 69,
     TEMPO = 80,
     STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
-    ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, 'n': 0, 'b' : -1, 'bb': -2 },
-    TYPE_TO_STRING = { 1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_', 64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '====' },
+    ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, n: 0, b : -1, bb: -2 },
+    TYPE_TO_STRING = {
+      1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_',
+      64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '===='
+    },
     // Convert from duration type to number of underbars.
     TYPE_TO_UNDERBAR = {
       1: 0, 2: 0, 4: 0, 8: 1, 16: 2, 32: 3,
       64: 4, 128: 5, 256: 6, 512: 7, 1024: 8
     },
     DOT_TO_STRING = { 0: '', 1: '.', 2: '..' },
-    BAR_TO_STRING = {single: '|', double: '||', end: '|]', 'repeat-begin': '|:', 'repeat-end': ':|', 'repeat-both': ':|:'};
+    BAR_TO_STRING = {
+      single: '|', double: '||', end: '|]',
+      'repeat-begin': '|:', 'repeat-end': ':|', 'repeat-both': ':|:'
+    };
 
   function chars(ch, num) {
     return new Array(num + 1).join(ch);
@@ -216,7 +222,7 @@
         },
         defId: {
           get: function () {
-          return ['t', this.beats, '-', this.beatType].join('');
+            return ['t', this.beats, '-', this.beatType].join('');
           }
         }
       },

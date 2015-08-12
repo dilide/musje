@@ -31,11 +31,12 @@ gulp.task('concat', function () {
       './src/parser/post-parser.js',
 
       './src/renderer/svgPaths.js',
-      './src/renderer/defs/TimeDef.js',
-      './src/renderer/defs/AccidentalDef.js',
-      './src/renderer/defs/PitchDef.js',
-      './src/renderer/defs/DurationDef.js',
       './src/renderer/defs/Defs.js',
+      './src/renderer/defs/Defs.BarDef.js',
+      './src/renderer/defs/Defs.TimeDef.js',
+      './src/renderer/defs/Defs.AccidentalDef.js',
+      './src/renderer/defs/Defs.PitchDef.js',
+      './src/renderer/defs/Defs.DurationDef.js',
 
       './src/renderer/layout/Layout.js',
       './src/renderer/layout/Layout.options.js',
@@ -45,6 +46,8 @@ gulp.task('concat', function () {
       './src/renderer/layout/Layout.Content.js',
       './src/renderer/layout/Layout.Systems.js',
       './src/renderer/layout/Layout.System.js',
+      './src/renderer/layout/Layout.Measures.js',
+      './src/renderer/layout/Layout.Measure.js',
       './src/renderer/layout/Layout.layoutCells.js',
 
       './src/renderer/Renderer.js',

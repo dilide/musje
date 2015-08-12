@@ -5,10 +5,10 @@
 
   // @constructor Defs
   // SVG definitions
-  function Defs(svg, layoutOptions) {
+  var Defs = musje.Defs = function (svg, layoutOptions) {
     this._svg = svg;
     this._lo = layoutOptions;
-  }
+  };
 
   Defs.prototype.get = function (musicData) {
     var id = musicData.defId;
@@ -22,17 +22,21 @@
     return this[maker](id, musicData);
   };
 
+  Defs.prototype._makeBar = function (id, bar) {
+    return new Defs.BarDef(this._svg, bar, this._lo);
+  };
+
   Defs.prototype._makeTime = function (id, time) {
-    return new musje.TimeDef(this._svg, id, time, this._lo);
+    return new Defs.TimeDef(this._svg, id, time, this._lo);
   };
 
   Defs.prototype._makeDuration = function (id, duration) {
-    return new musje.DurationDef(this._svg, id, duration, this._lo);
+    return new Defs.DurationDef(this._svg, id, duration, this._lo);
   };
 
   Defs.prototype._getPitch = function (id, pitch, underbar) {
     return this[id] ||
-        (this[id] = new musje.PitchDef(id, pitch, underbar, this));
+        (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
   };
 
   Defs.prototype._makeNote = function (id, note) {
@@ -66,7 +70,5 @@
       width: pitchDef.width + durationDef.width
     };
   };
-
-  musje.Defs = Defs;
 
 }(musje));

@@ -22,7 +22,7 @@
   // SVG definition for pitch.
   // The `PitchDef` is defined by properties: a s o u
   // accidental step octave underbar
-  function PitchDef(id, pitch, underbar, defs) {
+  var PitchDef = musje.Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
       svg = this._svg = defs._svg,
       el = this.el = svg.g().attr('id', id),
@@ -54,7 +54,7 @@
       stepCy: sbbox.cy,
       stepY2: sbbox.y2
     });
-  }
+  };
 
   PitchDef.prototype._addAccidental = function (accidental) {
     if (!accidental) {
@@ -121,7 +121,5 @@
         near(pbbox.y2, this._sbbox.y2) ? 0 : -pbbox.y2
       );
   };
-
-  musje.PitchDef = PitchDef;
 
 }(musje, Snap));

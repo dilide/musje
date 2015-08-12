@@ -1,11 +1,11 @@
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Defs, Snap) {
   'use strict';
 
   // @constructor TimeDef
   // SVG definition for Time signature.
-  function TimeDef(svg, id, time, lo) {
+  Defs.TimeDef = function (svg, id, time, lo) {
     var
       timeFontSize = lo.timeFontSize,
       lineExtend = timeFontSize * 0.1,
@@ -32,8 +32,6 @@
       width: bb.width,
       height: -bb.y
     };
-  }
+  };
 
-  musje.TimeDef = TimeDef;
-
-}(musje, Snap));
+}(musje.Defs, Snap));

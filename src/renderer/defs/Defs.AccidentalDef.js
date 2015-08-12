@@ -1,13 +1,13 @@
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Defs, Snap) {
   'use strict';
 
   var svgPaths = musje.svgPaths;
 
   // @constructor AccidentalDef
   // SVG definition for accidental
-  function AccidentalDef(id, accidental, defs) {
+  Defs.AccidentalDef = function (id, accidental, defs) {
     var
       lo = defs._lo,
       el = this.el = defs._svg.g().attr('id', id),
@@ -33,8 +33,6 @@
     bb = el.getBBox();
     el.toDefs();
     this.width = bb.width * 1.2;
-  }
+  };
 
-  musje.AccidentalDef = AccidentalDef;
-
-}(musje, Snap));
+}(musje.Defs, Snap));

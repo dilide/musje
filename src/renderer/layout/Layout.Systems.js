@@ -38,7 +38,7 @@
     this._score.measures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
       if (x < width) {
-        system.measures.push(measure);
+        system.measures.push(new Layout.Measure(measure, system));
         system.minWidth = x;
         x += lo.measurePaddingLeft;
       } else {
@@ -47,7 +47,7 @@
         system = result[i] = new Layout.System(content, lo);
         system.y = y();
         system.height = height;
-        system.measures.push(measure);
+        system.measures.push(new Layout.Measure(measure, system));
       }
     });
 

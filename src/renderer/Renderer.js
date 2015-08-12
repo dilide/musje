@@ -4,6 +4,7 @@
   'use strict';
 
   function renderBar(measure, lo) {
+
     var
       bar = measure.rightBar,
       measureEl = measure.el,
@@ -33,20 +34,20 @@
   var Renderer = musje.Renderer = function (score, svg, lo) {
     this._score = score;
     this._lo = musje.objExtend(musje.Layout.options, lo);
-    this._layout = new musje.Layout(score, svg, this._lo);
+    this.layout = new musje.Layout(score, svg, this._lo);
   };
 
   Renderer.prototype.render = function () {
-    var lo = this._lo, that = this;
+    var that = this;
 
-    this._layout.flow();
+    this.layout.flow();
 
     this.renderHeader();
 
-    this._layout.systems.forEach(function (system) {
+    this.layout.systems.forEach(function (system) {
       system.measures.forEach(function (measure) {
 
-        renderBar(measure, lo);
+        renderBar(measure, that._lo);
 
         measure.parts.forEach(function (cell) {
           cell.forEach(function (data, dataIdx) {
@@ -69,7 +70,7 @@
   Renderer.prototype.renderHeader = function () {
     var
       lo = this._lo,
-      header = this._layout.header,
+      header = this.layout.header,
       el = header.el,
       width = header.width;
 

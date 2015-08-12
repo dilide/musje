@@ -50,14 +50,14 @@
 
     headerSep: '100%',
     systemSep: '150%',
-    musicDataSep: '50%',
+    musicDataSep: '20%',
 
-    measurePaddingLeft: '60%',
-    measurePaddingRight: '60%',
+    measurePaddingLeft: '50%',
+    measurePaddingRight: '50%',
 
     thinBarlineWidth: '5%',
-    thickBarlineWidth: '20%',
-    barlineSep: '20%',
+    thickBarlineWidth: '16%',
+    barlineSep: '15%',
     barlineRadius: '6.6%',
 
     accidentalFontSize: '95%',
