@@ -23,7 +23,7 @@
   };
 
   Defs.prototype._makeBar = function (id, bar) {
-    return new Defs.BarDef(this._svg, bar, this._lo);
+    return new Defs.BarDef(this._svg, id, bar, this._lo);
   };
 
   Defs.prototype._makeTime = function (id, time) {

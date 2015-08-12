@@ -4,44 +4,71 @@
   'use strict';
 
   // @constructor BarDef
-  // SVG definition for barline
-  var BarDef = Defs.BarDef = function (svg, bar, defs) {
+  // SVG definition for barline.
+  var BarDef = Defs.BarDef = function (svg, id, bar, lo) {
+    this._lo = lo;
+    this.el = svg.g().attr('id', id).toDefs();
     var
-      lo = this._lo = defs._lo,
-      el = this.el = svg.g().attr('id', bar.value),
-      bb = el.getBBox(),
-      x = 0;
-console.log(defs._lo)
-    var height = 30;  // testing only
+      x = 0,
+      lineWidth;
 
     switch (bar.value) {
     case 'single':
-      this._addThinBar(0, height);
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'double':
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
       break;
     case 'end':
-      this._addThinBar(0, height);
-      x += lo.thinBarlineWidth + lo.barlineSep;
-      this._addThickbar(x, height);
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'repeat-begin':
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineDotSep + lo.barlineDotRadius;
+      break;
+    case 'repeat-end':
+      x = lo.barlineDotSep + lo.barlineDotRadius;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'repeat-both':
+      x = lo.barlineDotSep + lo.barlineDotRadius;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineDotSep + lo.barlineDotRadius;
       break;
     }
 
-    bb = el.getBBox();
-    el.toDefs();
-    this.width = bb.width * 1.2;
+    this.width = x;
   };
 
-  BarDef.prototype._addThinBar = function (x, height) {
-    var lo = this._lo;
-    x += lo.thinBarlineWidth / 2;
-    this.el.line(x, 0, x, height)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-  };
-
-  BarDef.prototype._addThickBar = function (x, height) {
-    var lo = this._lo;
-    x += lo.thickBarlineWidth / 2;
-    this.el.line(x, 0, x, height)
-        .attr({ strokeWidth: lo.thickBarlineWidth });
+  BarDef.prototype._addBarline = function (x, width) {
+    this.el.rect(x, 0, width, 1);
   };
 
 }(musje.Defs));

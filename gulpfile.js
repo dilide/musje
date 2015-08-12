@@ -51,6 +51,7 @@ gulp.task('concat', function () {
       './src/renderer/layout/Layout.Cell.js',
 
       './src/renderer/Renderer.js',
+      './src/renderer/Renderer.renderBar.js',
       './src/renderer/Renderer.renderDuration.js',
 
       './src/player.js'

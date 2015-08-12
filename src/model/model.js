@@ -77,15 +77,15 @@
           measures.forEach(function (measure, i) {
             measure.parts.forEach(function (cell) {
               if (cell[cell.length - 1].__name__ === 'bar') {
-                measure.rightBar = cell.pop();
+                measure.barRight = cell.pop();
               }
               if (cell[0].__name__ === 'bar') {
-                measure.leftBar = cell.shift();
+                measure.barLeft = cell.shift();
               } else {
                 if (i === 0) {
-                  measure.leftBar = new musje.Bar('single');
+                  measure.barLeft = new musje.Bar('single');
                 } else {
-                  measure.leftBar = measures[i - 1].rightBar;
+                  measure.barLeft = measures[i - 1].barRight;
                 }
               }
             });

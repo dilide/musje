@@ -3,21 +3,19 @@
 (function (musje) {
   'use strict';
 
-  var Layout = musje.Layout = function (score, svg, lo) {
-    this._score = score;
+  var Layout = musje.Layout = function (svg, lo) {
     this._lo = lo;
 
     this.svg = new Layout.Svg(svg, lo);
     this.body = new Layout.Body(this.svg, lo);
     this.header = new Layout.Header(this, lo);
     this.content = new Layout.Content(this.body, this.header, lo);
-    this.systems = new Layout.Systems(score, this.content, lo);
 
     this.defs = new musje.Defs(this.svg.el, this._lo);
   };
 
-  Layout.prototype.flow = function () {
-    var score = this._score;
+  Layout.prototype.flow = function (score) {
+    this._score = score;
 
     score.prepareTimewise();
     score.extractBars();
@@ -26,7 +24,7 @@
     this.setMinDimensionOfCells();
     this.setMinWidthOfMeasures();
 
-    this.systems.flow();
+    this.content.flow(score.measures);
   };
 
   Layout.prototype.setMusicDataDef = function () {

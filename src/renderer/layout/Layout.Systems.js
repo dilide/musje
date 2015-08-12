@@ -3,22 +3,19 @@
 (function (Layout) {
   'use strict';
 
-  var Systems = Layout.Systems = function (score, content, lo) {
-    this._score = score;
+  var Systems = Layout.Content.Systems = function (content, lo) {
     this._content = content;
     this._lo = lo;
-    this.width = content.width;
-    this.height = 25;
   };
 
   // Divide measures in timewise score into the systems.
   // Assign y, height, minWdith, and measures to each system.
-  Systems.prototype.flow = function () {
+  Systems.prototype.flow = function (scoreMeasures) {
     var
       content = this._content,
       lo = this._lo,
-      width = this.width,
-      height = this.height,
+      width = content.width,
+      height = 25,
       i = 0,
       x = 0,
       system,
@@ -33,7 +30,7 @@
     system.height = height;
     result = this._value = [system];
 
-    this._score.measures.forEach(function (measure) {
+    scoreMeasures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
       if (x < width) {
         system.measures.push(new Layout.Measure(measure, system, lo));

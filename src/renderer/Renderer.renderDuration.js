@@ -1,4 +1,4 @@
-/*global musje, Snap*/
+/* global musje, Snap */
 
 (function (Renderer, Snap) {
   'use strict';
@@ -24,8 +24,7 @@
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  Renderer.prototype.renderDuration = function (note, noteIdx, cell) {
-    var lo = this._lo;
+  Renderer.renderDuration = function (note, noteIdx, cell, lo) {
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 

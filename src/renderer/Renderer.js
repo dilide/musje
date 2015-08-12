@@ -1,70 +1,35 @@
-/*global musje*/
+/* global musje */
 
 (function (musje) {
   'use strict';
 
-  function renderBar(measure, lo) {
-
-    var
-      bar = measure.rightBar,
-      measureEl = measure.el,
-      x = measure.width,
-      y = 0,
-      y2 = measure.height;
-
-    switch (bar.value) {
-    case 'single':
-      x -= lo.thinBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-      break;
-    case 'end':
-      x -= lo.thickBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thickBarlineWidth });
-      x -= lo.thinBarlineWidth / 2 + lo.barlineSep +
-           lo.thickBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-      break;
-    }
+  function renderCell (cell, lo) {
+    cell.forEach(function (data, i) {
+      switch (data.__name__) {
+      case 'rest':  // fall through
+      case 'note':
+        data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
+        Renderer.renderDuration(data, i, cell, lo);
+        break;
+      case 'time':
+        data.el = cell.el.use(data.def.el).attr(data.pos);
+        break;
+      }
+    });
   }
 
 
   var Renderer = musje.Renderer = function (score, svg, lo) {
     this._score = score;
     this._lo = musje.objExtend(musje.Layout.options, lo);
-    this.layout = new musje.Layout(score, svg, this._lo);
+    this.layout = new musje.Layout(svg, this._lo);
   };
 
   Renderer.prototype.render = function () {
-    var that = this;
-
-    this.layout.flow();
+    this.layout.flow(this._score);
 
     this.renderHeader();
-
-    this.layout.systems.forEach(function (system) {
-      system.measures.forEach(function (measure) {
-
-        renderBar(measure, that._lo);
-
-        measure.parts.forEach(function (cell) {
-          cell.forEach(function (data, dataIdx) {
-            switch (data.__name__) {
-            case 'rest':  // fall through
-            case 'note':
-              data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
-              that.renderDuration(data, dataIdx, cell);
-              break;
-            case 'time':
-              data.el = cell.el.use(data.def.el).attr(data.pos);
-              break;
-            }
-          });
-        });
-      });
-    });
+    this.renderContent();
   };
 
   Renderer.prototype.renderHeader = function () {
@@ -89,6 +54,21 @@
 
     header.height = el.getBBox().height;
   };
+
+  Renderer.prototype.renderContent = function () {
+    var lo = this._lo, defs = this.layout.defs;
+
+    this.layout.content.systems.forEach(function (system) {
+      var measures = system.measures;
+      measures.forEach(function (measure, m) {
+        Renderer.renderBar(measure, m, measures.length, defs);
+        measure.parts.forEach(function (cell) {
+          renderCell(cell, lo);
+        });
+      });
+    });
+  };
+
 
   musje.Score.prototype.render = function (svg, lo) {
     new Renderer(this, svg, lo).render();

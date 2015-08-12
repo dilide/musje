@@ -33,6 +33,10 @@
     return this._value.map(cb);
   };
 
+  Object.defineProperty(Measures.prototype, 'length', {
+    get: function () { return this._value.length; }
+  });
+
   Measures.prototype._getPairs = function () {
     return this.map(function (measure) {
       return {

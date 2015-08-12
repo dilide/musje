@@ -28,7 +28,8 @@
       return this._h;
     },
     set: function (h) {
-      this._svg.height = h + this._lo.marginTop + this._lo.marginBottom;
+      var lo = this._lo;
+      this._svg.height = h + lo.marginTop + lo.marginBottom;
     }
   });
 

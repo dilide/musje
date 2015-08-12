@@ -402,15 +402,15 @@ if (typeof exports !== 'undefined') {
           measures.forEach(function (measure, i) {
             measure.parts.forEach(function (cell) {
               if (cell[cell.length - 1].__name__ === 'bar') {
-                measure.rightBar = cell.pop();
+                measure.barRight = cell.pop();
               }
               if (cell[0].__name__ === 'bar') {
-                measure.leftBar = cell.shift();
+                measure.barLeft = cell.shift();
               } else {
                 if (i === 0) {
-                  measure.leftBar = new musje.Bar('single');
+                  measure.barLeft = new musje.Bar('single');
                 } else {
-                  measure.leftBar = measures[i - 1].rightBar;
+                  measure.barLeft = measures[i - 1].barRight;
                 }
               }
             });
@@ -1653,7 +1653,7 @@ return new Parser;
   };
 
   Defs.prototype._makeBar = function (id, bar) {
-    return new Defs.BarDef(this._svg, bar, this._lo);
+    return new Defs.BarDef(this._svg, id, bar, this._lo);
   };
 
   Defs.prototype._makeTime = function (id, time) {
@@ -1709,44 +1709,71 @@ return new Parser;
   'use strict';
 
   // @constructor BarDef
-  // SVG definition for barline
-  var BarDef = Defs.BarDef = function (svg, bar, defs) {
+  // SVG definition for barline.
+  var BarDef = Defs.BarDef = function (svg, id, bar, lo) {
+    this._lo = lo;
+    this.el = svg.g().attr('id', id).toDefs();
     var
-      lo = this._lo = defs._lo,
-      el = this.el = svg.g().attr('id', bar.value),
-      bb = el.getBBox(),
-      x = 0;
-console.log(defs._lo)
-    var height = 30;  // testing only
+      x = 0,
+      lineWidth;
 
     switch (bar.value) {
     case 'single':
-      this._addThinBar(0, height);
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'double':
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
       break;
     case 'end':
-      this._addThinBar(0, height);
-      x += lo.thinBarlineWidth + lo.barlineSep;
-      this._addThickbar(x, height);
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'repeat-begin':
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineDotSep + lo.barlineDotRadius;
+      break;
+    case 'repeat-end':
+      x = lo.barlineDotSep + lo.barlineDotRadius;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth;
+      break;
+    case 'repeat-both':
+      x = lo.barlineDotSep + lo.barlineDotRadius;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thickBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineSep;
+      lineWidth = lo.thinBarlineWidth;
+      this._addBarline(x, lineWidth);
+      x += lineWidth + lo.barlineDotSep + lo.barlineDotRadius;
       break;
     }
 
-    bb = el.getBBox();
-    el.toDefs();
-    this.width = bb.width * 1.2;
+    this.width = x;
   };
 
-  BarDef.prototype._addThinBar = function (x, height) {
-    var lo = this._lo;
-    x += lo.thinBarlineWidth / 2;
-    this.el.line(x, 0, x, height)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-  };
-
-  BarDef.prototype._addThickBar = function (x, height) {
-    var lo = this._lo;
-    x += lo.thickBarlineWidth / 2;
-    this.el.line(x, 0, x, height)
-        .attr({ strokeWidth: lo.thickBarlineWidth });
+  BarDef.prototype._addBarline = function (x, width) {
+    this.el.rect(x, 0, width, 1);
   };
 
 }(musje.Defs));
@@ -2064,21 +2091,19 @@ console.log(defs._lo)
 (function (musje) {
   'use strict';
 
-  var Layout = musje.Layout = function (score, svg, lo) {
-    this._score = score;
+  var Layout = musje.Layout = function (svg, lo) {
     this._lo = lo;
 
     this.svg = new Layout.Svg(svg, lo);
     this.body = new Layout.Body(this.svg, lo);
     this.header = new Layout.Header(this, lo);
     this.content = new Layout.Content(this.body, this.header, lo);
-    this.systems = new Layout.Systems(score, this.content, lo);
 
     this.defs = new musje.Defs(this.svg.el, this._lo);
   };
 
-  Layout.prototype.flow = function () {
-    var score = this._score;
+  Layout.prototype.flow = function (score) {
+    this._score = score;
 
     score.prepareTimewise();
     score.extractBars();
@@ -2087,7 +2112,7 @@ console.log(defs._lo)
     this.setMinDimensionOfCells();
     this.setMinWidthOfMeasures();
 
-    this.systems.flow();
+    this.content.flow(score.measures);
   };
 
   Layout.prototype.setMusicDataDef = function () {
@@ -2194,10 +2219,11 @@ console.log(defs._lo)
     measurePaddingLeft: '50%',
     measurePaddingRight: '50%',
 
-    thinBarlineWidth: '5%',
+    thinBarlineWidth: '4%',
     thickBarlineWidth: '16%',
-    barlineSep: '15%',
-    barlineRadius: '6.6%',
+    barlineSep: '18%',
+    barlineDotRadius: '7.5%',
+    barlineDotSep: '22%',
 
     accidentalFontSize: '95%',
     accidentalShift: '10%',
@@ -2313,7 +2339,8 @@ console.log(defs._lo)
       return this._h;
     },
     set: function (h) {
-      this._svg.height = h + this._lo.marginTop + this._lo.marginBottom;
+      var lo = this._lo;
+      this._svg.height = h + lo.marginTop + lo.marginBottom;
     }
   });
 
@@ -2367,12 +2394,17 @@ console.log(defs._lo)
     this._lo = lo;
     this.el = body.el.g().addClass('mus-content');
     this.width = body.width;
+    this.systems = new Content.Systems(this, lo);
   };
 
   Content.prototype._resizeBody = function () {
     var lo = this._lo, headerHeight = this._header.height;
     this._body.height = this.height +
               (headerHeight ? headerHeight + lo.headerSep : 0);
+  };
+
+  Content.prototype.flow = function (scoreMeasures) {
+    this.systems.flow(scoreMeasures);
   };
 
   defineProperty(Content.prototype, 'y', {
@@ -2412,22 +2444,19 @@ console.log(defs._lo)
 (function (Layout) {
   'use strict';
 
-  var Systems = Layout.Systems = function (score, content, lo) {
-    this._score = score;
+  var Systems = Layout.Content.Systems = function (content, lo) {
     this._content = content;
     this._lo = lo;
-    this.width = content.width;
-    this.height = 25;
   };
 
   // Divide measures in timewise score into the systems.
   // Assign y, height, minWdith, and measures to each system.
-  Systems.prototype.flow = function () {
+  Systems.prototype.flow = function (scoreMeasures) {
     var
       content = this._content,
       lo = this._lo,
-      width = this.width,
-      height = this.height,
+      width = content.width,
+      height = 25,
       i = 0,
       x = 0,
       system,
@@ -2442,7 +2471,7 @@ console.log(defs._lo)
     system.height = height;
     result = this._value = [system];
 
-    this._score.measures.forEach(function (measure) {
+    scoreMeasures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
       if (x < width) {
         system.measures.push(new Layout.Measure(measure, system, lo));
@@ -2550,6 +2579,10 @@ console.log(defs._lo)
   Measures.prototype.map = function (cb) {
     return this._value.map(cb);
   };
+
+  Object.defineProperty(Measures.prototype, 'length', {
+    get: function () { return this._value.length; }
+  });
 
   Measures.prototype._getPairs = function () {
     return this.map(function (measure) {
@@ -2712,73 +2745,38 @@ console.log(defs._lo)
 
 }(musje.Layout, Snap));
 
-/*global musje*/
+/* global musje */
 
 (function (musje) {
   'use strict';
 
-  function renderBar(measure, lo) {
-
-    var
-      bar = measure.rightBar,
-      measureEl = measure.el,
-      x = measure.width,
-      y = 0,
-      y2 = measure.height;
-
-    switch (bar.value) {
-    case 'single':
-      x -= lo.thinBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-      break;
-    case 'end':
-      x -= lo.thickBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thickBarlineWidth });
-      x -= lo.thinBarlineWidth / 2 + lo.barlineSep +
-           lo.thickBarlineWidth / 2;
-      measureEl.line(x, y2, x, y)
-        .attr({ strokeWidth: lo.thinBarlineWidth });
-      break;
-    }
+  function renderCell (cell, lo) {
+    cell.forEach(function (data, i) {
+      switch (data.__name__) {
+      case 'rest':  // fall through
+      case 'note':
+        data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
+        Renderer.renderDuration(data, i, cell, lo);
+        break;
+      case 'time':
+        data.el = cell.el.use(data.def.el).attr(data.pos);
+        break;
+      }
+    });
   }
 
 
   var Renderer = musje.Renderer = function (score, svg, lo) {
     this._score = score;
     this._lo = musje.objExtend(musje.Layout.options, lo);
-    this.layout = new musje.Layout(score, svg, this._lo);
+    this.layout = new musje.Layout(svg, this._lo);
   };
 
   Renderer.prototype.render = function () {
-    var that = this;
-
-    this.layout.flow();
+    this.layout.flow(this._score);
 
     this.renderHeader();
-
-    this.layout.systems.forEach(function (system) {
-      system.measures.forEach(function (measure) {
-
-        renderBar(measure, that._lo);
-
-        measure.parts.forEach(function (cell) {
-          cell.forEach(function (data, dataIdx) {
-            switch (data.__name__) {
-            case 'rest':  // fall through
-            case 'note':
-              data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
-              that.renderDuration(data, dataIdx, cell);
-              break;
-            case 'time':
-              data.el = cell.el.use(data.def.el).attr(data.pos);
-              break;
-            }
-          });
-        });
-      });
-    });
+    this.renderContent();
   };
 
   Renderer.prototype.renderHeader = function () {
@@ -2804,13 +2802,123 @@ console.log(defs._lo)
     header.height = el.getBBox().height;
   };
 
+  Renderer.prototype.renderContent = function () {
+    var lo = this._lo, defs = this.layout.defs;
+
+    this.layout.content.systems.forEach(function (system) {
+      var measures = system.measures;
+      measures.forEach(function (measure, m) {
+        Renderer.renderBar(measure, m, measures.length, defs);
+        measure.parts.forEach(function (cell) {
+          renderCell(cell, lo);
+        });
+      });
+    });
+  };
+
+
   musje.Score.prototype.render = function (svg, lo) {
     new Renderer(this, svg, lo).render();
   };
 
 }(musje));
 
-/*global musje, Snap*/
+/* global musje, Snap */
+
+(function (musje, Snap) {
+  'use strict';
+
+  var BAR_TO_ID = {
+    single: 'bs', double: 'bd', end: 'be',
+    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
+  };
+
+  function renderDots(el, x, radius, measureHeight) {
+    var
+      cy = measureHeight / 2,
+      dy = measureHeight * 0.15;
+
+    el.circle(x, cy - dy, radius);
+    el.circle(x, cy + dy, radius);
+  }
+
+  function render(bar, measure, defs) {
+    var
+      lo = defs._lo,
+      def,
+      el;
+
+    bar.defId = BAR_TO_ID[bar.value];
+    def = defs.get(bar);
+
+    el = measure.el.g().addClass('mus-barline');
+
+    el.use(def.el).transform(Snap.matrix().scale(1, measure.height));
+
+    switch (bar.value) {
+    case 'repeat-begin':
+      renderDots(el, def.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      break;
+    case 'repeat-end':
+      renderDots(el, lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      break;
+    case 'repeat-both':
+      renderDots(el, def.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      renderDots(el, lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      break;
+    }
+
+    return {
+      el: el,
+      def: def
+    };
+  }
+
+  function translate(el, x) {
+    el.transform(Snap.matrix().translate(x, 0));
+  }
+
+  // @param m {number} Measure index in measures.
+  // @param len {number} Length of measures.
+  musje.Renderer.renderBar = function (measure, m, len, defs) {
+    var
+      bar = measure.barRight,
+      result, el, def;
+
+    if (m === len - 1) {
+      if (bar.value === 'repeat-begin') {
+        bar = new musje.Bar('single');
+      } else if (bar.value === 'repeat-both') {
+        bar = new musje.Bar('repeat-end');
+      }
+    }
+
+    result = render(bar, measure, defs);
+    el = result.el;
+    def = result.def;
+
+    if (m === len - 1) {
+      translate(el, measure.width - def.width);
+    } else {
+      translate(el, measure.width - def.width / 2);
+    }
+
+    if (m === 0) {
+      bar = measure.barLeft;
+      if (bar.value === 'repeat-both') {
+        render(new musje.Bar('repeat-begin'), measure, defs);
+      } else if (bar.value === 'repeat-end') {
+        render(new musje.Bar('single'), measure, defs);
+
+      } else {
+        render(measure.barLeft, measure, defs);
+      }
+    }
+  };
+
+}(musje, Snap));
+
+/* global musje, Snap */
 
 (function (Renderer, Snap) {
   'use strict';
@@ -2836,8 +2944,7 @@ console.log(defs._lo)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  Renderer.prototype.renderDuration = function (note, noteIdx, cell) {
-    var lo = this._lo;
+  Renderer.renderDuration = function (note, noteIdx, cell, lo) {
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 

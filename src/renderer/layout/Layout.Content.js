@@ -11,12 +11,17 @@
     this._lo = lo;
     this.el = body.el.g().addClass('mus-content');
     this.width = body.width;
+    this.systems = new Content.Systems(this, lo);
   };
 
   Content.prototype._resizeBody = function () {
     var lo = this._lo, headerHeight = this._header.height;
     this._body.height = this.height +
               (headerHeight ? headerHeight + lo.headerSep : 0);
+  };
+
+  Content.prototype.flow = function (scoreMeasures) {
+    this.systems.flow(scoreMeasures);
   };
 
   defineProperty(Content.prototype, 'y', {

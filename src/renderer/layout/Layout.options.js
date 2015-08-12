@@ -55,10 +55,11 @@
     measurePaddingLeft: '50%',
     measurePaddingRight: '50%',
 
-    thinBarlineWidth: '5%',
+    thinBarlineWidth: '4%',
     thickBarlineWidth: '16%',
-    barlineSep: '15%',
-    barlineRadius: '6.6%',
+    barlineSep: '18%',
+    barlineDotRadius: '7.5%',
+    barlineDotSep: '22%',
 
     accidentalFontSize: '95%',
     accidentalShift: '10%',
