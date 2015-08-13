@@ -21,7 +21,12 @@
   };
 
   Content.prototype.flow = function (scoreMeasures) {
-    this.systems.flow(scoreMeasures);
+    this._scoreMeasures = scoreMeasures;
+    this.reflow();
+  };
+
+  Content.prototype.reflow = function () {
+    this.systems.flow(this._scoreMeasures);
   };
 
   defineProperty(Content.prototype, 'y', {

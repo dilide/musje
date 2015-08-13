@@ -1642,39 +1642,39 @@ return new Parser;
 
   Defs.prototype.get = function (musicData) {
     var id = musicData.defId;
-    return this[id] || (this[id] = this._make(id, musicData));
+    return this[id] || (this[id] = this._makeDef(id, musicData));
   };
 
-  Defs.prototype._make = function (id, musicData) {
+  Defs.prototype._makeDef = function (id, musicData) {
     var
       n = musicData.__name__,
-      maker = '_make' + n.charAt(0).toUpperCase() + n.substr(1);
+      maker = '_make' + n.charAt(0).toUpperCase() + n.substr(1) + 'Def';
     return this[maker](id, musicData);
   };
 
-  Defs.prototype._makeBar = function (id, bar) {
+  Defs.prototype._makeBarDef = function (id, bar) {
     return new Defs.BarDef(this._svg, id, bar, this._lo);
   };
 
-  Defs.prototype._makeTime = function (id, time) {
+  Defs.prototype._makeTimeDef = function (id, time) {
     return new Defs.TimeDef(this._svg, id, time, this._lo);
   };
 
-  Defs.prototype._makeDuration = function (id, duration) {
+  Defs.prototype._makeDurationDef = function (id, duration) {
     return new Defs.DurationDef(this._svg, id, duration, this._lo);
   };
 
-  Defs.prototype._getPitch = function (id, pitch, underbar) {
+  Defs.prototype._getPitchDef = function (id, pitch, underbar) {
     return this[id] ||
         (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
   };
 
-  Defs.prototype._makeNote = function (id, note) {
+  Defs.prototype._makeNoteDef = function (id, note) {
     var
       pitch = note.pitch,
       underbar = note.duration.underbar,
       pitchId = pitch.defId + underbar,
-      pitchDef = this._getPitch(pitchId, pitch, underbar),
+      pitchDef = this._getPitchDef(pitchId, pitch, underbar),
       durationDef = this.get(note.duration);
 
     return {
@@ -1687,10 +1687,12 @@ return new Parser;
     };
   };
 
-  Defs.prototype._makeRest = function(id, rest) {
+  // Rest does not have its only RestDef class.
+  // It is just a trick to use a note with pitch.step = 0.
+  Defs.prototype._makeRestDef = function(id, rest) {
     var
       duration = rest.duration,
-      pitchDef = this._getPitch(id, { step: 0, octave: 0 }, duration.underbar),
+      pitchDef = this._getPitchDef(id, { step: 0, octave: 0 }, duration.underbar),
       durationDef = this.get(duration);
 
     return {
@@ -2404,7 +2406,12 @@ return new Parser;
   };
 
   Content.prototype.flow = function (scoreMeasures) {
-    this.systems.flow(scoreMeasures);
+    this._scoreMeasures = scoreMeasures;
+    this.reflow();
+  };
+
+  Content.prototype.reflow = function () {
+    this.systems.flow(this._scoreMeasures);
   };
 
   defineProperty(Content.prototype, 'y', {
@@ -2447,6 +2454,11 @@ return new Parser;
   var Systems = Layout.Content.Systems = function (content, lo) {
     this._content = content;
     this._lo = lo;
+
+    var system = new Layout.System(content, lo);
+    system.y = 0;
+    system.height = 25;
+    this._value = [system];
   };
 
   // Divide measures in timewise score into the systems.
@@ -2455,35 +2467,36 @@ return new Parser;
     var
       content = this._content,
       lo = this._lo,
+      result = this._value,
+      system = result[0],
       width = content.width,
       height = 25,
-      i = 0,
-      x = 0,
-      system,
-      result;
+      s = 0,
+      x = 0;
 
     function y() {
-      return i * (height + lo.systemSep);
+      return s * (height + lo.systemSep);
     }
-
-    system = new Layout.System(content, lo);
-    system.y = 0;
-    system.height = height;
-    result = this._value = [system];
 
     scoreMeasures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
+
+      // Continue putting this measure in the system.
       if (x < width) {
-        system.measures.push(new Layout.Measure(measure, system, lo));
+        measure = new Layout.Measure(measure, system, lo);
+        system.measures.push(measure);
         system.minWidth = x;
         x += lo.measurePaddingLeft;
+
+      // New system
       } else {
-        x = measure.minWidth + lo.measurePaddingRight;
-        i++;
-        system = result[i] = new Layout.System(content, lo);
+        s++;
+        system = result[s] = new Layout.System(content, lo);
         system.y = y();
         system.height = height;
-        system.measures.push(new Layout.Measure(measure, system, lo));
+        measure = new Layout.Measure(measure, system, lo);
+        system.measures.push(measure);
+        x = measure.minWidth + lo.measurePaddingRight;
       }
     });
 
@@ -2641,6 +2654,8 @@ return new Parser;
     objExtend = musje.objExtend,
     Layout = musje.Layout;
 
+  // @constructor Measure
+  // @param m {number} Index of measure in the system.
   var Measure = Layout.Measure = function (measure, system, lo) {
     this._system = system;
     this._lo = lo;
@@ -2681,6 +2696,24 @@ return new Parser;
     }
   });
 
+  defineProperty(Measure.prototype, 'barLeft', {
+    get: function () {
+      return this._barLeft;
+    },
+    set: function (bar) {
+      this._barLeft = bar;
+    }
+  });
+
+  defineProperty(Measure.prototype, 'barRight', {
+    get: function () {
+      return this._barLeft;
+    },
+    set: function (bar) {
+      this._barLeft = bar;
+    }
+  });
+
 }(musje, Snap));
 
 /* global musje, Snap */
@@ -2702,7 +2735,7 @@ return new Parser;
     this._value.forEach(cb);
   };
 
-  Cell.prototype.get = function (i) {
+  Cell.prototype.at = function (i) {
     return this._value[i];
   };
 
@@ -2766,14 +2799,14 @@ return new Parser;
   }
 
 
-  var Renderer = musje.Renderer = function (score, svg, lo) {
-    this._score = score;
+  var Renderer = musje.Renderer = function (svg, lo) {
     this._lo = musje.objExtend(musje.Layout.options, lo);
     this.layout = new musje.Layout(svg, this._lo);
   };
 
-  Renderer.prototype.render = function () {
-    this.layout.flow(this._score);
+  Renderer.prototype.render = function (score) {
+    this._score = score;
+    this.layout.flow(score);
 
     this.renderHeader();
     this.renderContent();
@@ -2818,7 +2851,7 @@ return new Parser;
 
 
   musje.Score.prototype.render = function (svg, lo) {
-    new Renderer(this, svg, lo).render();
+    new Renderer(svg, lo).render(this);
   };
 
 }(musje));
@@ -2925,10 +2958,10 @@ return new Parser;
 
   function findEndBeamedNote(cell, begin, beamLevel) {
     var i = begin + 1,
-      next = cell.get(i);
+      next = cell.at(i);
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
-      next = cell.get(i);
+      next = cell.at(i);
     }
     return next;
   }

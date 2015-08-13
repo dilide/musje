@@ -8,6 +8,8 @@
     objExtend = musje.objExtend,
     Layout = musje.Layout;
 
+  // @constructor Measure
+  // @param m {number} Index of measure in the system.
   var Measure = Layout.Measure = function (measure, system, lo) {
     this._system = system;
     this._lo = lo;
@@ -45,6 +47,24 @@
     set: function (x) {
       this._x = x;
       this.el.transform(Snap.matrix().translate(x, 0));
+    }
+  });
+
+  defineProperty(Measure.prototype, 'barLeft', {
+    get: function () {
+      return this._barLeft;
+    },
+    set: function (bar) {
+      this._barLeft = bar;
+    }
+  });
+
+  defineProperty(Measure.prototype, 'barRight', {
+    get: function () {
+      return this._barLeft;
+    },
+    set: function (bar) {
+      this._barLeft = bar;
     }
   });
 

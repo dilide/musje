@@ -19,14 +19,14 @@
   }
 
 
-  var Renderer = musje.Renderer = function (score, svg, lo) {
-    this._score = score;
+  var Renderer = musje.Renderer = function (svg, lo) {
     this._lo = musje.objExtend(musje.Layout.options, lo);
     this.layout = new musje.Layout(svg, this._lo);
   };
 
-  Renderer.prototype.render = function () {
-    this.layout.flow(this._score);
+  Renderer.prototype.render = function (score) {
+    this._score = score;
+    this.layout.flow(score);
 
     this.renderHeader();
     this.renderContent();
@@ -71,7 +71,7 @@
 
 
   musje.Score.prototype.render = function (svg, lo) {
-    new Renderer(this, svg, lo).render();
+    new Renderer(svg, lo).render(this);
   };
 
 }(musje));

@@ -1,5 +1,32 @@
-- Defs
+# Defs
+
+SVG definitions of music data.
+
+## API
+
+Usage
+```js
+var defs = new musje.Defs(svg, layoutOptions);
+// musicData = bar | time | note | rest
+var def = Defs.get(musicData);
+```
+
+Result
+```
+def.el
+def.width
+def.height
+```
+
+## Internal classes
+
+Definition classes only internally used by the Defs class.
+
+```
+- BarDef
 - TimeDef
-- AccidentalDef
-- PitchDef
-- DurationDef
+- NoteDef
+    - PitchDef
+        - AccidentalDef
+    - DurationDef
+```

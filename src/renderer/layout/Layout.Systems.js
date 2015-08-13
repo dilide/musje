@@ -6,6 +6,11 @@
   var Systems = Layout.Content.Systems = function (content, lo) {
     this._content = content;
     this._lo = lo;
+
+    var system = new Layout.System(content, lo);
+    system.y = 0;
+    system.height = 25;
+    this._value = [system];
   };
 
   // Divide measures in timewise score into the systems.
@@ -14,35 +19,36 @@
     var
       content = this._content,
       lo = this._lo,
+      result = this._value,
+      system = result[0],
       width = content.width,
       height = 25,
-      i = 0,
-      x = 0,
-      system,
-      result;
+      s = 0,
+      x = 0;
 
     function y() {
-      return i * (height + lo.systemSep);
+      return s * (height + lo.systemSep);
     }
-
-    system = new Layout.System(content, lo);
-    system.y = 0;
-    system.height = height;
-    result = this._value = [system];
 
     scoreMeasures.forEach(function (measure) {
       x += measure.minWidth + lo.measurePaddingRight;
+
+      // Continue putting this measure in the system.
       if (x < width) {
-        system.measures.push(new Layout.Measure(measure, system, lo));
+        measure = new Layout.Measure(measure, system, lo);
+        system.measures.push(measure);
         system.minWidth = x;
         x += lo.measurePaddingLeft;
+
+      // New system
       } else {
-        x = measure.minWidth + lo.measurePaddingRight;
-        i++;
-        system = result[i] = new Layout.System(content, lo);
+        s++;
+        system = result[s] = new Layout.System(content, lo);
         system.y = y();
         system.height = height;
-        system.measures.push(new Layout.Measure(measure, system, lo));
+        measure = new Layout.Measure(measure, system, lo);
+        system.measures.push(measure);
+        x = measure.minWidth + lo.measurePaddingRight;
       }
     });
 

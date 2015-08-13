@@ -5,10 +5,10 @@
 
   function findEndBeamedNote(cell, begin, beamLevel) {
     var i = begin + 1,
-      next = cell.get(i);
+      next = cell.at(i);
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
-      next = cell.get(i);
+      next = cell.at(i);
     }
     return next;
   }

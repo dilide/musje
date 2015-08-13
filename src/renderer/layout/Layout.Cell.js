@@ -17,7 +17,7 @@
     this._value.forEach(cb);
   };
 
-  Cell.prototype.get = function (i) {
+  Cell.prototype.at = function (i) {
     return this._value[i];
   };
 
