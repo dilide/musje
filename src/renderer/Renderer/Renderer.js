@@ -34,11 +34,6 @@
 
     this.renderHeader();
     this.renderContent();
-
-    var layout = this.layout;
-    setTimeout(function () {
-      layout.svg.width += 500;
-    }, 2000);
   };
 
   Renderer.prototype.renderHeader = function () {
@@ -65,12 +60,12 @@
   };
 
   Renderer.prototype.renderContent = function () {
-    var lo = this._lo, defs = this.layout.defs;
+    var lo = this._lo;
 
     this.layout.content.systems.forEach(function (system) {
       var measures = system.measures;
-      measures.forEach(function (measure, m) {
-        Renderer.renderBar(measure, m, measures.length, defs);
+      measures.forEach(function (measure) {
+        Renderer.renderBar(measure, lo);
         measure.parts.forEach(function (cell) {
           renderCell(cell, lo);
         });

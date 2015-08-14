@@ -33,7 +33,7 @@
     $scope.pauseDisabled = true;
     // $scope.stopDisabled = true;
 
-    $scope.width = 200;
+    $scope.width = 650;
     $scope.fonts = fonts;
     $scope.selectedFont = $scope.fonts[11];
 

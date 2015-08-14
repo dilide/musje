@@ -2101,6 +2101,11 @@ return new Parser;
   };
 
   Layout.prototype.flow = function (score) {
+    this._init(score);
+    this.content.flow(score.measures);
+  };
+
+  Layout.prototype._init = function (score) {
     score.prepareTimewise();
     score.extractBars();
     score.makeBeams();
@@ -2111,15 +2116,13 @@ return new Parser;
       measures = score.measures;
 
     measures.forEach(function (measure, m) {
-      measure = measures[m] = new Layout.Measure(measure, lo);
+      measure = measures[m] = new Layout.Measure(measure, defs, lo);
       measure.parts.forEach(function (cell, c) {
         cell = measure.parts[c] = new Layout.Cell(cell, defs, lo);
         cell.flow();
       });
       measure.calcMinWidth();
     });
-
-    this.content.flow(score.measures);
   };
 
 }(musje));
@@ -2131,7 +2134,7 @@ return new Parser;
 
   var options = musje.Layout.options = {
     mode: 'block', // inline | block | paper
-    width: 650,
+    // width: 650,
     // height: 600,
     marginTop: 25,
     marginRight: 30,
@@ -2399,13 +2402,13 @@ return new Parser;
     }
 
     scoreMeasures.forEach(function (measure) {
-      x += measure.minWidth + lo.measurePaddingRight;
+      var notCellWidth = (measure.barLeft.width + measure.barRight.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
+      x += measure.minWidth + notCellWidth;
 
       // Continue putting this measure in the system.
       if (x < width) {
         measure.system = system;
         system.measures.push(measure);
-        system.minWidth = x;
         x += lo.measurePaddingLeft;
 
       // New system
@@ -2416,7 +2419,7 @@ return new Parser;
         system.height = height;
         measure.system = system;
         system.measures.push(measure);
-        x = measure.minWidth + lo.measurePaddingRight;
+        x = measure.minWidth + notCellWidth;
       }
     });
 
@@ -2487,7 +2490,8 @@ return new Parser;
   System.prototype.flow = function () {
     var x = 0;
     this._tuneMeasuresWidths(this.measures, this.width);
-    this.measures.forEach(function (measure) {
+    this.measures.forEach(function (measure, m) {
+      measure.m = m;
       measure.flow();
       measure.x = x;
       x += measure.width;
@@ -2568,9 +2572,13 @@ return new Parser;
 
   // @constructor Measure
   // @param m {number} Index of measure in the system.
-  var Measure = Layout.Measure = function (measure, lo) {
+  var Measure = Layout.Measure = function (measure, defs, lo) {
+    this._defs = defs;
     this._lo = lo;
+
     objExtend(this, measure);
+    // this.barLeft.def = defs.get(this.barLeft);
+    // this.barRight.def = defs.get(this.barRight);
   };
 
   Measure.prototype.calcMinWidth = function () {
@@ -2586,8 +2594,10 @@ return new Parser;
 
   Measure.prototype.flow = function () {
     var measure = this;
-    this.parts = this.parts.map(function (cell) {
+    measure.parts = measure.parts.map(function (cell) {
       cell.measure = measure;
+      cell._x = measure.barLeft.width / 2 + measure._lo.measurePaddingRight;
+
       cell.y2 = measure.system.height;
 
       // cell.el.rect(0, -cell.height, cell.width, cell.height)
@@ -2632,20 +2642,49 @@ return new Parser;
   });
 
   defineProperty(Measure.prototype, 'barLeft', {
+
+    // barLeft at first measure of a system:
+    // |]  -> |
+    // :|  -> |
+    // :|: -> |:
     get: function () {
-      return this._barLeft;
+      var bar = this._bl;
+      if (this.m === 0) {
+        if (bar.value === 'end' || bar.value === 'repeat-end') {
+          bar = new musje.Bar('single');
+        } else if (bar.value === 'repeat-both') {
+          bar = new musje.Bar('repeat-begin');
+        }
+      }
+      bar.def = this._defs.get(bar);
+      return bar;
     },
+
     set: function (bar) {
-      this._barLeft = bar;
+      this._bl = bar;
     }
   });
 
   defineProperty(Measure.prototype, 'barRight', {
+
+    // barRight at last measure of a system:
+    //  |: ->  |
+    // :|: -> :|
     get: function () {
-      return this._barLeft;
+      var bar = this._br, system = this.system;
+      if (system && this.m === system.measures.length - 1) {
+        if (bar.value === 'repeat-begin') {
+          bar = new musje.Bar('single');
+        } else if (bar.value === 'repeat-both') {
+          bar = new musje.Bar('repeat-end');
+        }
+      }
+      bar.def = this._defs.get(bar);
+      return bar;
     },
+
     set: function (bar) {
-      this._barLeft = bar;
+      this._br = bar;
     }
   });
 
@@ -2662,7 +2701,6 @@ return new Parser;
     this._defs = defs;
     this._lo = lo;
     this.data = cell;
-    this.x = lo.measurePaddingRight;
   };
 
   Cell.prototype.flow = function () {
@@ -2709,6 +2747,16 @@ return new Parser;
     set: function (w) {
       this._w = w;
       this._reflow();
+    }
+  });
+
+  defineProperty(Cell.prototype, 'x', {
+    get: function () {
+      return this._x;
+    },
+    set: function (x) {
+      this._x = x;
+      this.el.transform(Snap.matrix().translate(x, this.y2));
     }
   });
 
@@ -2767,6 +2815,18 @@ return new Parser;
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
 
+
+  var BAR_TO_ID = {
+    single: 'bs', double: 'bd', end: 'be',
+    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
+  };
+
+  defineProperty(musje.Bar.prototype, 'defId', {
+    get: function () {
+      return BAR_TO_ID[this.value];
+    }
+  });
+
 }(musje, Snap));
 
 /* global musje */
@@ -2805,11 +2865,6 @@ return new Parser;
 
     this.renderHeader();
     this.renderContent();
-
-    var layout = this.layout;
-    setTimeout(function () {
-      layout.svg.width += 500;
-    }, 2000);
   };
 
   Renderer.prototype.renderHeader = function () {
@@ -2836,12 +2891,12 @@ return new Parser;
   };
 
   Renderer.prototype.renderContent = function () {
-    var lo = this._lo, defs = this.layout.defs;
+    var lo = this._lo;
 
     this.layout.content.systems.forEach(function (system) {
       var measures = system.measures;
-      measures.forEach(function (measure, m) {
-        Renderer.renderBar(measure, m, measures.length, defs);
+      measures.forEach(function (measure) {
+        Renderer.renderBar(measure, lo);
         measure.parts.forEach(function (cell) {
           renderCell(cell, lo);
         });
@@ -2861,11 +2916,6 @@ return new Parser;
 (function (musje, Snap) {
   'use strict';
 
-  var BAR_TO_ID = {
-    single: 'bs', double: 'bd', end: 'be',
-    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
-  };
-
   function renderDots(el, x, radius, measureHeight) {
     var
       cy = measureHeight / 2,
@@ -2875,36 +2925,25 @@ return new Parser;
     el.circle(x, cy + dy, radius);
   }
 
-  function render(bar, measure, defs) {
-    var
-      lo = defs._layout.options,
-      def,
-      el;
+  function render(bar, measure, lo) {
+    var el = measure.el.g().addClass('mus-barline');
 
-    bar.defId = BAR_TO_ID[bar.value];
-    def = defs.get(bar);
-
-    el = measure.el.g().addClass('mus-barline');
-
-    el.use(def.el).transform(Snap.matrix().scale(1, measure.height));
+    el.use(bar.def.el).transform(Snap.matrix().scale(1, measure.height));
 
     switch (bar.value) {
     case 'repeat-begin':
-      renderDots(el, def.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      renderDots(el, bar.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
       break;
     case 'repeat-end':
       renderDots(el, lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
       break;
     case 'repeat-both':
-      renderDots(el, def.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
+      renderDots(el, bar.width - lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
       renderDots(el, lo.barlineDotRadius, lo.barlineDotRadius, measure.height);
       break;
     }
 
-    return {
-      el: el,
-      def: def
-    };
+    return el;
   }
 
   function translate(el, x) {
@@ -2913,39 +2952,25 @@ return new Parser;
 
   // @param m {number} Measure index in measures.
   // @param len {number} Length of measures.
-  musje.Renderer.renderBar = function (measure, m, len, defs) {
+  musje.Renderer.renderBar = function (measure, lo) {
     var
+      m = measure.m,
+      len = measure.system.measures.length,
       bar = measure.barRight,
-      result, el, def;
+      el = render(bar, measure, lo);
 
+    // Last measure in a system align end
     if (m === len - 1) {
-      if (bar.value === 'repeat-begin') {
-        bar = new musje.Bar('single');
-      } else if (bar.value === 'repeat-both') {
-        bar = new musje.Bar('repeat-end');
-      }
-    }
+      translate(el, measure.width - bar.width);
 
-    result = render(bar, measure, defs);
-    el = result.el;
-    def = result.def;
-
-    if (m === len - 1) {
-      translate(el, measure.width - def.width);
+    // Others align middle
     } else {
-      translate(el, measure.width - def.width / 2);
+      translate(el, measure.width - bar.width / 2);
     }
 
+    // First measure in a system, render right bar, align begin
     if (m === 0) {
-      bar = measure.barLeft;
-      if (bar.value === 'repeat-both') {
-        render(new musje.Bar('repeat-begin'), measure, defs);
-      } else if (bar.value === 'repeat-end') {
-        render(new musje.Bar('single'), measure, defs);
-
-      } else {
-        render(measure.barLeft, measure, defs);
-      }
+      render(measure.barLeft, measure, lo);
     }
   };
 

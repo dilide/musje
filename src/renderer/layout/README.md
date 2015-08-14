@@ -20,7 +20,7 @@ layout.flow(score);
 
 ## Flow between top levels
 
-The flow control is simply managed using ES5 getter/setter properties.
+The flow control is managed using ES5 getter/setter properties.
 
 ```
 Properties       Set horizatally affects      Set vertically affects
@@ -64,9 +64,15 @@ layout.content      |      |                                    |
 
 ### Flow within content
 ```
-content.systems
------------------------------------------------------------
-system = systems[i]
+layout.content
+          .el
+          .y
+          .width
+          .height     <---+
+          .systems[]  <---+
+          .flow()  -------+
+                          |
+system = systems[i]   <---+
           .el
           .y
           .width

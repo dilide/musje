@@ -10,9 +10,13 @@
 
   // @constructor Measure
   // @param m {number} Index of measure in the system.
-  var Measure = Layout.Measure = function (measure, lo) {
+  var Measure = Layout.Measure = function (measure, defs, lo) {
+    this._defs = defs;
     this._lo = lo;
+
     objExtend(this, measure);
+    // this.barLeft.def = defs.get(this.barLeft);
+    // this.barRight.def = defs.get(this.barRight);
   };
 
   Measure.prototype.calcMinWidth = function () {
@@ -28,8 +32,10 @@
 
   Measure.prototype.flow = function () {
     var measure = this;
-    this.parts = this.parts.map(function (cell) {
+    measure.parts = measure.parts.map(function (cell) {
       cell.measure = measure;
+      cell._x = measure.barLeft.width / 2 + measure._lo.measurePaddingRight;
+
       cell.y2 = measure.system.height;
 
       // cell.el.rect(0, -cell.height, cell.width, cell.height)
@@ -74,20 +80,49 @@
   });
 
   defineProperty(Measure.prototype, 'barLeft', {
+
+    // barLeft at first measure of a system:
+    // |]  -> |
+    // :|  -> |
+    // :|: -> |:
     get: function () {
-      return this._barLeft;
+      var bar = this._bl;
+      if (this.m === 0) {
+        if (bar.value === 'end' || bar.value === 'repeat-end') {
+          bar = new musje.Bar('single');
+        } else if (bar.value === 'repeat-both') {
+          bar = new musje.Bar('repeat-begin');
+        }
+      }
+      bar.def = this._defs.get(bar);
+      return bar;
     },
+
     set: function (bar) {
-      this._barLeft = bar;
+      this._bl = bar;
     }
   });
 
   defineProperty(Measure.prototype, 'barRight', {
+
+    // barRight at last measure of a system:
+    //  |: ->  |
+    // :|: -> :|
     get: function () {
-      return this._barLeft;
+      var bar = this._br, system = this.system;
+      if (system && this.m === system.measures.length - 1) {
+        if (bar.value === 'repeat-begin') {
+          bar = new musje.Bar('single');
+        } else if (bar.value === 'repeat-both') {
+          bar = new musje.Bar('repeat-end');
+        }
+      }
+      bar.def = this._defs.get(bar);
+      return bar;
     },
+
     set: function (bar) {
-      this._barLeft = bar;
+      this._br = bar;
     }
   });
 

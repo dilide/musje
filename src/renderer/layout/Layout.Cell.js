@@ -9,7 +9,6 @@
     this._defs = defs;
     this._lo = lo;
     this.data = cell;
-    this.x = lo.measurePaddingRight;
   };
 
   Cell.prototype.flow = function () {
@@ -56,6 +55,16 @@
     set: function (w) {
       this._w = w;
       this._reflow();
+    }
+  });
+
+  defineProperty(Cell.prototype, 'x', {
+    get: function () {
+      return this._x;
+    },
+    set: function (x) {
+      this._x = x;
+      this.el.transform(Snap.matrix().translate(x, this.y2));
     }
   });
 

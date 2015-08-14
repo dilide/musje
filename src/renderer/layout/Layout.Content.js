@@ -43,13 +43,13 @@
     }
 
     scoreMeasures.forEach(function (measure) {
-      x += measure.minWidth + lo.measurePaddingRight;
+      var notCellWidth = (measure.barLeft.width + measure.barRight.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
+      x += measure.minWidth + notCellWidth;
 
       // Continue putting this measure in the system.
       if (x < width) {
         measure.system = system;
         system.measures.push(measure);
-        system.minWidth = x;
         x += lo.measurePaddingLeft;
 
       // New system
@@ -60,7 +60,7 @@
         system.height = height;
         measure.system = system;
         system.measures.push(measure);
-        x = measure.minWidth + lo.measurePaddingRight;
+        x = measure.minWidth + notCellWidth;
       }
     });
 

@@ -41,4 +41,16 @@
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
 
+
+  var BAR_TO_ID = {
+    single: 'bs', double: 'bd', end: 'be',
+    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
+  };
+
+  defineProperty(musje.Bar.prototype, 'defId', {
+    get: function () {
+      return BAR_TO_ID[this.value];
+    }
+  });
+
 }(musje, Snap));

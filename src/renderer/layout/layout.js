@@ -16,6 +16,11 @@
   };
 
   Layout.prototype.flow = function (score) {
+    this._init(score);
+    this.content.flow(score.measures);
+  };
+
+  Layout.prototype._init = function (score) {
     score.prepareTimewise();
     score.extractBars();
     score.makeBeams();
@@ -26,15 +31,13 @@
       measures = score.measures;
 
     measures.forEach(function (measure, m) {
-      measure = measures[m] = new Layout.Measure(measure, lo);
+      measure = measures[m] = new Layout.Measure(measure, defs, lo);
       measure.parts.forEach(function (cell, c) {
         cell = measure.parts[c] = new Layout.Cell(cell, defs, lo);
         cell.flow();
       });
       measure.calcMinWidth();
     });
-
-    this.content.flow(score.measures);
   };
 
 }(musje));
