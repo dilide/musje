@@ -10,26 +10,45 @@
 
   // @constructor Measure
   // @param m {number} Index of measure in the system.
-  var Measure = Layout.Measure = function (measure, system, lo) {
-    this._system = system;
+  var Measure = Layout.Measure = function (measure, lo) {
     this._lo = lo;
-    this.el = system.el.g().addClass('mus-measure');
-    this.height = system.height;
     objExtend(this, measure);
   };
 
-  Measure.prototype.layoutCells = function () {
-    var that = this, system = this._system;
+  Measure.prototype.calcMinWidth = function () {
+    var lo = this._lo, minWidth = 0;
+
+    this.parts.forEach(function (cell) {
+      minWidth = Math.max(minWidth, cell.minWidth);
+    });
+
+    this._padding = lo.measurePaddingLeft + lo.measurePaddingRight;
+    this.minWidth = minWidth + this._padding;
+  };
+
+  Measure.prototype.flow = function () {
+    var measure = this;
     this.parts = this.parts.map(function (cell) {
-      cell = new Layout.Cell(cell, that, that._lo);
-      cell.y2 = system.height;
-      cell.width = cell.minWidth;
+      cell.measure = measure;
+      cell.y2 = measure.system.height;
 
       // cell.el.rect(0, -cell.height, cell.width, cell.height)
       //   .addClass('bbox');
+
       return cell;
     });
   };
+
+  defineProperty(Measure.prototype, 'system', {
+    get: function () {
+      return this._s;
+    },
+    set: function (system) {
+      this._s = system;
+      this.el = system.el.g().addClass('mus-measure');
+      this.height = system.height;
+    }
+  });
 
   defineProperty(Measure.prototype, 'width', {
     get: function () {
@@ -37,6 +56,10 @@
     },
     set: function (w) {
       this._w = w;
+      var padding = this._padding;
+      this.parts.forEach(function (cell) {
+        cell.width = w - padding;
+      });
     }
   });
 

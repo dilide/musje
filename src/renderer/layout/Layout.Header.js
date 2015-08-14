@@ -5,8 +5,7 @@
 
   var defineProperty = Object.defineProperty;
 
-  var Header = Layout.Header = function (layout, lo) {
-    this._lo = lo;
+  var Header = Layout.Header = function (layout) {
     this._layout = layout;
     this.el = layout.body.el.g().addClass('mus-header');
     this.width = layout.body.width;
@@ -26,8 +25,9 @@
       return this._h;
     },
     set: function (h) {
+      var layout = this._layout;
+      layout.content.y = h ? h + layout.options.headerSep : 0;
       this._h = h;
-      this._layout.content.y = h ? h + this._lo.headerSep : 0;
     }
   });
 

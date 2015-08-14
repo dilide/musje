@@ -1,6 +1,8 @@
 # Layout
 
-## API Usage
+## API
+
+Usage
 
 ```js
 var layout = musje.Layout(svg, layoutOptions);
@@ -10,10 +12,10 @@ layout.flow(score);
 ## Top-level layout hierachy.
 
 ```
-- Svg
-  - Body
-    - Header
-    - Content - Systems
+- Svg(layout)
+  - Body(layout)
+    - Header(layout)
+    - Content(layout): systems[]
 ```
 
 ## Flow between top levels
@@ -42,56 +44,60 @@ layout.content      |      |                                    |
           .width    |                                   content.reflow() &
                     |                                    renderContent()
           .height   +- body.height  <---------------------------+
+          .systems[]
+          .flow()
 ```
 
 
 ## Content layout hieracy
 
 ```
-- Content
-  - Systems
-    - System
-      - Measures
-        - Measure
-          - barLeft
-          - barRight
-          - Parts
-            - Cell
-              - musicData
+- Content: systems[]
+  - System(content, lo): measures[]
+    - Measure(measure, system, lo)
+      - barLeft
+      - barRight
+      - parts
+        - Cell(cell, measure, lo): data[]
+          - musicData
 ```
 
 ### Flow within content
 ```
-systems = content.systems
-
+content.systems
+-----------------------------------------------------------
 system = systems[i]
           .el
           .y
           .width
           .height
+          .measures[]
+          .flow()
 
-measures = system[i]
-
-measure = measures[i]
+------------------------------------------------------------
+measure =
+measures[i]
           .el
           .x
           .width
           .height
 
-bar = measure.barLeft
-    | measure.barRight
+bar =
+measure.barLeft| measure.barRight
           .el
           .y
           .width
           .height
-cell = measure.parts[i]
+cell =
+measure.parts[i]
           .el
           .x
           .y
           .width
           .height
 
-musicData = cell[i]
+musicData =
+cell[i]
           .el
           .x
           .y

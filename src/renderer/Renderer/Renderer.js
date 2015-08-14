@@ -4,15 +4,19 @@
   'use strict';
 
   function renderCell (cell, lo) {
-    cell.forEach(function (data, i) {
+    cell.data.forEach(function (data, i) {
       switch (data.__name__) {
       case 'rest':  // fall through
       case 'note':
-        data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
+        data.el = cell.el.use(data.def.pitchDef.el).attr({
+          x: data.x, y: data.y
+        });
         Renderer.renderDuration(data, i, cell, lo);
         break;
       case 'time':
-        data.el = cell.el.use(data.def.el).attr(data.pos);
+        data.el = cell.el.use(data.def.el).attr({
+          x: data.x, y: data.y
+        });
         break;
       }
     });
@@ -30,6 +34,11 @@
 
     this.renderHeader();
     this.renderContent();
+
+    var layout = this.layout;
+    setTimeout(function () {
+      layout.svg.width += 500;
+    }, 2000);
   };
 
   Renderer.prototype.renderHeader = function () {

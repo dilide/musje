@@ -5,8 +5,11 @@
 
   var defineProperty = Object.defineProperty;
 
-  var Svg = Layout.Svg = function (svg, lo) {
-    this.el = Snap(svg).attr({
+  var Svg = Layout.Svg = function (layout) {
+    this._layout = layout;
+    var lo = layout.options;
+
+    this.el = Snap(layout.svg).attr({
         fontFamily: lo.fontFamily
       }).addClass('musje');
     this.el.clear();
@@ -20,6 +23,8 @@
     set: function (w) {
       this._w = w;
       this.el.attr('width', w);
+      var body = this._layout.body;
+      if (body) { body.width = w; }
     }
   });
 

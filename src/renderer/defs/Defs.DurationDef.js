@@ -1,102 +1,94 @@
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Defs, Snap) {
   'use strict';
-
-  var objExtend = musje.objExtend;
 
   // @constructor DurationDef
   // SVG Definition for duration.
-  var DurationDef = musje.Defs.DurationDef = function (svg, id, duration, lo) {
-    this._svg = svg;
-    this._lo = lo;
+  var DurationDef = Defs.DurationDef = function (id, duration, layout) {
+    this._id = id;
+    this._layout = layout;
 
     // only make def el for:
     // id = d10, d11, d12, d20, d21, d20, d41, d40
     switch (duration.type) {
     case 1:   // whole note
-      return this._makeType1(id, duration.dot);
+      this._makeEl();
+      this._makeType1(id, duration.dot);
+      break;
     case 2:   // half note
-      return this._makeType2(id, duration.dot);
+      this._makeEl();
+      this._makeType2(id, duration.dot);
+      break;
     default:  // other note types type quarter note def
-      return this._makeType4(id, duration.dot);
+      if (duration.dot === 0) {
+        this.width = 0 ;
+      } else {
+        this._makeEl();
+        this._makeType4(id, duration.dot);
+      }
     }
   };
 
-  DurationDef.prototype._addDot = function (el, x, dot, type) {
-    var lo = this._lo;
+  DurationDef.prototype._makeEl = function () {
+    this.el = this._layout.svg.el.g().attr('id', this._id).toDefs();
+  };
+
+  // Add dot for type 1 (whole) or type 2 (half) note.
+  DurationDef.prototype._addDot = function (x, dot, type) {
+    var lo = this._layout.options;
 
     if (dot > 0) {
       x += lo.dotOffset * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
+      this.el.circle(x, 0, lo.dotRadius);
     }
     if (dot > 1) {
       x += lo.dotSep * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
+      this.el.circle(x, 0, lo.dotRadius);
     }
     return x + lo.typebarExt;
   };
 
   DurationDef.prototype._makeType1 = function (id, dot) {
-    var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      width;
+    var lo = this._layout.options;
 
-    el.path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
-      off: lo.typebarOffset,
-      w: lo.typebarLength,
-      sep: lo.typebarSep
-    })).attr({
-      stroke: 'black',
-      strokeWidth: lo.typeStrokeWidth,
-      fill: 'none'
-    });
+    this.el
+      .path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
+        off: lo.typebarOffset,
+        w: lo.typebarLength,
+        sep: lo.typebarSep
+      }))
+      .attr({
+        fill: 'none',
+        stroke: 'black',
+        strokeWidth: lo.typeStrokeWidth
+      });
 
-    width = this._addDot(el, lo.typebarOffset + 3 * lo.typebarLength +
-                             2 * lo.typebarSep, dot, 2);
-
-    return objExtend(this, {
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    });
+    this.width = this._addDot(lo.typebarOffset + 3 * lo.typebarLength +
+                              2 * lo.typebarSep, dot, 2);
   };
 
   DurationDef.prototype._makeType2 = function (id, dot) {
     var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      x = lo.typebarOffset + lo.typebarLength,
-      width;
+      lo = this._layout.options,
+      x = lo.typebarOffset + lo.typebarLength;
 
-    el.line(lo.typebarOffset, 0, x, 0)
+    this.el.line(lo.typebarOffset, 0, x, 0)
       .attr('stroke-width', lo.typeStrokeWidth);
 
-    width = this._addDot(el, x, dot, 2);
-
-    return objExtend({
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    });
+    this.width = this._addDot(x, dot, 2);
   };
 
   DurationDef.prototype._makeType4 = function (id, dot) {
-    if (dot === 0) { return objExtend(this, { width: 0 }); }
-
     var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
+      lo = this._layout.options,
       x = lo.t4DotOffset;
 
-    el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
+    this.el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
     if (dot > 1) {
-      el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
+      this.el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
     }
-    return objExtend(this, { el: el, width: x + lo.t4DotExt });
+    this.width = x + lo.t4DotExt;
   };
 
-}(musje, Snap));
+}(musje.Defs, Snap));

@@ -5,22 +5,22 @@
 
   function findEndBeamedNote(cell, begin, beamLevel) {
     var i = begin + 1,
-      next = cell.at(i);
+      next = cell.data[i];
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
-      next = cell.at(i);
+      next = cell.data[i];
     }
     return next;
   }
 
-  function endX(note) {
+  function x2(note) {
     var def = note.def;
-    return note.pos.x + def.pitchDef.width +
+    return note.x + def.pitchDef.width +
            def.durationDef.width * def.pitchDef.matrix.split().scalex;
   }
 
   function renderUnderbar(note, x, y, cell, lo) {
-    cell.el.line(x, y, endX(note), y)
+    cell.el.line(x, y, x2(note), y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
@@ -29,8 +29,8 @@
     var pitchDef = note.def.pitchDef;
 
     var underbar = note.duration.underbar;
-    var x = note.pos.x;
-    var y = note.pos.y;
+    var x = note.x;
+    var y = note.y;
 
     // Whole and half notes
     if (note.duration.type < 4) {

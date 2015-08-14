@@ -642,9 +642,9 @@ if (typeof exports !== 'undefined') {
    * Usage:
    * var score = musje.score(JSONString or object);
    */
-  musje.score = function (src) {
-    if (typeof src === 'string') { src = JSON.parse(src); }
-    return new musje.Score(src);
+  musje.score = function (obj) {
+    if (typeof obj === 'string') { obj = JSON.parse(obj); }
+    return new musje.Score(obj);
   };
 
 }(musje));
@@ -1635,46 +1635,52 @@ return new Parser;
 
   // @constructor Defs
   // SVG definitions
-  var Defs = musje.Defs = function (svg, layoutOptions) {
-    this._svg = svg;
-    this._lo = layoutOptions;
+  var Defs = musje.Defs = function (layout) {
+    this._layout = layout;
   };
 
   Defs.prototype.get = function (musicData) {
     var id = musicData.defId;
-    return this[id] || (this[id] = this._makeDef(id, musicData));
+    return this[id] || (this[id] = this._make(id, musicData));
   };
 
-  Defs.prototype._makeDef = function (id, musicData) {
+  Defs.prototype.getAccidental = function (accidental) {
+    var id = 'a' + accidental.replace(/#/g, 's');
+    return this[id] ||
+        (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
+  };
+
+  Defs.prototype._make = function (id, musicData) {
     var
       n = musicData.__name__,
-      maker = '_make' + n.charAt(0).toUpperCase() + n.substr(1) + 'Def';
-    return this[maker](id, musicData);
+      maker = '_make' + n.charAt(0).toUpperCase() + n.substr(1);
+
+    return this[maker](id, musicData) || { width: 0, height: 0 };
   };
 
-  Defs.prototype._makeBarDef = function (id, bar) {
-    return new Defs.BarDef(this._svg, id, bar, this._lo);
+  Defs.prototype._makeBar = function (id, bar) {
+    return new Defs.BarDef(id, bar, this._layout);
   };
 
-  Defs.prototype._makeTimeDef = function (id, time) {
-    return new Defs.TimeDef(this._svg, id, time, this._lo);
+  Defs.prototype._makeTime = function (id, time) {
+    return new Defs.TimeDef(id, time, this._layout);
   };
 
-  Defs.prototype._makeDurationDef = function (id, duration) {
-    return new Defs.DurationDef(this._svg, id, duration, this._lo);
+  Defs.prototype._makeDuration = function (id, duration) {
+    return new Defs.DurationDef(id, duration, this._layout);
   };
 
-  Defs.prototype._getPitchDef = function (id, pitch, underbar) {
+  Defs.prototype._getPitch = function (id, pitch, underbar) {
     return this[id] ||
         (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
   };
 
-  Defs.prototype._makeNoteDef = function (id, note) {
+  Defs.prototype._makeNote = function (id, note) {
     var
       pitch = note.pitch,
       underbar = note.duration.underbar,
       pitchId = pitch.defId + underbar,
-      pitchDef = this._getPitchDef(pitchId, pitch, underbar),
+      pitchDef = this._getPitch(pitchId, pitch, underbar),
       durationDef = this.get(note.duration);
 
     return {
@@ -1689,10 +1695,10 @@ return new Parser;
 
   // Rest does not have its only RestDef class.
   // It is just a trick to use a note with pitch.step = 0.
-  Defs.prototype._makeRestDef = function(id, rest) {
+  Defs.prototype._makeRest = function(id, rest) {
     var
       duration = rest.duration,
-      pitchDef = this._getPitchDef(id, { step: 0, octave: 0 }, duration.underbar),
+      pitchDef = this._getPitch(id, { step: 0, octave: 0 }, duration.underbar),
       durationDef = this.get(duration);
 
     return {
@@ -1712,12 +1718,13 @@ return new Parser;
 
   // @constructor BarDef
   // SVG definition for barline.
-  var BarDef = Defs.BarDef = function (svg, id, bar, lo) {
-    this._lo = lo;
-    this.el = svg.g().attr('id', id).toDefs();
+  var BarDef = Defs.BarDef = function (id, bar, layout) {
     var
+      lo = layout.options,
       x = 0,
       lineWidth;
+
+    this.el = layout.svg.el.g().attr('id', id).toDefs();
 
     switch (bar.value) {
     case 'single':
@@ -1787,33 +1794,32 @@ return new Parser;
 
   // @constructor TimeDef
   // SVG definition for Time signature.
-  Defs.TimeDef = function (svg, id, time, lo) {
+  Defs.TimeDef = function (id, time, layout) {
     var
+      lo = layout.options,
       timeFontSize = lo.timeFontSize,
       lineExtend = timeFontSize * 0.1,
-      el = svg.g(
-          svg.text(0, -1 * timeFontSize, time.beats),
-          svg.text(0, 0, time.beatType)   // baseline y = 0
-        )
+      el = this.el = layout.svg.el.g()
         .attr({
           id: id,
           fontSize: timeFontSize,
           fontWeight: lo.timeFontWeight,
           textAnchor: 'middle'
         }),
-      bb = el.getBBox(),
-      lineY = -0.85 * timeFontSize;
+      lineY = -0.85 * timeFontSize,
+      bb;
 
+    el.text(0, -1 * timeFontSize, time.beats);
+    el.text(0, 0, time.beatType);   // baseline y = 0
+    bb = el.getBBox();
     el.line(bb.x - lineExtend, lineY, bb.x2 + lineExtend, lineY);
     el.transform(Snap.matrix().scale(1, 0.8).translate(lineExtend - bb.x, 0));
+
     bb = el.getBBox();
     el.toDefs();
 
-    return {
-      el: el,
-      width: bb.width,
-      height: -bb.y
-    };
+    this.width = bb.width;
+    this.height = -bb.y;
   };
 
 }(musje.Defs, Snap));
@@ -1827,10 +1833,10 @@ return new Parser;
 
   // @constructor AccidentalDef
   // SVG definition for accidental
-  Defs.AccidentalDef = function (id, accidental, defs) {
+  Defs.AccidentalDef = function (id, accidental, layout) {
     var
-      lo = defs._lo,
-      el = this.el = defs._svg.g().attr('id', id),
+      lo = layout.options,
+      el = this.el = layout.svg.el.g().attr('id', id),
       accKey = accidental.replace(/bb/, 'b'), // double flat to be synthesized
       pathData = svgPaths[accKey],
       ratio = svgPaths.ACCIDENTAL_RATIOS[accKey],
@@ -1844,15 +1850,16 @@ return new Parser;
       .translate(-bb.x, shift - bb.y2)
     );
 
-    // Double flat
+    // Combine two flat to be double flat.
     if (accidental === 'bb') {
       el.use(path).attr('x', lo.accidentalFontSize * 0.24);
       el.transform('scale(0.9,1)');
     }
 
     bb = el.getBBox();
-    el.toDefs();
     this.width = bb.width * 1.2;
+
+    el.toDefs();
   };
 
 }(musje.Defs, Snap));
@@ -1884,15 +1891,14 @@ return new Parser;
   // accidental step octave underbar
   var PitchDef = Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
-      svg = this._svg = defs._svg,
-      el = this.el = svg.g().attr('id', id),
+      layout = this._layout = defs._layout,
+      el = this.el = layout.svg.el.g().attr('id', id),
       accidental = pitch.accidental,
       matrix,
       sbbox,
       pbbox;
 
     this._defs = defs;
-    this._lo = defs._lo;
     this._addAccidental(accidental);
     this._addStep(pitch.step);
     this._addOctave(pitch.octave);
@@ -1918,24 +1924,21 @@ return new Parser;
 
   PitchDef.prototype._addAccidental = function (accidental) {
     if (!accidental) {
-      this._accidentalEndX = 0;
+      this._accidentalX2 = 0;
       return;
     }
 
     var
-      id = 'a' + accidental.replace(/#/g, 's'),
-      defs = this._defs,
-      accDef = defs[id] || (defs[id] =
-                    new Defs.AccidentalDef(id, accidental, defs));
+      accDef = this._defs.getAccidental(accidental);
 
-    this.el.use(accDef.el).attr('y', -this._lo.accidentalShift);
-    this._accidentalEndX = accDef.width;
+    this.el.use(accDef.el).attr('y', -this._layout.options.accidentalShift);
+    this._accidentalX2 = accDef.width;
   };
 
   PitchDef.prototype._addStep = function (step) {
     this._sbbox = this.el
-      .text(this._accidentalEndX, 0, '' + step)
-      .attr('font-size', this._lo.fontSize)
+      .text(this._accidentalX2, 0, '' + step)
+      .attr('font-size', this._layout.options.fontSize)
       .getBBox();
   };
 
@@ -1943,7 +1946,7 @@ return new Parser;
     if (!octave) { return; }
 
     var
-      lo = this._lo,
+      lo = this._layout.options,
       octaveRadius = lo.octaveRadius,
       octaveOffset = lo.octaveOffset,
       octaveSep = lo.octaveSep,
@@ -1966,7 +1969,7 @@ return new Parser;
   // scale it to be more square.
   PitchDef.prototype._getTransformMatrix = function (hasAccidental, octave, underbar) {
     var
-      lo = this._lo,
+      lo = this._layout.options,
       pbbox = this.el.getBBox(),
       absOctave = Math.abs(octave);
 
@@ -1987,179 +1990,136 @@ return new Parser;
 
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (Defs, Snap) {
   'use strict';
-
-  var objExtend = musje.objExtend;
 
   // @constructor DurationDef
   // SVG Definition for duration.
-  var DurationDef = musje.Defs.DurationDef = function (svg, id, duration, lo) {
-    this._svg = svg;
-    this._lo = lo;
+  var DurationDef = Defs.DurationDef = function (id, duration, layout) {
+    this._id = id;
+    this._layout = layout;
 
     // only make def el for:
     // id = d10, d11, d12, d20, d21, d20, d41, d40
     switch (duration.type) {
     case 1:   // whole note
-      return this._makeType1(id, duration.dot);
+      this._makeEl();
+      this._makeType1(id, duration.dot);
+      break;
     case 2:   // half note
-      return this._makeType2(id, duration.dot);
+      this._makeEl();
+      this._makeType2(id, duration.dot);
+      break;
     default:  // other note types type quarter note def
-      return this._makeType4(id, duration.dot);
+      if (duration.dot === 0) {
+        this.width = 0 ;
+      } else {
+        this._makeEl();
+        this._makeType4(id, duration.dot);
+      }
     }
   };
 
-  DurationDef.prototype._addDot = function (el, x, dot, type) {
-    var lo = this._lo;
+  DurationDef.prototype._makeEl = function () {
+    this.el = this._layout.svg.el.g().attr('id', this._id).toDefs();
+  };
+
+  // Add dot for type 1 (whole) or type 2 (half) note.
+  DurationDef.prototype._addDot = function (x, dot, type) {
+    var lo = this._layout.options;
 
     if (dot > 0) {
       x += lo.dotOffset * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
+      this.el.circle(x, 0, lo.dotRadius);
     }
     if (dot > 1) {
       x += lo.dotSep * (type === 1 ? 1.2 : 1);
-      el.circle(x, 0, lo.dotRadius);
+      this.el.circle(x, 0, lo.dotRadius);
     }
     return x + lo.typebarExt;
   };
 
   DurationDef.prototype._makeType1 = function (id, dot) {
-    var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      width;
+    var lo = this._layout.options;
 
-    el.path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
-      off: lo.typebarOffset,
-      w: lo.typebarLength,
-      sep: lo.typebarSep
-    })).attr({
-      stroke: 'black',
-      strokeWidth: lo.typeStrokeWidth,
-      fill: 'none'
-    });
+    this.el
+      .path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
+        off: lo.typebarOffset,
+        w: lo.typebarLength,
+        sep: lo.typebarSep
+      }))
+      .attr({
+        fill: 'none',
+        stroke: 'black',
+        strokeWidth: lo.typeStrokeWidth
+      });
 
-    width = this._addDot(el, lo.typebarOffset + 3 * lo.typebarLength +
-                             2 * lo.typebarSep, dot, 2);
-
-    return objExtend(this, {
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    });
+    this.width = this._addDot(lo.typebarOffset + 3 * lo.typebarLength +
+                              2 * lo.typebarSep, dot, 2);
   };
 
   DurationDef.prototype._makeType2 = function (id, dot) {
     var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
-      x = lo.typebarOffset + lo.typebarLength,
-      width;
+      lo = this._layout.options,
+      x = lo.typebarOffset + lo.typebarLength;
 
-    el.line(lo.typebarOffset, 0, x, 0)
+    this.el.line(lo.typebarOffset, 0, x, 0)
       .attr('stroke-width', lo.typeStrokeWidth);
 
-    width = this._addDot(el, x, dot, 2);
-
-    return objExtend({
-      el: el,
-      width: width,
-      minWidth: width,
-      maxWidth: width
-    });
+    this.width = this._addDot(x, dot, 2);
   };
 
   DurationDef.prototype._makeType4 = function (id, dot) {
-    if (dot === 0) { return objExtend(this, { width: 0 }); }
-
     var
-      lo = this._lo,
-      el = this._svg.g().attr('id', id).toDefs(),
+      lo = this._layout.options,
       x = lo.t4DotOffset;
 
-    el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
+    this.el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
     if (dot > 1) {
-      el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
+      this.el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
     }
-    return objExtend(this, { el: el, width: x + lo.t4DotExt });
+    this.width = x + lo.t4DotExt;
   };
 
-}(musje, Snap));
+}(musje.Defs, Snap));
 
 /* global musje */
 
 (function (musje) {
   'use strict';
 
-  var Layout = musje.Layout = function (svg, lo) {
-    this._lo = lo;
+  var Layout = musje.Layout = function (svg, options) {
+    this.options = options;
+    this.svg = svg;
 
-    this.svg = new Layout.Svg(svg, lo);
-    this.body = new Layout.Body(this.svg, lo);
-    this.header = new Layout.Header(this, lo);
-    this.content = new Layout.Content(this.body, this.header, lo);
+    this.svg = new Layout.Svg(this);
+    this.body = new Layout.Body(this);
+    this.header = new Layout.Header(this);
+    this.content = new Layout.Content(this);
 
-    this.defs = new musje.Defs(this.svg.el, this._lo);
+    this.defs = new musje.Defs(this);
   };
 
   Layout.prototype.flow = function (score) {
-    this._score = score;
-
     score.prepareTimewise();
     score.extractBars();
     score.makeBeams();
-    this.setMusicDataDef();
-    this.setMinDimensionOfCells();
-    this.setMinWidthOfMeasures();
+
+    var
+      defs = this.defs,
+      lo = this.options,
+      measures = score.measures;
+
+    measures.forEach(function (measure, m) {
+      measure = measures[m] = new Layout.Measure(measure, lo);
+      measure.parts.forEach(function (cell, c) {
+        cell = measure.parts[c] = new Layout.Cell(cell, defs, lo);
+        cell.flow();
+      });
+      measure.calcMinWidth();
+    });
 
     this.content.flow(score.measures);
-  };
-
-  Layout.prototype.setMusicDataDef = function () {
-    var defs = this.defs;
-
-    this._score.walkMusicData(function (data) {
-      switch (data.__name__) {
-      case 'rest':  // fall through
-      case 'note':
-        data.def = defs.get(data);
-        break;
-      case 'time':
-        data.def = defs.get(data);
-        break;
-      default:
-        data.def = { width: 0, height: 0 };
-      }
-    });
-  };
-
-  Layout.prototype.setMinDimensionOfCells = function () {
-    var lo = this._lo;
-    this._score.walkCells(function (cell) {
-      var x = 0, minHeight;
-      cell.forEach(function (musicData) {
-        x += musicData.def.width + lo.musicDataSep;
-        minHeight = Math.min(minHeight, musicData.def.height);
-      });
-      cell.minWidth = x;
-      cell.minHeight = minHeight;
-    });
-  };
-
-  Layout.prototype.setMinWidthOfMeasures = function () {
-    var
-      lo = this._lo,
-      padding = lo.measurePaddingLeft + lo.measurePaddingRight;
-
-    this._score.measures.forEach(function (measure) {
-      var minWidth = 0;
-      measure.parts.forEach(function (cell) {
-        minWidth = Math.max(minWidth, cell.minWidth);
-      });
-      measure.minWidth = minWidth + padding;
-    });
   };
 
 }(musje));
@@ -2281,8 +2241,11 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  var Svg = Layout.Svg = function (svg, lo) {
-    this.el = Snap(svg).attr({
+  var Svg = Layout.Svg = function (layout) {
+    this._layout = layout;
+    var lo = layout.options;
+
+    this.el = Snap(layout.svg).attr({
         fontFamily: lo.fontFamily
       }).addClass('musje');
     this.el.clear();
@@ -2296,6 +2259,8 @@ return new Parser;
     set: function (w) {
       this._w = w;
       this.el.attr('width', w);
+      var body = this._layout.body;
+      if (body) { body.width = w; }
     }
   });
 
@@ -2318,9 +2283,12 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  var Body = Layout.Body = function (svg, lo) {
-    this._svg = svg;
-    this._lo = lo;
+  var Body = Layout.Body = function (layout) {
+    this._layout = layout;
+    var
+      svg = layout.svg,
+      lo = layout.options;
+
     this.el = svg.el.g()
         .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
         .addClass('mus-body');
@@ -2333,6 +2301,9 @@ return new Parser;
     },
     set: function (w) {
       this._w = w;
+      var layout = this._layout;
+      if (layout.header) { layout.header.width = w; }
+      if (layout.content) { layout.content.width = w; }
     }
   });
 
@@ -2341,8 +2312,8 @@ return new Parser;
       return this._h;
     },
     set: function (h) {
-      var lo = this._lo;
-      this._svg.height = h + lo.marginTop + lo.marginBottom;
+      var layout = this._layout, lo = layout.options;
+      layout.svg.height = h + lo.marginTop + lo.marginBottom;
     }
   });
 
@@ -2355,8 +2326,7 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  var Header = Layout.Header = function (layout, lo) {
-    this._lo = lo;
+  var Header = Layout.Header = function (layout) {
     this._layout = layout;
     this.el = layout.body.el.g().addClass('mus-header');
     this.width = layout.body.width;
@@ -2376,8 +2346,9 @@ return new Parser;
       return this._h;
     },
     set: function (h) {
+      var layout = this._layout;
+      layout.content.y = h ? h + layout.options.headerSep : 0;
       this._h = h;
-      this._layout.content.y = h ? h + this._lo.headerSep : 0;
     }
   });
 
@@ -2390,28 +2361,70 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  var Content = Layout.Content = function (body, header, lo) {
-    this._body = body;
-    this._header = header;
-    this._lo = lo;
-    this.el = body.el.g().addClass('mus-content');
-    this.width = body.width;
-    this.systems = new Content.Systems(this, lo);
+  var Content = Layout.Content = function (layout) {
+    this._layout = layout;
+    this.el = layout.body.el.g().addClass('mus-content');
+    this.width = layout.body.width;
+
+    var system = new Layout.System(this, layout.options);
+    system.y = 0;
+    system.height = 25;
+    this.systems = [system];
   };
 
   Content.prototype._resizeBody = function () {
-    var lo = this._lo, headerHeight = this._header.height;
-    this._body.height = this.height +
-              (headerHeight ? headerHeight + lo.headerSep : 0);
+    var
+      layout = this._layout,
+      headerHeight = layout.header.height;
+
+    layout.body.height = this.height +
+            (headerHeight ? headerHeight + layout.options.headerSep : 0);
   };
 
+  // Divide measures in timewise score into the systems.
+  // Assign y, height, minWdith, and measures to each system.
   Content.prototype.flow = function (scoreMeasures) {
-    this._scoreMeasures = scoreMeasures;
-    this.reflow();
-  };
+    var
+      content = this,
+      lo = this._layout.options,
+      systems = this.systems,
+      system = systems[0],
+      width = content.width,
+      height = 25,
+      s = 0,
+      x = 0;
 
-  Content.prototype.reflow = function () {
-    this.systems.flow(this._scoreMeasures);
+    function y() {
+      return s * (height + lo.systemSep);
+    }
+
+    scoreMeasures.forEach(function (measure) {
+      x += measure.minWidth + lo.measurePaddingRight;
+
+      // Continue putting this measure in the system.
+      if (x < width) {
+        measure.system = system;
+        system.measures.push(measure);
+        system.minWidth = x;
+        x += lo.measurePaddingLeft;
+
+      // New system
+      } else {
+        s++;
+        system = systems[s] = new Layout.System(content, lo);
+        system.y = y();
+        system.height = height;
+        measure.system = system;
+        system.measures.push(measure);
+        x = measure.minWidth + lo.measurePaddingRight;
+      }
+    });
+
+    content.height = y() + height;
+
+    systems.forEach(function (system) {
+      system.flow();
+    });
   };
 
   defineProperty(Content.prototype, 'y', {
@@ -2446,74 +2459,6 @@ return new Parser;
 
 }(musje.Layout, Snap));
 
-/* global musje */
-
-(function (Layout) {
-  'use strict';
-
-  var Systems = Layout.Content.Systems = function (content, lo) {
-    this._content = content;
-    this._lo = lo;
-
-    var system = new Layout.System(content, lo);
-    system.y = 0;
-    system.height = 25;
-    this._value = [system];
-  };
-
-  // Divide measures in timewise score into the systems.
-  // Assign y, height, minWdith, and measures to each system.
-  Systems.prototype.flow = function (scoreMeasures) {
-    var
-      content = this._content,
-      lo = this._lo,
-      result = this._value,
-      system = result[0],
-      width = content.width,
-      height = 25,
-      s = 0,
-      x = 0;
-
-    function y() {
-      return s * (height + lo.systemSep);
-    }
-
-    scoreMeasures.forEach(function (measure) {
-      x += measure.minWidth + lo.measurePaddingRight;
-
-      // Continue putting this measure in the system.
-      if (x < width) {
-        measure = new Layout.Measure(measure, system, lo);
-        system.measures.push(measure);
-        system.minWidth = x;
-        x += lo.measurePaddingLeft;
-
-      // New system
-      } else {
-        s++;
-        system = result[s] = new Layout.System(content, lo);
-        system.y = y();
-        system.height = height;
-        measure = new Layout.Measure(measure, system, lo);
-        system.measures.push(measure);
-        x = measure.minWidth + lo.measurePaddingRight;
-      }
-    });
-
-    content.height = y() + height;
-
-    this._value.forEach(function (system) {
-      system.measures.flow();
-    });
-
-  };
-
-  Systems.prototype.forEach = function (callback) {
-    this._value.forEach(callback);
-  };
-
-}(musje.Layout));
-
 /* global musje, Snap */
 
 (function (Layout, Snap) {
@@ -2521,11 +2466,64 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
+  function getPairs(measures) {
+    return measures.map(function (measure) {
+      return {
+        width: measure.minWidth,
+        measure: measure
+      };
+    }).sort(function (a, b) {
+      return b.width - a.width;   // descending sort
+    });
+  }
+
   var System = Layout.System = function (content, lo) {
     this._lo = lo;
     this.el = content.el.g().addClass('mus-system');
     this.width = content.width;
-    this.measures = new Layout.Measures(this);
+    this.measures = [];
+  };
+
+  System.prototype.flow = function () {
+    var x = 0;
+    this._tuneMeasuresWidths(this.measures, this.width);
+    this.measures.forEach(function (measure) {
+      measure.flow();
+      measure.x = x;
+      x += measure.width;
+    });
+  };
+
+  System.prototype._tuneMeasuresWidths = function () {
+    var
+      pairs = getPairs(this.measures),
+      length = pairs.length,
+      widthLeft = this.width,
+      itemLeft = length,
+      i = 0,    // i + itemLeft === length
+      width;
+
+    while (i < length) {
+      if (widthLeft >= pairs[i].width * itemLeft) {
+        width = widthLeft / itemLeft;
+        do {
+          pairs[i].measure.width = width;
+          i++;
+        } while (i < length);
+        break;
+      } else {
+        width = pairs[i].width;
+        pairs[i].measure.width = width;
+        widthLeft -= width;
+        i++;
+        itemLeft--;
+      }
+    }
+
+    // measures.forEach(function (measure) {
+    //   measure.el.rect(0, 0, measure.width, measure.height)
+    //         .attr({ stroke: 'green', fill: 'none' });
+    // });
   };
 
   defineProperty(System.prototype, 'y', {
@@ -2558,92 +2556,6 @@ return new Parser;
 
 }(musje.Layout, Snap));
 
-/* global musje */
-
-(function (Layout) {
-  'use strict';
-
-  var Measures = Layout.Measures = function (system) {
-    this._system = system;
-    this._value = [];
-  };
-
-  Measures.prototype.flow = function () {
-    var x = 0;
-    this._tuneWidths();
-    this.forEach(function (measure) {
-      measure.layoutCells();
-      measure.parts.forEach(function (cell) {
-        cell.layoutMusicData();
-      });
-      measure.x = x;
-      x += measure.width;
-    });
-  };
-
-  Measures.prototype.forEach = function (cb) {
-    this._value.forEach(cb);
-  };
-
-  Measures.prototype.push = function (cb) {
-    this._value.push(cb);
-  };
-
-  Measures.prototype.map = function (cb) {
-    return this._value.map(cb);
-  };
-
-  Object.defineProperty(Measures.prototype, 'length', {
-    get: function () { return this._value.length; }
-  });
-
-  Measures.prototype._getPairs = function () {
-    return this.map(function (measure) {
-      return {
-        width: measure.minWidth,
-        measure: measure
-      };
-    }).sort(function (a, b) {
-      return b.width - a.width;   // descending sort
-    });
-  };
-
-  Measures.prototype._tuneWidths = function () {
-    var
-      systemWidth = this._system.width,
-      pairs = this._getPairs(),
-      length = pairs.length,
-      widthLeft = systemWidth,
-      itemLeft = length,
-      i = 0,    // i + itemLeft === length
-      width;
-
-    while (i < length) {
-      if (widthLeft >= pairs[i].width * itemLeft) {
-        width = widthLeft / itemLeft;
-        do {
-          pairs[i].measure.width = width;
-          i++;
-        } while (i < length);
-        break;
-      } else {
-        width = pairs[i].width;
-        pairs[i].measure.width = width;
-        widthLeft -= width;
-        i++;
-        itemLeft--;
-      }
-    }
-
-    // this.measures.forEach(function (measure) {
-    //   measure.el.rect(0, 0, measure.width, measure.height)
-    //         .attr({ stroke: 'green', fill: 'none' });
-    // });
-
-  };
-
-}(musje.Layout));
-
 /* global musje, Snap */
 
 (function (musje, Snap) {
@@ -2656,26 +2568,45 @@ return new Parser;
 
   // @constructor Measure
   // @param m {number} Index of measure in the system.
-  var Measure = Layout.Measure = function (measure, system, lo) {
-    this._system = system;
+  var Measure = Layout.Measure = function (measure, lo) {
     this._lo = lo;
-    this.el = system.el.g().addClass('mus-measure');
-    this.height = system.height;
     objExtend(this, measure);
   };
 
-  Measure.prototype.layoutCells = function () {
-    var that = this, system = this._system;
+  Measure.prototype.calcMinWidth = function () {
+    var lo = this._lo, minWidth = 0;
+
+    this.parts.forEach(function (cell) {
+      minWidth = Math.max(minWidth, cell.minWidth);
+    });
+
+    this._padding = lo.measurePaddingLeft + lo.measurePaddingRight;
+    this.minWidth = minWidth + this._padding;
+  };
+
+  Measure.prototype.flow = function () {
+    var measure = this;
     this.parts = this.parts.map(function (cell) {
-      cell = new Layout.Cell(cell, that, that._lo);
-      cell.y2 = system.height;
-      cell.width = cell.minWidth;
+      cell.measure = measure;
+      cell.y2 = measure.system.height;
 
       // cell.el.rect(0, -cell.height, cell.width, cell.height)
       //   .addClass('bbox');
+
       return cell;
     });
   };
+
+  defineProperty(Measure.prototype, 'system', {
+    get: function () {
+      return this._s;
+    },
+    set: function (system) {
+      this._s = system;
+      this.el = system.el.g().addClass('mus-measure');
+      this.height = system.height;
+    }
+  });
 
   defineProperty(Measure.prototype, 'width', {
     get: function () {
@@ -2683,6 +2614,10 @@ return new Parser;
     },
     set: function (w) {
       this._w = w;
+      var padding = this._padding;
+      this.parts.forEach(function (cell) {
+        cell.width = w - padding;
+      });
     }
   });
 
@@ -2723,39 +2658,49 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  var Cell = Layout.Cell = function (cell, measure, lo) {
+  var Cell = Layout.Cell = function (cell, defs, lo) {
+    this._defs = defs;
     this._lo = lo;
-    this._value = cell;
-    this.el = measure.el.g().addClass('mus-cell');
+    this.data = cell;
     this.x = lo.measurePaddingRight;
-    this.height = measure.height;
   };
 
-  Cell.prototype.forEach = function (cb) {
-    this._value.forEach(cb);
+  Cell.prototype.flow = function () {
+    var
+      defs = this._defs,
+      lo = this._lo,
+      x = 0,
+      minHeight;
+
+    this.data.forEach(function (data) {
+      var def = data.def = defs.get(data);
+      data.x = x;
+      data.y = 0;
+      x += def.width + lo.musicDataSep;
+      minHeight = Math.min(minHeight, def.height);
+    });
+
+    this.minWidth = x;
+    this.minHeight = minHeight;
   };
 
-  Cell.prototype.at = function (i) {
-    return this._value[i];
-  };
-
-  Cell.prototype.layoutMusicData = function () {
-    var lo = this._lo, x = 0;
-
-    this.forEach(function (data) {
-      switch (data.__name__) {
-      case 'rest':  // fall through
-      case 'note':
-        data.pos = { x: x, y: 0 };
-        x += data.def.width + lo.musicDataSep;
-        break;
-      case 'time':
-        data.pos = { x: x, y: 0 };
-        x += data.def.width + lo.musicDataSep;
-        break;
-      }
+  Cell.prototype._reflow = function () {
+    var cell = this;
+    this.data.forEach(function (data) {
+      data.x *= cell.width / cell.minWidth;
     });
   };
+
+  defineProperty(Cell.prototype, 'measure', {
+    get: function () {
+      return this._m;
+    },
+    set: function (measure) {
+      this._m = measure;
+      this.el = measure.el.g().addClass('mus-cell');
+      this.height = measure.height;
+    }
+  });
 
   defineProperty(Cell.prototype, 'width', {
     get: function () {
@@ -2763,6 +2708,7 @@ return new Parser;
     },
     set: function (w) {
       this._w = w;
+      this._reflow();
     }
   });
 
@@ -2778,21 +2724,70 @@ return new Parser;
 
 }(musje.Layout, Snap));
 
+/* global musje, Snap */
+
+(function (musje) {
+  'use strict';
+
+  var defineProperty = Object.defineProperty;
+
+  function extendClass(className) {
+    defineProperty(musje[className].prototype, 'x', {
+      get: function () {
+        return this._x;
+      },
+      set: function (x) {
+        this._x = x;
+        if (this.el) {
+          this.el.attr('x', x);
+        }
+      }
+    });
+
+    defineProperty(musje[className].prototype, 'y', {
+      get: function () {
+        return this._y;
+      },
+      set: function (y) {
+        this._y = y;
+        if (this.el) { this.el.attr('y', y); }
+      }
+    });
+
+    defineProperty(musje[className].prototype, 'width', {
+      get: function () {
+        return this.def.width;
+      },
+      // set: function (w) {
+      //   this._w = w;
+      // }
+    });
+
+  }
+
+  ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
+
+}(musje, Snap));
+
 /* global musje */
 
 (function (musje) {
   'use strict';
 
   function renderCell (cell, lo) {
-    cell.forEach(function (data, i) {
+    cell.data.forEach(function (data, i) {
       switch (data.__name__) {
       case 'rest':  // fall through
       case 'note':
-        data.el = cell.el.use(data.def.pitchDef.el).attr(data.pos);
+        data.el = cell.el.use(data.def.pitchDef.el).attr({
+          x: data.x, y: data.y
+        });
         Renderer.renderDuration(data, i, cell, lo);
         break;
       case 'time':
-        data.el = cell.el.use(data.def.el).attr(data.pos);
+        data.el = cell.el.use(data.def.el).attr({
+          x: data.x, y: data.y
+        });
         break;
       }
     });
@@ -2810,6 +2805,11 @@ return new Parser;
 
     this.renderHeader();
     this.renderContent();
+
+    var layout = this.layout;
+    setTimeout(function () {
+      layout.svg.width += 500;
+    }, 2000);
   };
 
   Renderer.prototype.renderHeader = function () {
@@ -2877,7 +2877,7 @@ return new Parser;
 
   function render(bar, measure, defs) {
     var
-      lo = defs._lo,
+      lo = defs._layout.options,
       def,
       el;
 
@@ -2958,22 +2958,22 @@ return new Parser;
 
   function findEndBeamedNote(cell, begin, beamLevel) {
     var i = begin + 1,
-      next = cell.at(i);
+      next = cell.data[i];
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
-      next = cell.at(i);
+      next = cell.data[i];
     }
     return next;
   }
 
-  function endX(note) {
+  function x2(note) {
     var def = note.def;
-    return note.pos.x + def.pitchDef.width +
+    return note.x + def.pitchDef.width +
            def.durationDef.width * def.pitchDef.matrix.split().scalex;
   }
 
   function renderUnderbar(note, x, y, cell, lo) {
-    cell.el.line(x, y, endX(note), y)
+    cell.el.line(x, y, x2(note), y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
@@ -2982,8 +2982,8 @@ return new Parser;
     var pitchDef = note.def.pitchDef;
 
     var underbar = note.duration.underbar;
-    var x = note.pos.x;
-    var y = note.pos.y;
+    var x = note.x;
+    var y = note.y;
 
     // Whole and half notes
     if (note.duration.type < 4) {

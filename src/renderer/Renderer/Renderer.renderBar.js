@@ -19,7 +19,7 @@
 
   function render(bar, measure, defs) {
     var
-      lo = defs._lo,
+      lo = defs._layout.options,
       def,
       el;
 

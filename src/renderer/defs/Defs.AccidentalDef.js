@@ -7,10 +7,10 @@
 
   // @constructor AccidentalDef
   // SVG definition for accidental
-  Defs.AccidentalDef = function (id, accidental, defs) {
+  Defs.AccidentalDef = function (id, accidental, layout) {
     var
-      lo = defs._lo,
-      el = this.el = defs._svg.g().attr('id', id),
+      lo = layout.options,
+      el = this.el = layout.svg.el.g().attr('id', id),
       accKey = accidental.replace(/bb/, 'b'), // double flat to be synthesized
       pathData = svgPaths[accKey],
       ratio = svgPaths.ACCIDENTAL_RATIOS[accKey],
@@ -24,15 +24,16 @@
       .translate(-bb.x, shift - bb.y2)
     );
 
-    // Double flat
+    // Combine two flat to be double flat.
     if (accidental === 'bb') {
       el.use(path).attr('x', lo.accidentalFontSize * 0.24);
       el.transform('scale(0.9,1)');
     }
 
     bb = el.getBBox();
-    el.toDefs();
     this.width = bb.width * 1.2;
+
+    el.toDefs();
   };
 
 }(musje.Defs, Snap));

@@ -317,9 +317,9 @@
    * Usage:
    * var score = musje.score(JSONString or object);
    */
-  musje.score = function (src) {
-    if (typeof src === 'string') { src = JSON.parse(src); }
-    return new musje.Score(src);
+  musje.score = function (obj) {
+    if (typeof obj === 'string') { obj = JSON.parse(obj); }
+    return new musje.Score(obj);
   };
 
 }(musje));

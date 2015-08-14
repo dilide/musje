@@ -11,6 +11,11 @@ Musje consists of
 
 Checkout http://jianpu.github.io/musje/demo/ for demo.
 
+## Install
+
+Musje depends on Snap.js for rendering and MIDI.js for playing.
+It shall have bower support in the future.
+
 ## Usage
 
 ```js
@@ -20,11 +25,35 @@ score.play();
 score.stop();
 ```
 
+Another way to build a song is using JavaScript object `obj` or
+JSON `jsonString`.
+
+```js
+var obj = {
+  head: {
+    title: 'the title',
+    composer: '...'
+  },
+  parts: [
+    {
+      measures: [
+        [musicData11, musicData12, ...], [musicData21, ...], ...
+      ]
+    },
+    {
+      measures: [ data for the second part ]
+    }
+  ]
+};
+var score = new musje.Score(obj);
+// or use the wrapper function:
+var score = musje.score(obj or jsonString);
+```
 
 ## Develop
 
 ### Install
-Install node.js first, and install ```gulp``` globally
+Install node.js first, and install `gulp` globally
 ```
 npm install -g gulp
 ```
@@ -37,7 +66,7 @@ npm install
 ```
 gulp build
 ```
-or ```gulp``` will run the build by default.
+or `gulp` will run the build by default.
 
 ### Demo
 ```

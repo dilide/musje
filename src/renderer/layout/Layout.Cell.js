@@ -5,39 +5,49 @@
 
   var defineProperty = Object.defineProperty;
 
-  var Cell = Layout.Cell = function (cell, measure, lo) {
+  var Cell = Layout.Cell = function (cell, defs, lo) {
+    this._defs = defs;
     this._lo = lo;
-    this._value = cell;
-    this.el = measure.el.g().addClass('mus-cell');
+    this.data = cell;
     this.x = lo.measurePaddingRight;
-    this.height = measure.height;
   };
 
-  Cell.prototype.forEach = function (cb) {
-    this._value.forEach(cb);
+  Cell.prototype.flow = function () {
+    var
+      defs = this._defs,
+      lo = this._lo,
+      x = 0,
+      minHeight;
+
+    this.data.forEach(function (data) {
+      var def = data.def = defs.get(data);
+      data.x = x;
+      data.y = 0;
+      x += def.width + lo.musicDataSep;
+      minHeight = Math.min(minHeight, def.height);
+    });
+
+    this.minWidth = x;
+    this.minHeight = minHeight;
   };
 
-  Cell.prototype.at = function (i) {
-    return this._value[i];
-  };
-
-  Cell.prototype.layoutMusicData = function () {
-    var lo = this._lo, x = 0;
-
-    this.forEach(function (data) {
-      switch (data.__name__) {
-      case 'rest':  // fall through
-      case 'note':
-        data.pos = { x: x, y: 0 };
-        x += data.def.width + lo.musicDataSep;
-        break;
-      case 'time':
-        data.pos = { x: x, y: 0 };
-        x += data.def.width + lo.musicDataSep;
-        break;
-      }
+  Cell.prototype._reflow = function () {
+    var cell = this;
+    this.data.forEach(function (data) {
+      data.x *= cell.width / cell.minWidth;
     });
   };
+
+  defineProperty(Cell.prototype, 'measure', {
+    get: function () {
+      return this._m;
+    },
+    set: function (measure) {
+      this._m = measure;
+      this.el = measure.el.g().addClass('mus-cell');
+      this.height = measure.height;
+    }
+  });
 
   defineProperty(Cell.prototype, 'width', {
     get: function () {
@@ -45,6 +55,7 @@
     },
     set: function (w) {
       this._w = w;
+      this._reflow();
     }
   });
 

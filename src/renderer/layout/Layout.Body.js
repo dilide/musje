@@ -5,9 +5,12 @@
 
   var defineProperty = Object.defineProperty;
 
-  var Body = Layout.Body = function (svg, lo) {
-    this._svg = svg;
-    this._lo = lo;
+  var Body = Layout.Body = function (layout) {
+    this._layout = layout;
+    var
+      svg = layout.svg,
+      lo = layout.options;
+
     this.el = svg.el.g()
         .transform(Snap.matrix().translate(lo.marginLeft, lo.marginTop))
         .addClass('mus-body');
@@ -20,6 +23,9 @@
     },
     set: function (w) {
       this._w = w;
+      var layout = this._layout;
+      if (layout.header) { layout.header.width = w; }
+      if (layout.content) { layout.content.width = w; }
     }
   });
 
@@ -28,8 +34,8 @@
       return this._h;
     },
     set: function (h) {
-      var lo = this._lo;
-      this._svg.height = h + lo.marginTop + lo.marginBottom;
+      var layout = this._layout, lo = layout.options;
+      layout.svg.height = h + lo.marginTop + lo.marginBottom;
     }
   });
 

@@ -44,11 +44,10 @@ gulp.task('concat', function () {
       './src/renderer/Layout/Layout.Body.js',
       './src/renderer/Layout/Layout.Header.js',
       './src/renderer/Layout/Layout.Content.js',
-      './src/renderer/Layout/Layout.Systems.js',
       './src/renderer/Layout/Layout.System.js',
-      './src/renderer/Layout/Layout.Measures.js',
       './src/renderer/Layout/Layout.Measure.js',
       './src/renderer/Layout/Layout.Cell.js',
+      './src/renderer/Layout/MusicData.js',
 
       './src/renderer/Renderer/Renderer.js',
       './src/renderer/Renderer/Renderer.renderBar.js',

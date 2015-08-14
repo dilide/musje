@@ -22,14 +22,42 @@
     { type: 'monospace', name: '"Lucida Console", Monaco, monospace' }
   ];
 
+  function now() { return new Date().getTime(); }
+
   var demo = angular.module('musjeDemo', []);
 
   demo.controller('MusjeDemoCtrl', function ($scope, $http, $document) {
     var JSONSchema = musje.makeJSONSchema(musje.model);
 
+    $scope.playDisabled = true;
+    $scope.pauseDisabled = true;
+    // $scope.stopDisabled = true;
+
+    $scope.width = 200;
+    $scope.fonts = fonts;
+    $scope.selectedFont = $scope.fonts[11];
+
+    $http.get('score-samples/望春風.txt').success(function (data) {
+      $scope.src = data;
+      $scope.run();
+    });
+
+    $document.ready(function () {
+      MIDI.loadPlugin({
+        soundfontUrl: "./soundfont/",
+        instrument: "acoustic_grand_piano", // or multiple instruments
+        onsuccess: function () {
+          $scope.playDisabled = false;
+          $scope.$digest();
+        }
+      });
+    });
+
     $scope.run = function () {
+      var t0 = now();
       try {
         var score = $scope.score = musje.parse($scope.src);
+        $scope.parseTime = now() - t0;
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
         // $scope.result = JSON.stringify(score, null, "  ");
@@ -46,24 +74,15 @@
         $scope.totalMeasures = 'N/A';
         $scope.error = '' + err;
       }
+      t0 = now();
       $scope.render();
+      $scope.renderTime = now() - t0;
     };
-
-    $scope.playDisabled = true;
-    $scope.pauseDisabled = true;
-    // $scope.stopDisabled = true;
-
-    $scope.fonts = fonts;
-    $scope.selectedFont = $scope.fonts[11];
-
-    $http.get('score-samples/望春風.txt').success(function (data) {
-      $scope.src = data;
-      $scope.run();
-    });
 
     $scope.render = function () {
       $scope.score.render('.mus-score', {
-        fontFamily: $scope.selectedFont.name
+        fontFamily: $scope.selectedFont.name,
+        width: $scope.width
       });
     };
     $scope.play = function () {
@@ -74,17 +93,6 @@
     $scope.stop = function () {
       $scope.score.stop();
     };
-
-    $document.ready(function () {
-      MIDI.loadPlugin({
-        soundfontUrl: "./soundfont/",
-        instrument: "acoustic_grand_piano", // or multiple instruments
-        onsuccess: function () {
-          $scope.playDisabled = false;
-          $scope.$digest();
-        }
-      });
-    });
 
   });
 

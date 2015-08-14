@@ -25,15 +25,14 @@
   // accidental step octave underbar
   var PitchDef = Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
-      svg = this._svg = defs._svg,
-      el = this.el = svg.g().attr('id', id),
+      layout = this._layout = defs._layout,
+      el = this.el = layout.svg.el.g().attr('id', id),
       accidental = pitch.accidental,
       matrix,
       sbbox,
       pbbox;
 
     this._defs = defs;
-    this._lo = defs._lo;
     this._addAccidental(accidental);
     this._addStep(pitch.step);
     this._addOctave(pitch.octave);
@@ -59,24 +58,21 @@
 
   PitchDef.prototype._addAccidental = function (accidental) {
     if (!accidental) {
-      this._accidentalEndX = 0;
+      this._accidentalX2 = 0;
       return;
     }
 
     var
-      id = 'a' + accidental.replace(/#/g, 's'),
-      defs = this._defs,
-      accDef = defs[id] || (defs[id] =
-                    new Defs.AccidentalDef(id, accidental, defs));
+      accDef = this._defs.getAccidental(accidental);
 
-    this.el.use(accDef.el).attr('y', -this._lo.accidentalShift);
-    this._accidentalEndX = accDef.width;
+    this.el.use(accDef.el).attr('y', -this._layout.options.accidentalShift);
+    this._accidentalX2 = accDef.width;
   };
 
   PitchDef.prototype._addStep = function (step) {
     this._sbbox = this.el
-      .text(this._accidentalEndX, 0, '' + step)
-      .attr('font-size', this._lo.fontSize)
+      .text(this._accidentalX2, 0, '' + step)
+      .attr('font-size', this._layout.options.fontSize)
       .getBBox();
   };
 
@@ -84,7 +80,7 @@
     if (!octave) { return; }
 
     var
-      lo = this._lo,
+      lo = this._layout.options,
       octaveRadius = lo.octaveRadius,
       octaveOffset = lo.octaveOffset,
       octaveSep = lo.octaveSep,
@@ -107,7 +103,7 @@
   // scale it to be more square.
   PitchDef.prototype._getTransformMatrix = function (hasAccidental, octave, underbar) {
     var
-      lo = this._lo,
+      lo = this._layout.options,
       pbbox = this.el.getBBox(),
       absOctave = Math.abs(octave);
 

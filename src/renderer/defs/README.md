@@ -8,7 +8,8 @@ Usage
 ```js
 var defs = new musje.Defs(svg, layoutOptions);
 // musicData = bar | time | note | rest
-var def = Defs.get(musicData);
+var def = defs.get(musicData);
+defs.getAccidental(accidental);
 ```
 
 Result

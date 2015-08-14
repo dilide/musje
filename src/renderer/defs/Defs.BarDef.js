@@ -5,12 +5,13 @@
 
   // @constructor BarDef
   // SVG definition for barline.
-  var BarDef = Defs.BarDef = function (svg, id, bar, lo) {
-    this._lo = lo;
-    this.el = svg.g().attr('id', id).toDefs();
+  var BarDef = Defs.BarDef = function (id, bar, layout) {
     var
+      lo = layout.options,
       x = 0,
       lineWidth;
+
+    this.el = layout.svg.el.g().attr('id', id).toDefs();
 
     switch (bar.value) {
     case 'single':
