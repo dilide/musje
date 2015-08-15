@@ -32,6 +32,10 @@
               </button>
             </div>
             <div class="form-group">
+              <label for="font-select">Song:</label>
+              <select id="font-select" class="form-control" ng-options="song for song in songList" ng-model="selectedSong" ng-change="loadSong()"></select>
+            </div>
+            <div class="form-group">
               <label for="font-select">Font:</label>
               <select id="font-select" class="form-control" ng-options="font.name group by font.type for font in fonts" ng-model="selectedFont" ng-model-options="{ debounce: 500 }" ng-change="render()" style="width:150px"></select>
             </div>

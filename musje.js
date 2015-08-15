@@ -1895,8 +1895,14 @@ return new Parser;
   var PitchDef = Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
       layout = this._layout = defs._layout,
-      el = this.el = layout.svg.el.g().attr('id', id),
       accidental = pitch.accidental,
+      octave = pitch.octave,
+      scale = getScale(accidental, octave, underbar),
+      el = this.el = layout.svg.el.g().attr({
+        id: id,
+        stroke: 'black',
+        strokeWidth: 2 - (scale.x + scale.y)
+      }),
       matrix,
       sbbox,
       pbbox;
@@ -1904,9 +1910,9 @@ return new Parser;
     this._defs = defs;
     this._addAccidental(accidental);
     this._addStep(pitch.step);
-    this._addOctave(pitch.octave);
+    this._addOctave(octave);
 
-    matrix = this._getTransformMatrix(accidental, pitch.octave, underbar);
+    matrix = this._getMatrix(scale, octave, underbar);
     el.transform(matrix);
 
     sbbox = this._sbbox;
@@ -1916,7 +1922,7 @@ return new Parser;
     el.toDefs();
 
     objExtend(this, {
-      matrix: matrix,
+      scale: scale,
       width: pbbox.width,
       height: -pbbox.y,
       stepY: sbbox.y,
@@ -1968,25 +1974,27 @@ return new Parser;
     this.el.add(octaveEl);
   };
 
+  function getScale(hasAccidental, octave, underbar) {
+    var absOctave = Math.abs(octave);
+    return {
+      x: Math.pow(0.97, absOctave + underbar + (hasAccidental ? 2 : 0)),
+      y: Math.pow(0.95, absOctave + underbar + (hasAccidental ? 1 : 0))
+    };
+  }
+
   // Transform the pitch to be in a good baseline position and
   // scale it to be more square.
-  PitchDef.prototype._getTransformMatrix = function (hasAccidental, octave, underbar) {
+  PitchDef.prototype._getMatrix = function (scale, octave, underbar) {
     var
       lo = this._layout.options,
       pbbox = this.el.getBBox(),
-      absOctave = Math.abs(octave);
+      dy = (octave >= 0 && underbar === 0 ? -lo.stepBaselineShift : 0) -
+                            underbar * lo.underbarSep;
 
-    return Snap.matrix().translate(
-        -pbbox.x,
-        (octave >= 0 && underbar === 0 ? -lo.stepBaselineShift : 0) -
-                            underbar * lo.underbarSep
-      ).scale(
-        Math.pow(0.97, absOctave + underbar + (hasAccidental ? 3 : 0)),
-        Math.pow(0.95, absOctave + underbar + (hasAccidental ? 1 : 0))
-      ).translate(
-        0,
-        near(pbbox.y2, this._sbbox.y2) ? 0 : -pbbox.y2
-      );
+    return Snap.matrix()
+      .translate(-pbbox.x, dy)
+      .scale(scale.x, scale.y)
+      .translate(0, near(pbbox.y2, this._sbbox.y2) ? 0 : -pbbox.y2);
   };
 
 }(musje, Snap));
@@ -2167,7 +2175,7 @@ return new Parser;
         }
       }
     },
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Helvetica, Arial, Sans Serif',
 
     titleFontSize: '110%',
@@ -3009,7 +3017,7 @@ return new Parser;
   function x2(note) {
     var def = note.def;
     return note.x + def.pitchDef.width +
-           def.durationDef.width * def.pitchDef.matrix.split().scalex;
+           def.durationDef.width * def.pitchDef.scale.x;
   }
 
   function renderUnderbar(note, x, y, cell, lo) {

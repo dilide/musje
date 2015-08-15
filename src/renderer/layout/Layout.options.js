@@ -35,7 +35,7 @@
         }
       }
     },
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Helvetica, Arial, Sans Serif',
 
     titleFontSize: '110%',

@@ -20,7 +20,8 @@
     { type: 'sans-serif', name: 'Copperplate, "Copperplate Gothic Light", sans-serif' },
     { type: 'monospace', name: '"Courier New", Courier, monospace' },
     { type: 'monospace', name: '"Lucida Console", Monaco, monospace' }
-  ];
+  ],
+  samplePath = 'http://jianpu.github.io/musje-score-samples/';
 
   function now() { return new Date().getTime(); }
 
@@ -36,9 +37,18 @@
     $scope.fonts = fonts;
     $scope.selectedFont = $scope.fonts[11];
 
-    $http.get('score-samples/望春風.txt').success(function (data) {
-      $scope.src = data;
-      $scope.run();
+
+    $scope.loadSong = function () {
+      $http.get(samplePath + $scope.selectedSong + '.txt').success(function (data) {
+        $scope.src = data;
+        $scope.run();
+      });
+    };
+
+    $http.get(samplePath + 'song-list.txt').success(function (data) {
+      $scope.songList = data.trim().split('\n');
+      $scope.selectedSong = "望春風";
+      $scope.loadSong();
     });
 
     $document.ready(function () {

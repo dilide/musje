@@ -16,7 +16,7 @@
   function x2(note) {
     var def = note.def;
     return note.x + def.pitchDef.width +
-           def.durationDef.width * def.pitchDef.matrix.split().scalex;
+           def.durationDef.width * def.pitchDef.scale.x;
   }
 
   function renderUnderbar(note, x, y, cell, lo) {
