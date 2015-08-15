@@ -64,6 +64,7 @@
       }
     });
 
+    s++;
     content.height = y() + height;
 
     systems.forEach(function (system) {

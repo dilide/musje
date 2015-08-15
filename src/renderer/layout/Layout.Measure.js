@@ -87,6 +87,8 @@
     // :|: -> |:
     get: function () {
       var bar = this._bl;
+      if (!bar) { return { width: 0, height: 0 }; }
+
       if (this.m === 0) {
         if (bar.value === 'end' || bar.value === 'repeat-end') {
           bar = new musje.Bar('single');
@@ -110,6 +112,8 @@
     // :|: -> :|
     get: function () {
       var bar = this._br, system = this.system;
+      if (!bar) { return { width: 0, height: 0 }; }
+
       if (system && this.m === system.measures.length - 1) {
         if (bar.value === 'repeat-begin') {
           bar = new musje.Bar('single');

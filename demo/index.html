@@ -47,10 +47,11 @@
       <pre class="error" ng-show="error">{{error}}</pre>
       <p>Total measures: {{totalMeasures}},
         parse time: {{parseTime}} ms,
-        render time: {{renderTime}} ms,
-        width: <input type="text" ng-model="width" ng-change="render()">
+        render time: {{renderTime}} ms
       </p>
-      <svg class="mus-score"></svg>
+      <div resize>
+        <svg class="mus-score"></svg>
+      </div>
       <pre ng-show="schema">{{schema}}</pre>
       <pre ng-show="converted">{{converted}}</pre>
     </div>

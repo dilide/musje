@@ -44,20 +44,27 @@
       m = measure.m,
       len = measure.system.measures.length,
       bar = measure.barRight,
+      el;
+
+    if (bar.def) {
       el = render(bar, measure, lo);
 
-    // Last measure in a system align end
-    if (m === len - 1) {
-      translate(el, measure.width - bar.width);
+      // Last measure in a system align end
+      if (m === len - 1) {
+        translate(el, measure.width - bar.width);
 
-    // Others align middle
-    } else {
-      translate(el, measure.width - bar.width / 2);
+      // Others align middle
+      } else {
+        translate(el, measure.width - bar.width / 2);
+      }
     }
 
     // First measure in a system, render right bar, align begin
     if (m === 0) {
-      render(measure.barLeft, measure, lo);
+      bar = measure.barLeft;
+      if (bar.def) {
+        render(bar, measure, lo);
+      }
     }
   };
 

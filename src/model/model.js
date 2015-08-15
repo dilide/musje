@@ -74,18 +74,21 @@
         // Extract bars in each cell out into the measure.
         extractBars: function () {
           var measures = this.measures;
-          measures.forEach(function (measure, i) {
+          measures.forEach(function (measure, m) {
             measure.parts.forEach(function (cell) {
-              if (cell[cell.length - 1].__name__ === 'bar') {
+              var len = cell.length;
+              if (!len) { return; }
+
+              if (len && cell[len - 1].__name__ === 'bar') {
                 measure.barRight = cell.pop();
               }
-              if (cell[0].__name__ === 'bar') {
+              if (cell[0] && cell[0].__name__ === 'bar') {
                 measure.barLeft = cell.shift();
               } else {
-                if (i === 0) {
-                  measure.barLeft = new musje.Bar('single');
+                if (m === 0) {
+                  // measure.barLeft = new musje.Bar('single');
                 } else {
-                  measure.barLeft = measures[i - 1].barRight;
+                  measure.barLeft = measures[m - 1].barRight;
                 }
               }
             });

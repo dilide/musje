@@ -399,18 +399,21 @@ if (typeof exports !== 'undefined') {
         // Extract bars in each cell out into the measure.
         extractBars: function () {
           var measures = this.measures;
-          measures.forEach(function (measure, i) {
+          measures.forEach(function (measure, m) {
             measure.parts.forEach(function (cell) {
-              if (cell[cell.length - 1].__name__ === 'bar') {
+              var len = cell.length;
+              if (!len) { return; }
+
+              if (len && cell[len - 1].__name__ === 'bar') {
                 measure.barRight = cell.pop();
               }
-              if (cell[0].__name__ === 'bar') {
+              if (cell[0] && cell[0].__name__ === 'bar') {
                 measure.barLeft = cell.shift();
               } else {
-                if (i === 0) {
-                  measure.barLeft = new musje.Bar('single');
+                if (m === 0) {
+                  // measure.barLeft = new musje.Bar('single');
                 } else {
-                  measure.barLeft = measures[i - 1].barRight;
+                  measure.barLeft = measures[m - 1].barRight;
                 }
               }
             });
@@ -2423,6 +2426,7 @@ return new Parser;
       }
     });
 
+    s++;
     content.height = y() + height;
 
     systems.forEach(function (system) {
@@ -2649,6 +2653,8 @@ return new Parser;
     // :|: -> |:
     get: function () {
       var bar = this._bl;
+      if (!bar) { return { width: 0, height: 0 }; }
+
       if (this.m === 0) {
         if (bar.value === 'end' || bar.value === 'repeat-end') {
           bar = new musje.Bar('single');
@@ -2672,6 +2678,8 @@ return new Parser;
     // :|: -> :|
     get: function () {
       var bar = this._br, system = this.system;
+      if (!bar) { return { width: 0, height: 0 }; }
+
       if (system && this.m === system.measures.length - 1) {
         if (bar.value === 'repeat-begin') {
           bar = new musje.Bar('single');
@@ -2957,20 +2965,27 @@ return new Parser;
       m = measure.m,
       len = measure.system.measures.length,
       bar = measure.barRight,
+      el;
+
+    if (bar.def) {
       el = render(bar, measure, lo);
 
-    // Last measure in a system align end
-    if (m === len - 1) {
-      translate(el, measure.width - bar.width);
+      // Last measure in a system align end
+      if (m === len - 1) {
+        translate(el, measure.width - bar.width);
 
-    // Others align middle
-    } else {
-      translate(el, measure.width - bar.width / 2);
+      // Others align middle
+      } else {
+        translate(el, measure.width - bar.width / 2);
+      }
     }
 
     // First measure in a system, render right bar, align begin
     if (m === 0) {
-      render(measure.barLeft, measure, lo);
+      bar = measure.barLeft;
+      if (bar.def) {
+        render(bar, measure, lo);
+      }
     }
   };
 

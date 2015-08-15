@@ -33,7 +33,6 @@
     $scope.pauseDisabled = true;
     // $scope.stopDisabled = true;
 
-    $scope.width = 650;
     $scope.fonts = fonts;
     $scope.selectedFont = $scope.fonts[11];
 
@@ -100,6 +99,24 @@
     return {
       restrict: 'A',
       templateUrl: 'demo-footer.html'
+    };
+  });
+
+  demo.directive('resize', function ($window) {
+    return {
+      restrict: 'A',
+      link: function postLink(scope, element) {
+        function resized() {
+          scope.width = element[0].offsetWidth;
+        }
+        resized();
+
+        angular.element($window).bind('resize', function() {
+          resized();
+          scope.run();
+          scope.$apply();
+        });
+      }
     };
   });
 
