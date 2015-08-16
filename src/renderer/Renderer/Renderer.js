@@ -5,15 +5,15 @@
 
   function renderCell (cell, lo) {
     cell.data.forEach(function (data, i) {
-      switch (data.__name__) {
-      case 'rest':  // fall through
-      case 'note':
+      switch (data.$type) {
+      case 'Rest':  // fall through
+      case 'Note':
         data.el = cell.el.use(data.def.pitchDef.el).attr({
           x: data.x, y: data.y
         });
         Renderer.renderDuration(data, i, cell, lo);
         break;
-      case 'time':
+      case 'Time':
         data.el = cell.el.use(data.def.el).attr({
           x: data.x, y: data.y
         });

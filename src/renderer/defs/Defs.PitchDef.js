@@ -54,6 +54,7 @@
 
     objExtend(this, {
       scale: scale,
+      matrix: matrix,
       width: pbbox.width,
       height: -pbbox.y,
       stepY: sbbox.y,

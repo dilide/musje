@@ -17,7 +17,7 @@
     }
 
     cell.forEach(function (musicData) {
-      if (musicData.__name__ !== 'note' && musicData.__name__ !== 'rest') {
+      if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
         return;
       }
       var

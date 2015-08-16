@@ -6,8 +6,11 @@
   var
     defineProperty = Object.defineProperty,
     push = Array.prototype.push,
-    objForEach = musje.objForEach,
-    camel = musje.camel;
+    objForEach = musje.objForEach;
+
+  function camel(str) {
+    return str.charAt(0).toUpperCase() + str.substr(1);
+  }
 
   function defaultValue(model, $ref) {
     var tmp = $ref.split('/'), groupName = tmp[1], schemaName = tmp[2];
@@ -16,17 +19,21 @@
   }
 
   function getObjectName(model, $ref) {
-    var tmp = $ref.split('/'), groupName = tmp[1];
+    var
+      names = $ref.split('/'),
+      groupName = names[1];
+
     return (groupName === 'objects' || groupName === 'namedObjects' ||
             groupName === 'arrays' || groupName === 'root') &&
-           tmp[2];
+           names[2];
   }
 
-  function makeObjectProperty(obj, propName, type) {
-    var varName = '_' + propName, Constructor;
+  function makeObjectProperty(namespace, obj, propName, type) {
+    var
+      varName = '_' + propName,
+      Constructor = namespace[type];
 
-    Constructor = musje[type];
-    if (!Constructor) { throw new Error('Undefined type: musje.' + type); }
+    if (!Constructor) { throw new Error('Undefined type: ' + type); }
 
     defineProperty(obj, propName, {
       get: function () {
@@ -39,18 +46,17 @@
     });
   }
 
-  function defineClass(nameSpace, groupName, objectName, model) {
+  function defineClass(namespace, groupName, type, model) {
     var
-      className = camel(objectName),
-      Constructor = nameSpace[className] =  function (obj) {
+      Constructor = namespace[type] =  function (obj) {
         for (var key in obj) { this[key] = obj[key]; }
       },
       proto = Constructor.prototype,
       propNames = [];
 
-    proto.__name__ = objectName;
+    proto.$type = type;
 
-    objForEach(model[groupName][objectName], function (descriptor, propName) {
+    objForEach(model[groupName][type], function (descriptor, propName) {
       var defaultVal, objName;
 
       // ES5 accessor property
@@ -69,7 +75,7 @@
         if (defaultVal !== undefined) {
           proto[propName] = defaultVal;
         } else if (objName) {
-          makeObjectProperty(proto, propName, camel(objName));
+          makeObjectProperty(namespace, proto, propName, objName);
         }
         propNames.push(propName);
 
@@ -82,7 +88,7 @@
     if (groupName === 'namedObjects') {
       proto.toJSON = function () {
         var result = {},
-          inner = result[this.__name__] = {},
+          inner = result[this.$type] = {},
           i, propName;
         for (i = 0; i < propNames.length; i++) {
           propName = propNames[i];
@@ -102,18 +108,17 @@
     }
   }
 
-  function defineSimpleClass(nameSpace, objectName, model) {
+  function defineSimpleClass(namespace, type, model) {
     var
-      className = camel(objectName),
-      Constructor = nameSpace[className] =  function (val) {
+      Constructor = namespace[type] =  function (val) {
         this.value = val;
       },
       proto = Constructor.prototype,
-      defaultValue = model.namedObjects[objectName].default;
+      defaultValue = model.namedObjects[type].default;
 
-    proto.__name__ = objectName;
+    proto.$type = type;
 
-    objForEach(model.namedObjects[objectName], function (descriptor, propName) {
+    objForEach(model.namedObjects[type], function (descriptor, propName) {
 
       if (descriptor.default !== undefined) {
         proto.value = descriptor.default;
@@ -126,38 +131,38 @@
 
     proto.toJSON = function () {
       var result = {};
-      result[objectName] = this.value;
+      result[type] = this.value;
       return result;
     };
   }
 
-  function defineArrayClass(nameSpace, arrayName, model) {
+  function defineArrayClass(namespace, type, model) {
     var
-      className = camel(arrayName),
-      schema = model.arrays[arrayName],
+      schema = model.arrays[type],
       constructorName;
 
     if (Array.isArray(schema)) {
-      nameSpace[className] = function (a) {
+      namespace[type] = function (a) {
         var arr = [];
         arr.push = function () {
           objForEach(arguments, function (item) {
-            var propName = Object.keys(item)[0],
-              Constructor = nameSpace[camel(propName)];
+            var
+              propName = Object.keys(item)[0],
+              Constructor = namespace[camel(propName)];
             push.call(arr, new Constructor(item[propName]));
           });
         };
         arr.push.apply(arr, a);
         return arr;
       };
-    } else {
 
-      constructorName = camel(getObjectName(model, model.arrays[arrayName].$ref));
-      nameSpace[className] = function (a) {
+    } else {
+      constructorName = getObjectName(model, model.arrays[type].$ref);
+      namespace[type] = function (a) {
         var arr = [];
         arr.push = function () {
           objForEach(arguments, function (item) {
-            push.call(arr, new nameSpace[constructorName](item));
+            push.call(arr, new namespace[constructorName](item));
           });
         };
         arr.push.apply(arr, a);
@@ -166,29 +171,29 @@
     }
   }
 
-  function defineClasses(nameSpace, model, groupName) {
-    if (groupName === 'arrays') {
-      objForEach(model[groupName], function (descriptor, objectName) {
-        defineArrayClass(nameSpace, objectName, model);
-      });
-    } else {
-      objForEach(model[groupName], function (descriptor, objectName) {
-        if (groupName === 'namedObjects' && descriptor.type) {
-          defineSimpleClass(nameSpace, objectName, model);
-        } else {
-          defineClass(nameSpace, groupName, objectName, model);
-        }
-      });
-    }
+  function defineArrayClasses(namespace, model) {
+    objForEach(model.arrays, function (descriptor, type) {
+      defineArrayClass(namespace, type, model);
+    });
+  }
+
+  function defineClasses(namespace, model, groupName) {
+    objForEach(model[groupName], function (descriptor, type) {
+      if (groupName === 'namedObjects' && descriptor.type) {
+        defineSimpleClass(namespace, type, model);
+      } else {
+        defineClass(namespace, groupName, type, model);
+      }
+    });
   }
 
   musje.makeClasses = function (model) {
     var rootName = Object.keys(model.root)[0];
-    defineClasses(musje, model, 'arrays');
+    defineArrayClasses(musje, model);
     defineClasses(musje, model, 'objects');
     defineClasses(musje, model, 'namedObjects');
     defineClass(musje, 'root', rootName, model);
-    musje[musje.camel(rootName)].prototype.stringify = function (replacer, space) {
+    musje[rootName].prototype.stringify = function (replacer, space) {
       return JSON.stringify(this, replacer, space);
     };
   };

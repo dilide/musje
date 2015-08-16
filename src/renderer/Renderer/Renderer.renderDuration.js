@@ -44,7 +44,8 @@
         cell.el.g().transform(Snap.matrix().translate(x + pitchDef.width, y))
           .use(durationDef.el).transform(pitchDef.matrix);
       }
-      // Eigth or shorter notes
+
+      // Underbar(s) for eigth or shorter notes
       if (underbar) {
         for (var i = 0; i < underbar; i++) {
           if (note.beams && note.beams[i]) {

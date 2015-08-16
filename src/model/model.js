@@ -41,9 +41,9 @@
     description: '123 jianpu music score',
 
     root: {
-      score: {
-        head: { $ref: '#/objects/scoreHead' },
-        parts: { $ref: '#/arrays/parts' },
+      Score: {
+        head: { $ref: '#/objects/ScoreHead' },
+        parts: { $ref: '#/arrays/Parts' },
 
         // A cell is identically a measure in a part or a part in a measure.
         walkCells: function (callback) {
@@ -79,15 +79,16 @@
               var len = cell.length;
               if (!len) { return; }
 
-              if (len && cell[len - 1].__name__ === 'bar') {
+              // barRight
+              if (len && cell[len - 1].$type === 'Bar') {
                 measure.barRight = cell.pop();
               }
-              if (cell[0] && cell[0].__name__ === 'bar') {
+
+              // barLeft
+              if (cell[0] && cell[0].$type === 'Bar') {
                 measure.barLeft = cell.shift();
               } else {
-                if (m === 0) {
-                  // measure.barLeft = new musje.Bar('single');
-                } else {
+                if (m !== 0) {
                   measure.barLeft = measures[m - 1].barRight;
                 }
               }
@@ -111,7 +112,7 @@
     },
 
     objects: {
-      scoreHead: {
+      ScoreHead: {
         title: { type: 'string' },
         composer: { type: 'string' },
         isEmpty: function () {
@@ -123,9 +124,9 @@
         }
       },
 
-      part: {
-        // head: { $ref: '#/objects/partHead' },
-        measures: { $ref: '#/arrays/measures' },
+      Part: {
+        // head: { $ref: '#/objects/PartHead' },
+        measures: { $ref: '#/arrays/Measures' },
         toString: function () {
           return this.measures.map(function (measure) {
             return measure.map(function (musicData) {
@@ -137,7 +138,7 @@
 
       // partHead: TO BE DEFINED!,
 
-      pitch: {
+      Pitch: {
         step: {
           type: 'integer',
           minimum: 1,
@@ -177,7 +178,7 @@
         }
       },
 
-      duration: {
+      Duration: {
         type: { $ref: '#/integers/beatType' },
         dot: {
           type: 'integer',
@@ -214,7 +215,7 @@
     },
 
     namedObjects: {
-      time: {
+      Time: {
         beats: {
           type: 'integer',
           default: 4
@@ -230,9 +231,9 @@
         }
       },
 
-      note: {
-        pitch: { $ref: '#/objects/pitch' },
-        duration: { $ref: '#/objects/duration' },
+      Note: {
+        pitch: { $ref: '#/objects/Pitch' },
+        duration: { $ref: '#/objects/Duration' },
         slur: {
           type: 'array',
           items: {
@@ -253,8 +254,8 @@
         }
       },
 
-      rest: {
-        duration: { $ref: '#/objects/duration' },
+      Rest: {
+        duration: { $ref: '#/objects/Duration' },
         defId: {
           get: function () {
             var duration = this.duration;
@@ -266,12 +267,12 @@
         }
       },
 
-      chord: {
+      Chord: {
         pitches: {
           type: 'array',
-          items: { $ref: '#/objects/pitch' }
+          items: { $ref: '#/objects/Pitch' }
         },
-        duration: { $ref: '#/objects/duration' },
+        duration: { $ref: '#/objects/Duration' },
         toString: function () {
           return '<' + this.pitches.map(function (pitch) {
             return pitch.toString();
@@ -279,20 +280,23 @@
         }
       },
 
-      // voice: {
+      // Voice: {
       //   type: 'array',
       //   items: {
       //     oneOf: [
-      //       { $ref: '#/namedObjects/note' },
-      //       { $ref: '#/namedObjects/rest' },
-      //       { $ref: '#/namedObjects/chord' },
+      //       { $ref: '#/namedObjects/Note' },
+      //       { $ref: '#/namedObjects/Rest' },
+      //       { $ref: '#/namedObjects/Chord' },
       //     ]
       //   }
       // }
 
-      bar: {
+      Bar: {
         type: 'string',
-        enum: ['single', 'double', 'end', 'repeat-begin', 'repeat-end', 'repeat-both'],
+        enum: [
+          'single', 'double', 'end',
+          'repeat-begin', 'repeat-end', 'repeat-both'
+        ],
         default: 'single',
         toString: function () {
           return BAR_TO_STRING[this.value];
@@ -301,15 +305,15 @@
     },
 
     arrays: {
-      parts: { $ref: '#/objects/part' },
-      measures: { $ref: '#/arrays/musicData' },
-      musicData: [
-        { $ref: '#/namedObjects/time' },
-        { $ref: '#/namedObjects/note' },
-        { $ref: '#/namedObjects/rest' },
-        { $ref: '#/namedObjects/chord' },
-        // { $ref: '#/namedObjects/voice' },
-        { $ref: '#/namedObjects/bar' }
+      Parts: { $ref: '#/objects/Part' },
+      Measures: { $ref: '#/arrays/MusicData' },
+      MusicData: [
+        { $ref: '#/namedObjects/Time' },
+        { $ref: '#/namedObjects/Note' },
+        { $ref: '#/namedObjects/Rest' },
+        { $ref: '#/namedObjects/Chord' },
+        // { $ref: '#/namedObjects/Voice' },
+        { $ref: '#/namedObjects/Bar' }
       ]
     }
   };

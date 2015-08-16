@@ -21,10 +21,7 @@
   };
 
   Defs.prototype._make = function (id, musicData) {
-    var
-      n = musicData.__name__,
-      maker = '_make' + n.charAt(0).toUpperCase() + n.substr(1);
-
+    var maker = '_make' + musicData.$type;
     return this[maker](id, musicData) || { width: 0, height: 0 };
   };
 

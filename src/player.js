@@ -50,13 +50,13 @@
 
     measures.forEach(function (measure) {
       measure.forEach(function (data) {
-        switch (data.__name__) {
-        case 'note':
+        switch (data.$type) {
+        case 'Note':
           // playNote(time, dur, freq);
           timeouts.push(midiPlayNote(data, time));
           time += data.duration.second;
           break;
-        case 'rest':
+        case 'Rest':
           time += data.duration.second;
           break;
         }

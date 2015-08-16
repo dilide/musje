@@ -30,8 +30,4 @@ if (typeof exports !== 'undefined') {
     return Math.abs(a - b) < 0.00001;
   };
 
-  musje.camel = function (str) {
-    return str.charAt(0).toUpperCase() + str.substr(1);
-  };
-
 }(musje));
