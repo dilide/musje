@@ -69,8 +69,8 @@
         $scope.parseTime = now() - t0;
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
         $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
-        // $scope.result = JSON.stringify(score, null, "  ");
-        // $scope.converted = '' + score;
+        $scope.result = JSON.stringify(score, null, "  ");
+        $scope.converted = '' + score;
 
         if (!tv4.validate(JSON.parse(score.stringify()), JSONSchema)) {
           $scope.error =

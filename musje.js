@@ -47,19 +47,14 @@ if (typeof exports !== 'undefined') {
   }
 
   function defaultValue(model, $ref) {
-    var tmp = $ref.split('/'), groupName = tmp[1], schemaName = tmp[2];
-    return model[groupName] && model[groupName][schemaName] &&
-           model[groupName][schemaName].default;
+    var tmp = $ref.split('/'), category = tmp[1], schemaName = tmp[2];
+    return model[category] && model[category][schemaName] &&
+           model[category][schemaName].default;
   }
 
-  function getObjectName(model, $ref) {
-    var
-      names = $ref.split('/'),
-      groupName = names[1];
-
-    return (groupName === 'objects' || groupName === 'namedObjects' ||
-            groupName === 'arrays' || groupName === 'root') &&
-           names[2];
+  // @param $ref {string} Schema reference: '#/category/type'
+  function getType($ref) {
+    return $ref.split('/')[2];
   }
 
   function makeObjectProperty(namespace, obj, propName, type) {
@@ -80,17 +75,24 @@ if (typeof exports !== 'undefined') {
     });
   }
 
-  function defineClass(namespace, groupName, type, model) {
+  function makeObjectConstructor() {
+    return function (obj) {
+      var that = this;
+      objForEach(obj, function (value, key) {
+        that[key] = value;
+      });
+    };
+  }
+
+  function defineClass(namespace, category, type, model) {
     var
-      Constructor = namespace[type] =  function (obj) {
-        for (var key in obj) { this[key] = obj[key]; }
-      },
+      Constructor = namespace[type] = makeObjectConstructor(),
       proto = Constructor.prototype,
       propNames = [];
 
     proto.$type = type;
 
-    objForEach(model[groupName][type], function (descriptor, propName) {
+    objForEach(model[category][type], function (descriptor, propName) {
       var defaultVal, objName;
 
       // ES5 accessor property
@@ -105,7 +107,7 @@ if (typeof exports !== 'undefined') {
       // Schema reference
       } else if (descriptor.$ref) {
         defaultVal = defaultValue(model, descriptor.$ref);
-        objName = getObjectName(model, descriptor.$ref);
+        objName = getType(descriptor.$ref);
         if (defaultVal !== undefined) {
           proto[propName] = defaultVal;
         } else if (objName) {
@@ -119,7 +121,7 @@ if (typeof exports !== 'undefined') {
       }
     });
 
-    if (groupName === 'namedObjects') {
+    if (category === 'namedObjects') {
       proto.toJSON = function () {
         var result = {},
           inner = result[this.$type] = {},
@@ -170,38 +172,45 @@ if (typeof exports !== 'undefined') {
     };
   }
 
+  function makeArrayOfArrayConstructor(namespace) {
+    return function (a) {
+      var arr = [];
+
+      // Overwrite array push function with applying the constructor.
+      arr.push = function () {
+        objForEach(arguments, function (item) {
+          var
+            propName = Object.keys(item)[0],
+            Constructor = namespace[camel(propName)];
+
+          push.call(arr, new Constructor(item[propName]));
+        });
+      };
+
+      arr.push.apply(arr, a);
+      return arr;
+    };
+  }
+
+  function makeArrayOfObjectConstructor(namespace, constructorName) {
+    return function (a) {
+      var arr = [];
+      arr.push = function () {
+        objForEach(arguments, function (item) {
+          push.call(arr, new namespace[constructorName](item));
+        });
+      };
+      arr.push.apply(arr, a);
+      return arr;
+    };
+  }
+
   function defineArrayClass(namespace, type, model) {
-    var
-      schema = model.arrays[type],
-      constructorName;
-
+    var schema = model.arrays[type];
     if (Array.isArray(schema)) {
-      namespace[type] = function (a) {
-        var arr = [];
-        arr.push = function () {
-          objForEach(arguments, function (item) {
-            var
-              propName = Object.keys(item)[0],
-              Constructor = namespace[camel(propName)];
-            push.call(arr, new Constructor(item[propName]));
-          });
-        };
-        arr.push.apply(arr, a);
-        return arr;
-      };
-
+      namespace[type] = makeArrayOfArrayConstructor(namespace);
     } else {
-      constructorName = getObjectName(model, model.arrays[type].$ref);
-      namespace[type] = function (a) {
-        var arr = [];
-        arr.push = function () {
-          objForEach(arguments, function (item) {
-            push.call(arr, new namespace[constructorName](item));
-          });
-        };
-        arr.push.apply(arr, a);
-        return arr;
-      };
+      namespace[type] = makeArrayOfObjectConstructor(namespace, getType(schema.$ref));
     }
   }
 
@@ -211,12 +220,12 @@ if (typeof exports !== 'undefined') {
     });
   }
 
-  function defineClasses(namespace, model, groupName) {
-    objForEach(model[groupName], function (descriptor, type) {
-      if (groupName === 'namedObjects' && descriptor.type) {
+  function defineClasses(namespace, model, category) {
+    objForEach(model[category], function (descriptor, type) {
+      if (category === 'namedObjects' && descriptor.type) {
         defineSimpleClass(namespace, type, model);
       } else {
-        defineClass(namespace, groupName, type, model);
+        defineClass(namespace, category, type, model);
       }
     });
   }
@@ -371,57 +380,6 @@ if (typeof exports !== 'undefined') {
         head: { $ref: '#/objects/ScoreHead' },
         parts: { $ref: '#/arrays/Parts' },
 
-        // A cell is identically a measure in a part or a part in a measure.
-        walkCells: function (callback) {
-          this.parts.forEach(function (part, p) {
-            part.measures.forEach(function (cell, m) {
-              callback(cell, m, p);
-            });
-          });
-        },
-        walkMusicData: function (callback) {
-          this.walkCells(function (cell, m, p) {
-            cell.forEach(function (musicData, md) {
-              callback(musicData, md, m, p);
-            });
-          });
-        },
-
-        prepareTimewise: function () {
-          var measures = this.measures = [];
-          this.walkCells(function (cell, m, p) {
-            measures[m] = measures[m] || [];
-            var measure = measures[m];
-            measure.parts = measure.parts || [];
-            measure.parts[p] = cell;
-          });
-        },
-
-        // Extract bars in each cell out into the measure.
-        extractBars: function () {
-          var measures = this.measures;
-          measures.forEach(function (measure, m) {
-            measure.parts.forEach(function (cell) {
-              var len = cell.length;
-              if (!len) { return; }
-
-              // barRight
-              if (len && cell[len - 1].$type === 'Bar') {
-                measure.barRight = cell.pop();
-              }
-
-              // barLeft
-              if (cell[0] && cell[0].$type === 'Bar') {
-                measure.barLeft = cell.shift();
-              } else {
-                if (m !== 0) {
-                  measure.barLeft = measures[m - 1].barRight;
-                }
-              }
-            });
-          });
-        },
-
         toString: function () {
           return this.head + this.parts.map(function (part) {
             return part.toString();
@@ -445,19 +403,26 @@ if (typeof exports !== 'undefined') {
           return !this.title && !this.composer;
         },
         toString: function () {
-          return '              <<<' + this.title + '>>>          ' +
-                 this.composer + '\n';
+          return '<<' + this.title + '>>' + this.composer + '\n';
         }
       },
 
+      // The part is partwise
       Part: {
         // head: { $ref: '#/objects/PartHead' },
         measures: { $ref: '#/arrays/Measures' },
         toString: function () {
-          return this.measures.map(function (measure) {
-            return measure.map(function (musicData) {
-              return musicData.toString();
-            }).join(' ');
+          return this.measures.map(function (cell) {
+            return cell;
+          }).join(' ');
+        }
+      },
+
+      Cell: {
+        data: { $ref: '#/arrays/MusicData' },
+        toString: function () {
+          return this.data.map(function (musicData) {
+            return musicData.toString();
           }).join(' ');
         }
       },
@@ -632,7 +597,8 @@ if (typeof exports !== 'undefined') {
 
     arrays: {
       Parts: { $ref: '#/objects/Part' },
-      Measures: { $ref: '#/arrays/MusicData' },
+      // Measures: { $ref: '#/arrays/Cell' },
+      Measures: { $ref: '#/objects/Cell' },
       MusicData: [
         { $ref: '#/namedObjects/Time' },
         { $ref: '#/namedObjects/Note' },
@@ -652,7 +618,7 @@ if (typeof exports !== 'undefined') {
    */
   musje.score = function (obj) {
     if (typeof obj === 'string') { obj = JSON.parse(obj); }
-    return new musje.Score(obj);
+    return new musje.Score(obj).init();
   };
 
 }(musje));
@@ -662,7 +628,9 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
-  var near = musje.near;
+  var
+    objExtend = musje.objExtend,
+    near = musje.near;
 
   function getBeamedGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
@@ -675,7 +643,7 @@ if (typeof exports !== 'undefined') {
       group = [];
     }
 
-    cell.forEach(function (musicData) {
+    cell.data.forEach(function (musicData) {
       if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
         return;
       }
@@ -739,11 +707,75 @@ if (typeof exports !== 'undefined') {
     });
   }
 
-  musje.Score.prototype.makeBeams = function () {
-    this.walkCells(function (cell) {
-      makeBeams(cell, 1);
-    });
-  };
+  objExtend(musje.Score.prototype, {
+
+    init: function () {
+      this.prepareTimewise();
+      this.extractBars();
+      this.makeBeams();
+      return this;
+    },
+
+    // A cell is identically a measure in a part or a part in a measure.
+    walkCells: function (callback) {
+      this.parts.forEach(function (part, p) {
+        part.measures.forEach(function (cell, m) {
+          callback(cell, m, p);
+        });
+      });
+    },
+    walkMusicData: function (callback) {
+      this.walkCells(function (cell, m, p) {
+        cell.data.forEach(function (musicData, md) {
+          callback(musicData, md, m, p);
+        });
+      });
+    },
+
+    prepareTimewise: function () {
+      var measures = this.measures = [];
+      this.walkCells(function (cell, m, p) {
+        measures[m] = measures[m] || [];
+        var measure = measures[m];
+        measure.parts = measure.parts || [];
+        measure.parts[p] = cell;
+      });
+    },
+
+    // Extract bars in each cell out into the measure.
+    extractBars: function () {
+      var measures = this.measures;
+      measures.forEach(function (measure, m) {
+        measure.parts.forEach(function (cell) {
+          var
+            data = cell.data,
+            len = data.length;
+          if (!len) { return; }
+
+          // barRight
+          if (len && data[len - 1].$type === 'Bar') {
+            measure.barRight = data.pop();
+          }
+
+          // barLeft
+          if (data[0] && data[0].$type === 'Bar') {
+            measure.barLeft = data.shift();
+          } else {
+            if (m !== 0) {
+              measure.barLeft = measures[m - 1].barRight;
+            }
+          }
+        });
+      });
+    },
+
+    makeBeams: function () {
+      this.walkCells(function (cell) {
+        makeBeams(cell, 1);
+      });
+    }
+
+  });
 
 }(musje));
 
@@ -868,19 +900,19 @@ case 18:
  this.$ = { measures: $$[$0]}; 
 break;
 case 19:
- this.$ = { measures: $$[$0]}; $$[$0][0].unshift({ bar: $$[$0-2] }); 
+ this.$ = { measures: $$[$0]}; $$[$0][0].data.unshift({ bar: $$[$0-2] }); 
 break;
 case 21:
- this.$ = $$[$0-3]; lastItem($$[$0-3]).push({ bar: $$[$0-2] }); $$[$0-3].push($$[$0]); 
+ this.$ = $$[$0-3]; lastItem($$[$0-3]).data.push({ bar: $$[$0-2] }); $$[$0-3].push($$[$0]); 
 break;
 case 22:
- this.$ = $$[$0-2]; lastItem($$[$0-2]).push({ bar: $$[$0-1] }); $$[$0-2].push([]); 
+ this.$ = $$[$0-2]; lastItem($$[$0-2]).data.push({ bar: $$[$0-1] }); $$[$0-2].push({ data: [] }); 
 break;
 case 23:
- this.$ = [$$[$0-1]]; 
+ this.$ = { data: [$$[$0-1]] }; 
 break;
-case 24: case 63:
- this.$ = $$[$0-2]; $$[$0-2].push($$[$0-1]); 
+case 24:
+ this.$ = $$[$0-2]; $$[$0-2].data.push($$[$0-1]); 
 break;
 case 25:
  this.$ = 'single'; 
@@ -995,6 +1027,9 @@ case 60: case 65:
 break;
 case 61:
  this.$ = $$[$0-1]; 
+break;
+case 63:
+ this.$ = $$[$0-2]; $$[$0-2].push($$[$0-1]); 
 break;
 case 66:
  this.$ = { time: { beats: +$$[$0-1], beatType: +$$[$0] } }; 
@@ -2120,10 +2155,6 @@ return new Parser;
   };
 
   Layout.prototype._init = function (score) {
-    score.prepareTimewise();
-    score.extractBars();
-    score.makeBeams();
-
     var
       defs = this.defs,
       lo = this.options,
@@ -2131,9 +2162,8 @@ return new Parser;
 
     measures.forEach(function (measure, m) {
       measure = measures[m] = new Layout.Measure(measure, defs, lo);
-      measure.parts.forEach(function (cell, c) {
-        cell = measure.parts[c] = new Layout.Cell(cell, defs, lo);
-        cell.flow();
+      measure.parts.forEach(function (cell) {
+        cell.flow(defs, lo);
       });
       measure.calcMinWidth();
     });
@@ -2592,8 +2622,6 @@ return new Parser;
     this._lo = lo;
 
     objExtend(this, measure);
-    // this.barLeft.def = defs.get(this.barLeft);
-    // this.barRight.def = defs.get(this.barRight);
   };
 
   Measure.prototype.calcMinWidth = function () {
@@ -2711,23 +2739,13 @@ return new Parser;
 
 /* global musje, Snap */
 
-(function (Layout, Snap) {
+(function (CellPrototype, Snap) {
   'use strict';
 
   var defineProperty = Object.defineProperty;
 
-  var Cell = Layout.Cell = function (cell, defs, lo) {
-    this._defs = defs;
-    this._lo = lo;
-    this.data = cell;
-  };
-
-  Cell.prototype.flow = function () {
-    var
-      defs = this._defs,
-      lo = this._lo,
-      x = 0,
-      minHeight;
+  CellPrototype.flow = function (defs, lo) {
+    var x = 0, minHeight;
 
     this.data.forEach(function (data) {
       var def = data.def = defs.get(data);
@@ -2741,14 +2759,14 @@ return new Parser;
     this.minHeight = minHeight;
   };
 
-  Cell.prototype._reflow = function () {
+  CellPrototype._reflow = function () {
     var cell = this;
     this.data.forEach(function (data) {
       data.x *= cell.width / cell.minWidth;
     });
   };
 
-  defineProperty(Cell.prototype, 'measure', {
+  defineProperty(CellPrototype, 'measure', {
     get: function () {
       return this._m;
     },
@@ -2759,7 +2777,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Cell.prototype, 'width', {
+  defineProperty(CellPrototype, 'width', {
     get: function () {
       return this._w;
     },
@@ -2769,7 +2787,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Cell.prototype, 'x', {
+  defineProperty(CellPrototype, 'x', {
     get: function () {
       return this._x;
     },
@@ -2779,7 +2797,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Cell.prototype, 'y2', {
+  defineProperty(CellPrototype, 'y2', {
     get: function () {
       return this._y2;
     },
@@ -2789,7 +2807,7 @@ return new Parser;
     }
   });
 
-}(musje.Layout, Snap));
+}(musje.Cell.prototype, Snap));
 
 /* global musje, Snap */
 
@@ -2829,7 +2847,6 @@ return new Parser;
       //   this._w = w;
       // }
     });
-
   }
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);

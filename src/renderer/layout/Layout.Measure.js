@@ -15,8 +15,6 @@
     this._lo = lo;
 
     objExtend(this, measure);
-    // this.barLeft.def = defs.get(this.barLeft);
-    // this.barRight.def = defs.get(this.barRight);
   };
 
   Measure.prototype.calcMinWidth = function () {

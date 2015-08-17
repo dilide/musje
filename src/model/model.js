@@ -45,57 +45,6 @@
         head: { $ref: '#/objects/ScoreHead' },
         parts: { $ref: '#/arrays/Parts' },
 
-        // A cell is identically a measure in a part or a part in a measure.
-        walkCells: function (callback) {
-          this.parts.forEach(function (part, p) {
-            part.measures.forEach(function (cell, m) {
-              callback(cell, m, p);
-            });
-          });
-        },
-        walkMusicData: function (callback) {
-          this.walkCells(function (cell, m, p) {
-            cell.forEach(function (musicData, md) {
-              callback(musicData, md, m, p);
-            });
-          });
-        },
-
-        prepareTimewise: function () {
-          var measures = this.measures = [];
-          this.walkCells(function (cell, m, p) {
-            measures[m] = measures[m] || [];
-            var measure = measures[m];
-            measure.parts = measure.parts || [];
-            measure.parts[p] = cell;
-          });
-        },
-
-        // Extract bars in each cell out into the measure.
-        extractBars: function () {
-          var measures = this.measures;
-          measures.forEach(function (measure, m) {
-            measure.parts.forEach(function (cell) {
-              var len = cell.length;
-              if (!len) { return; }
-
-              // barRight
-              if (len && cell[len - 1].$type === 'Bar') {
-                measure.barRight = cell.pop();
-              }
-
-              // barLeft
-              if (cell[0] && cell[0].$type === 'Bar') {
-                measure.barLeft = cell.shift();
-              } else {
-                if (m !== 0) {
-                  measure.barLeft = measures[m - 1].barRight;
-                }
-              }
-            });
-          });
-        },
-
         toString: function () {
           return this.head + this.parts.map(function (part) {
             return part.toString();
@@ -119,19 +68,26 @@
           return !this.title && !this.composer;
         },
         toString: function () {
-          return '              <<<' + this.title + '>>>          ' +
-                 this.composer + '\n';
+          return '<<' + this.title + '>>' + this.composer + '\n';
         }
       },
 
+      // The part is partwise
       Part: {
         // head: { $ref: '#/objects/PartHead' },
         measures: { $ref: '#/arrays/Measures' },
         toString: function () {
-          return this.measures.map(function (measure) {
-            return measure.map(function (musicData) {
-              return musicData.toString();
-            }).join(' ');
+          return this.measures.map(function (cell) {
+            return cell;
+          }).join(' ');
+        }
+      },
+
+      Cell: {
+        data: { $ref: '#/arrays/MusicData' },
+        toString: function () {
+          return this.data.map(function (musicData) {
+            return musicData.toString();
           }).join(' ');
         }
       },
@@ -306,7 +262,8 @@
 
     arrays: {
       Parts: { $ref: '#/objects/Part' },
-      Measures: { $ref: '#/arrays/MusicData' },
+      // Measures: { $ref: '#/arrays/Cell' },
+      Measures: { $ref: '#/objects/Cell' },
       MusicData: [
         { $ref: '#/namedObjects/Time' },
         { $ref: '#/namedObjects/Note' },
@@ -326,7 +283,7 @@
    */
   musje.score = function (obj) {
     if (typeof obj === 'string') { obj = JSON.parse(obj); }
-    return new musje.Score(obj);
+    return new musje.Score(obj).init();
   };
 
 }(musje));

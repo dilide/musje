@@ -21,10 +21,6 @@
   };
 
   Layout.prototype._init = function (score) {
-    score.prepareTimewise();
-    score.extractBars();
-    score.makeBeams();
-
     var
       defs = this.defs,
       lo = this.options,
@@ -32,9 +28,8 @@
 
     measures.forEach(function (measure, m) {
       measure = measures[m] = new Layout.Measure(measure, defs, lo);
-      measure.parts.forEach(function (cell, c) {
-        cell = measure.parts[c] = new Layout.Cell(cell, defs, lo);
-        cell.flow();
+      measure.parts.forEach(function (cell) {
+        cell.flow(defs, lo);
       });
       measure.calcMinWidth();
     });

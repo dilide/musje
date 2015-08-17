@@ -36,7 +36,6 @@
       //   this._w = w;
       // }
     });
-
   }
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);

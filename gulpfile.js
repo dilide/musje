@@ -24,7 +24,7 @@ gulp.task('concat', function () {
       './src/model/makeClasses.js',
       './src/model/makeJSONSchema.js',  // only for development
       './src/model/model.js',
-      './src/model/Score.makeBeams.js',
+      './src/model/Score.prototype.js',
 
       './src/parser/pre-parser.js',
       './.tmp/parser.js',
@@ -46,7 +46,7 @@ gulp.task('concat', function () {
       './src/renderer/Layout/Layout.Content.js',
       './src/renderer/Layout/Layout.System.js',
       './src/renderer/Layout/Layout.Measure.js',
-      './src/renderer/Layout/Layout.Cell.js',
+      './src/renderer/Layout/Cell.js',
       './src/renderer/Layout/MusicData.js',
 
       './src/renderer/Renderer/Renderer.js',
@@ -65,13 +65,6 @@ gulp.task('build', function () {
   runSequence('jison', 'concat');
 });
 
-gulp.task('concat-watch', ['concat'], function () {
-  browserSync.reload();
-});
-gulp.task('jison-watch', ['jison'], function () {
-  browserSync.reload();
-});
-
 
 gulp.task('demo', ['build'], function() {
   browserSync.init({
@@ -81,8 +74,12 @@ gulp.task('demo', ['build'], function() {
     startPath: '/demo/',
   });
 
-  gulp.watch('src/parser/parser.jison', ['jison-watch']);
-  gulp.watch('src/**/*.js', ['concat-watch']);
+  gulp.watch('src/parser/parser.jison', function () {
+    runSequence('jison', 'concat', browserSync.reload);
+  });
+  gulp.watch('src/**/*.js', function () {
+    runSequence('concat', browserSync.reload);
+  });
   gulp.watch('demo/main.css', function () {
     gulp.src('demo/main.css')
       .pipe(browserSync.stream());

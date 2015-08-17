@@ -13,19 +13,14 @@
   }
 
   function defaultValue(model, $ref) {
-    var tmp = $ref.split('/'), groupName = tmp[1], schemaName = tmp[2];
-    return model[groupName] && model[groupName][schemaName] &&
-           model[groupName][schemaName].default;
+    var tmp = $ref.split('/'), category = tmp[1], schemaName = tmp[2];
+    return model[category] && model[category][schemaName] &&
+           model[category][schemaName].default;
   }
 
-  function getObjectName(model, $ref) {
-    var
-      names = $ref.split('/'),
-      groupName = names[1];
-
-    return (groupName === 'objects' || groupName === 'namedObjects' ||
-            groupName === 'arrays' || groupName === 'root') &&
-           names[2];
+  // @param $ref {string} Schema reference: '#/category/type'
+  function getType($ref) {
+    return $ref.split('/')[2];
   }
 
   function makeObjectProperty(namespace, obj, propName, type) {
@@ -46,17 +41,24 @@
     });
   }
 
-  function defineClass(namespace, groupName, type, model) {
+  function makeObjectConstructor() {
+    return function (obj) {
+      var that = this;
+      objForEach(obj, function (value, key) {
+        that[key] = value;
+      });
+    };
+  }
+
+  function defineClass(namespace, category, type, model) {
     var
-      Constructor = namespace[type] =  function (obj) {
-        for (var key in obj) { this[key] = obj[key]; }
-      },
+      Constructor = namespace[type] = makeObjectConstructor(),
       proto = Constructor.prototype,
       propNames = [];
 
     proto.$type = type;
 
-    objForEach(model[groupName][type], function (descriptor, propName) {
+    objForEach(model[category][type], function (descriptor, propName) {
       var defaultVal, objName;
 
       // ES5 accessor property
@@ -71,7 +73,7 @@
       // Schema reference
       } else if (descriptor.$ref) {
         defaultVal = defaultValue(model, descriptor.$ref);
-        objName = getObjectName(model, descriptor.$ref);
+        objName = getType(descriptor.$ref);
         if (defaultVal !== undefined) {
           proto[propName] = defaultVal;
         } else if (objName) {
@@ -85,7 +87,7 @@
       }
     });
 
-    if (groupName === 'namedObjects') {
+    if (category === 'namedObjects') {
       proto.toJSON = function () {
         var result = {},
           inner = result[this.$type] = {},
@@ -136,38 +138,45 @@
     };
   }
 
+  function makeArrayOfArrayConstructor(namespace) {
+    return function (a) {
+      var arr = [];
+
+      // Overwrite array push function with applying the constructor.
+      arr.push = function () {
+        objForEach(arguments, function (item) {
+          var
+            propName = Object.keys(item)[0],
+            Constructor = namespace[camel(propName)];
+
+          push.call(arr, new Constructor(item[propName]));
+        });
+      };
+
+      arr.push.apply(arr, a);
+      return arr;
+    };
+  }
+
+  function makeArrayOfObjectConstructor(namespace, constructorName) {
+    return function (a) {
+      var arr = [];
+      arr.push = function () {
+        objForEach(arguments, function (item) {
+          push.call(arr, new namespace[constructorName](item));
+        });
+      };
+      arr.push.apply(arr, a);
+      return arr;
+    };
+  }
+
   function defineArrayClass(namespace, type, model) {
-    var
-      schema = model.arrays[type],
-      constructorName;
-
+    var schema = model.arrays[type];
     if (Array.isArray(schema)) {
-      namespace[type] = function (a) {
-        var arr = [];
-        arr.push = function () {
-          objForEach(arguments, function (item) {
-            var
-              propName = Object.keys(item)[0],
-              Constructor = namespace[camel(propName)];
-            push.call(arr, new Constructor(item[propName]));
-          });
-        };
-        arr.push.apply(arr, a);
-        return arr;
-      };
-
+      namespace[type] = makeArrayOfArrayConstructor(namespace);
     } else {
-      constructorName = getObjectName(model, model.arrays[type].$ref);
-      namespace[type] = function (a) {
-        var arr = [];
-        arr.push = function () {
-          objForEach(arguments, function (item) {
-            push.call(arr, new namespace[constructorName](item));
-          });
-        };
-        arr.push.apply(arr, a);
-        return arr;
-      };
+      namespace[type] = makeArrayOfObjectConstructor(namespace, getType(schema.$ref));
     }
   }
 
@@ -177,12 +186,12 @@
     });
   }
 
-  function defineClasses(namespace, model, groupName) {
-    objForEach(model[groupName], function (descriptor, type) {
-      if (groupName === 'namedObjects' && descriptor.type) {
+  function defineClasses(namespace, model, category) {
+    objForEach(model[category], function (descriptor, type) {
+      if (category === 'namedObjects' && descriptor.type) {
         defineSimpleClass(namespace, type, model);
       } else {
-        defineClass(namespace, groupName, type, model);
+        defineClass(namespace, category, type, model);
       }
     });
   }

@@ -1,22 +1,12 @@
 /* global musje, Snap */
 
-(function (Layout, Snap) {
+(function (CellPrototype, Snap) {
   'use strict';
 
   var defineProperty = Object.defineProperty;
 
-  var Cell = Layout.Cell = function (cell, defs, lo) {
-    this._defs = defs;
-    this._lo = lo;
-    this.data = cell;
-  };
-
-  Cell.prototype.flow = function () {
-    var
-      defs = this._defs,
-      lo = this._lo,
-      x = 0,
-      minHeight;
+  CellPrototype.flow = function (defs, lo) {
+    var x = 0, minHeight;
 
     this.data.forEach(function (data) {
       var def = data.def = defs.get(data);
@@ -30,14 +20,14 @@
     this.minHeight = minHeight;
   };
 
-  Cell.prototype._reflow = function () {
+  CellPrototype._reflow = function () {
     var cell = this;
     this.data.forEach(function (data) {
       data.x *= cell.width / cell.minWidth;
     });
   };
 
-  defineProperty(Cell.prototype, 'measure', {
+  defineProperty(CellPrototype, 'measure', {
     get: function () {
       return this._m;
     },
@@ -48,7 +38,7 @@
     }
   });
 
-  defineProperty(Cell.prototype, 'width', {
+  defineProperty(CellPrototype, 'width', {
     get: function () {
       return this._w;
     },
@@ -58,7 +48,7 @@
     }
   });
 
-  defineProperty(Cell.prototype, 'x', {
+  defineProperty(CellPrototype, 'x', {
     get: function () {
       return this._x;
     },
@@ -68,7 +58,7 @@
     }
   });
 
-  defineProperty(Cell.prototype, 'y2', {
+  defineProperty(CellPrototype, 'y2', {
     get: function () {
       return this._y2;
     },
@@ -78,4 +68,4 @@
     }
   });
 
-}(musje.Layout, Snap));
+}(musje.Cell.prototype, Snap));

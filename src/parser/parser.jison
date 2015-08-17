@@ -158,23 +158,23 @@ part
   : measure_list
     { $$ = { measures: $1}; }
   | bar maybe_space measure_list
-    { $$ = { measures: $3}; $3[0].unshift({ bar: $1 }); }
+    { $$ = { measures: $3}; $3[0].data.unshift({ bar: $1 }); }
   ;
 
 measure_list
   : measure
     { $$ = [$1]; }
   | measure_list bar maybe_space measure
-    { $$ = $1; lastItem($1).push({ bar: $2 }); $1.push($4); }
+    { $$ = $1; lastItem($1).data.push({ bar: $2 }); $1.push($4); }
   | measure_list bar maybe_space
-    { $$ = $1; lastItem($1).push({ bar: $2 }); $1.push([]); }
+    { $$ = $1; lastItem($1).data.push({ bar: $2 }); $1.push({ data: [] }); }
   ;
 
 measure
   : music_data maybe_space
-    { $$ = [$1]; }
+    { $$ = { data: [$1] }; }
   | measure music_data maybe_space
-    { $$ = $1; $1.push($2); }
+    { $$ = $1; $1.data.push($2); }
   ;
 
 bar

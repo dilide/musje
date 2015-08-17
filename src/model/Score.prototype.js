@@ -3,7 +3,9 @@
 (function (musje) {
   'use strict';
 
-  var near = musje.near;
+  var
+    objExtend = musje.objExtend,
+    near = musje.near;
 
   function getBeamedGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
@@ -16,7 +18,7 @@
       group = [];
     }
 
-    cell.forEach(function (musicData) {
+    cell.data.forEach(function (musicData) {
       if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
         return;
       }
@@ -80,10 +82,74 @@
     });
   }
 
-  musje.Score.prototype.makeBeams = function () {
-    this.walkCells(function (cell) {
-      makeBeams(cell, 1);
-    });
-  };
+  objExtend(musje.Score.prototype, {
+
+    init: function () {
+      this.prepareTimewise();
+      this.extractBars();
+      this.makeBeams();
+      return this;
+    },
+
+    // A cell is identically a measure in a part or a part in a measure.
+    walkCells: function (callback) {
+      this.parts.forEach(function (part, p) {
+        part.measures.forEach(function (cell, m) {
+          callback(cell, m, p);
+        });
+      });
+    },
+    walkMusicData: function (callback) {
+      this.walkCells(function (cell, m, p) {
+        cell.data.forEach(function (musicData, md) {
+          callback(musicData, md, m, p);
+        });
+      });
+    },
+
+    prepareTimewise: function () {
+      var measures = this.measures = [];
+      this.walkCells(function (cell, m, p) {
+        measures[m] = measures[m] || [];
+        var measure = measures[m];
+        measure.parts = measure.parts || [];
+        measure.parts[p] = cell;
+      });
+    },
+
+    // Extract bars in each cell out into the measure.
+    extractBars: function () {
+      var measures = this.measures;
+      measures.forEach(function (measure, m) {
+        measure.parts.forEach(function (cell) {
+          var
+            data = cell.data,
+            len = data.length;
+          if (!len) { return; }
+
+          // barRight
+          if (len && data[len - 1].$type === 'Bar') {
+            measure.barRight = data.pop();
+          }
+
+          // barLeft
+          if (data[0] && data[0].$type === 'Bar') {
+            measure.barLeft = data.shift();
+          } else {
+            if (m !== 0) {
+              measure.barLeft = measures[m - 1].barRight;
+            }
+          }
+        });
+      });
+    },
+
+    makeBeams: function () {
+      this.walkCells(function (cell) {
+        makeBeams(cell, 1);
+      });
+    }
+
+  });
 
 }(musje));
