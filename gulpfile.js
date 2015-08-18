@@ -22,6 +22,7 @@ gulp.task('concat', function () {
       './src/utilities.js',
 
       './src/model/makeClasses.js',
+      './src/model/makeClasses-arrayConstructors.js',
       './src/model/makeJSONSchema.js',  // only for development
       './src/model/model.js',
       './src/model/Score.prototype.js',
@@ -31,6 +32,7 @@ gulp.task('concat', function () {
       './src/parser/post-parser.js',
 
       './src/renderer/svgPaths.js',
+      './src/renderer/Defs/defIds.js',
       './src/renderer/Defs/Defs.js',
       './src/renderer/Defs/Defs.BarDef.js',
       './src/renderer/Defs/Defs.TimeDef.js',
@@ -79,6 +81,10 @@ gulp.task('demo', ['build'], function() {
   });
   gulp.watch('src/**/*.js', function () {
     runSequence('concat', browserSync.reload);
+  });
+  gulp.watch('musje.css', function () {
+    gulp.src('musje.css')
+      .pipe(browserSync.stream());
   });
   gulp.watch('demo/main.css', function () {
     gulp.src('demo/main.css')

@@ -4,8 +4,8 @@
   'use strict';
 
   var
-    objExtend = musje.objExtend,
-    objForEach = musje.objForEach;
+    extend = musje.extend,
+    objEach = musje.objEach;
 
   // TODO: To be implemented without dependency...
   function objDeepClone(obj) {
@@ -14,26 +14,26 @@
 
   function noAccessor(obj) {
     var result = objDeepClone(obj);
-    objForEach(result, function (val, key) {
+    objEach(result, function (val, key) {
       if (val.get || val.set) { delete result[key]; }
     });
     return result;
   }
 
   musje.makeJSONSchema = function (model) {
-    var schema = objExtend({
+    var schema = extend({
       $schema: 'http://json-schema.org/draft-04/schema#'
     }, model);
 
     // Group of schema definitions with name: integers, objects, arrays...
-    objForEach(schema, function (rawGroup, groupName) {
+    objEach(schema, function (rawGroup, groupName) {
       var newGroup;
 
       switch (groupName) {
       case 'integers':
         newGroup = schema.integers = {};
-        objForEach(rawGroup, function (val, key) {
-          newGroup[key] = objExtend({ type: 'integer' }, val);
+        objEach(rawGroup, function (val, key) {
+          newGroup[key] = extend({ type: 'integer' }, val);
         });
         break;
       case 'root':
@@ -44,7 +44,7 @@
         break;
       case 'objects':
         newGroup = schema.objects = {};
-        objForEach(rawGroup, function (val, key) {
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: noAccessor(val),
@@ -52,9 +52,9 @@
           };
         });
         break;
-      case 'namedObjects':
-        newGroup = schema.namedObjects = {};
-        objForEach(rawGroup, function (val, key) {
+      case 'elements':
+        newGroup = schema.elements = {};
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: {},
@@ -69,7 +69,7 @@
         break;
       case 'arrays':
         newGroup = schema.arrays = {};
-        objForEach(rawGroup, function (val, key) {
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'array',
             items: val,

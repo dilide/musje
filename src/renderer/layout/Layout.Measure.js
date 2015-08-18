@@ -5,7 +5,7 @@
 
   var
     defineProperty = Object.defineProperty,
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     Layout = musje.Layout;
 
   // @constructor Measure
@@ -14,7 +14,7 @@
     this._defs = defs;
     this._lo = lo;
 
-    objExtend(this, measure);
+    extend(this, measure);
   };
 
   Measure.prototype.calcMinWidth = function () {

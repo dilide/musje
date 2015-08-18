@@ -80,7 +80,7 @@
     dotOffset: '60%',       // for type = 2
     dotRadius: '6.6%',      // 1 - . .
     dotSep: '60%',          // off len dotOff . dotSep . ext
-    t4DotOffset: '15%',
+    t4DotOffset: '30%',
     t4DotSep: '50%',
     t4DotExt: '25%',
     t4DotBaselineShift: '20%'
@@ -88,7 +88,7 @@
 
   var fontSize = options.fontSize;
 
-  musje.objForEach(options, function (value, key) {
+  musje.objEach(options, function (value, key) {
     if (typeof value !== 'string') { return; }
 
     var unit = value.replace(/[\d\.]+/, '');

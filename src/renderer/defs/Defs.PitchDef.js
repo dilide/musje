@@ -4,7 +4,7 @@
   'use strict';
 
   var
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     near = musje.near,
     Defs = musje.Defs;
 
@@ -52,7 +52,7 @@
     pbbox = el.getBBox();
     el.toDefs();
 
-    objExtend(this, {
+    extend(this, {
       scale: scale,
       matrix: matrix,
       width: pbbox.width,

@@ -6,6 +6,9 @@
 (function (musje) {
   'use strict';
 
+  // Constants and helpers
+  // =================================================================
+
   var
     A4_FREQUENCY = 440,
     A4_MIDI_NUMBER = 69,
@@ -36,10 +39,14 @@
            octave < 0 ? chars(',', -octave) : '';
   }
 
+  // Musje model definitions
+  // =================================================================
   musje.model = {
     title: 'Musje',
     description: '123 jianpu music score',
 
+    // Root object
+    // ---------------------------------------------------------------
     root: {
       Score: {
         head: { $ref: '#/objects/ScoreHead' },
@@ -53,6 +60,8 @@
       }
     },
 
+    // Integers
+    // ---------------------------------------------------------------
     integers: {
       beatType: {
         enum: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
@@ -60,6 +69,8 @@
       }
     },
 
+    // Objects
+    // ---------------------------------------------------------------
     objects: {
       ScoreHead: {
         title: { type: 'string' },
@@ -72,7 +83,6 @@
         }
       },
 
-      // The part is partwise
       Part: {
         // head: { $ref: '#/objects/PartHead' },
         measures: { $ref: '#/arrays/Measures' },
@@ -124,11 +134,6 @@
             return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
           }
         },
-        defId: {
-          get: function () {
-            return ['p', this.accidental.replace(/#/g, 's'), this.step, this.octave].join('');
-          }
-        },
         toString: function () {
           return this.accidental + this.step + octaveString(this.octave);
         }
@@ -141,6 +146,10 @@
           minimum: 0,
           maximum: 2,
           default: 0
+        },
+        tie: {
+          type: 'boolean',
+          default: false
         },
         quarter: {
           get: function () {
@@ -159,18 +168,15 @@
             return TYPE_TO_UNDERBAR[this.type] || 0;
           }
         },
-        defId: {
-          get: function () {
-            return 'd' + this.type + this.dot;
-          }
-        },
         toString: function () {
           return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
         }
       }
     },
 
-    namedObjects: {
+    // Elements are use inside an array
+    // ---------------------------------------------------------------
+    elements: {
       Time: {
         beats: {
           type: 'integer',
@@ -179,32 +185,13 @@
         beatType: { $ref: '#/integers/beatType' },
         toString: function () {
           return this.beats + '/' + this.beatType;
-        },
-        defId: {
-          get: function () {
-            return ['t', this.beats, '-', this.beatType].join('');
-          }
         }
       },
 
       Note: {
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
-        slur: {
-          type: 'array',
-          items: {
-            enum: ['begin', 'end']
-          }
-        },
-        defId: {
-          get: function () {
-            var pitch = this.pitch, duration = this.duration;
-            return [
-              'n', pitch.accidental.replace(/#/g, 's'),
-              pitch.step, pitch.octave, duration.type, duration.dot
-            ].join('');
-          }
-        },
+        slurs: { $ref: '#/arrays/Slurs' },
         toString: function () {
           return this.pitch + this.duration;
         }
@@ -212,12 +199,6 @@
 
       Rest: {
         duration: { $ref: '#/objects/Duration' },
-        defId: {
-          get: function () {
-            var duration = this.duration;
-            return 'r' + duration.type + duration.dot;
-          }
-        },
         toString: function () {
           return '0' + this.duration;
         }
@@ -240,9 +221,9 @@
       //   type: 'array',
       //   items: {
       //     oneOf: [
-      //       { $ref: '#/namedObjects/Note' },
-      //       { $ref: '#/namedObjects/Rest' },
-      //       { $ref: '#/namedObjects/Chord' },
+      //       { $ref: '#/elements/Note' },
+      //       { $ref: '#/elements/Rest' },
+      //       { $ref: '#/elements/Chord' },
       //     ]
       //   }
       // }
@@ -260,22 +241,27 @@
       }
     },
 
+    // Arrays
+    // ---------------------------------------------------------------
     arrays: {
       Parts: { $ref: '#/objects/Part' },
-      // Measures: { $ref: '#/arrays/Cell' },
       Measures: { $ref: '#/objects/Cell' },
       MusicData: [
-        { $ref: '#/namedObjects/Time' },
-        { $ref: '#/namedObjects/Note' },
-        { $ref: '#/namedObjects/Rest' },
-        { $ref: '#/namedObjects/Chord' },
-        // { $ref: '#/namedObjects/Voice' },
-        { $ref: '#/namedObjects/Bar' }
-      ]
+        { $ref: '#/elements/Time' },
+        { $ref: '#/elements/Note' },
+        { $ref: '#/elements/Rest' },
+        { $ref: '#/elements/Chord' },
+        // { $ref: '#/elements/Voice' },
+        { $ref: '#/elements/Bar' }
+      ],
+      Slurs: {
+        type: 'string',
+        enum: ['begin', 'end']
+      }
     }
   };
 
-  musje.makeClasses(musje.model);
+  musje.makeClasses(musje, musje.model);
 
   /**
    * Usage:

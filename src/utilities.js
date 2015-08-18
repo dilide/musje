@@ -12,8 +12,8 @@ if (typeof exports !== 'undefined') {
     return type === 'function' || type === 'object' && !!obj;
   }
 
-  var objForEach =
-  musje.objForEach = function (obj, cb) {
+  var objEach =
+  musje.objEach = function (obj, cb) {
     if (isObject(obj)) {
       Object.keys(obj).forEach(function (key) {
         cb(obj[key], key);
@@ -21,8 +21,8 @@ if (typeof exports !== 'undefined') {
     }
   };
 
-  musje.objExtend = function(obj, ext) {
-    objForEach(ext, function (val, key) { obj[key] = val; });
+  musje.extend = function(obj, ext) {
+    objEach(ext, function (val, key) { obj[key] = val; });
     return obj;
   };
 

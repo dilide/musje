@@ -21,7 +21,7 @@
   };
 
   Defs.prototype._make = function (id, musicData) {
-    var maker = '_make' + musicData.$type;
+    var maker = '_make' + musicData.$name;
     return this[maker](id, musicData) || { width: 0, height: 0 };
   };
 

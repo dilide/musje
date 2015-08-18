@@ -2,7 +2,7 @@
 
 %{
 
-  var objExtend = musje.objExtend;
+  var extend = musje.extend;
 
   function lastItem(arr) { return arr[arr.length - 1]; }
 
@@ -24,7 +24,7 @@
 
     for (i = 0; i < parts.length; i++) {
       lastMeasure = lastItem(parts[i].measures);
-      if (lastMeasure.length === 0) {
+      if (lastMeasure.data.length === 0) {
         parts[i].measures.pop();
       }
     }
@@ -103,7 +103,7 @@ BEATS         {SMALL_INT}\/
 %% /* Musje grammar rules */
 e
   : maybe_musje EOF
-    { return musje.score($1); }
+    { return $1; }
   ;
 
 maybe_musje
@@ -210,17 +210,17 @@ slurable
   | '(' pitchful maybe_duration
     {
       $$ = $2;
-      objExtend(onlyProperty($2), {
+      extend(onlyProperty($2), {
         duration: $3,
-        slur: ['begin']
+        slurs: ['begin']
       });
     }
   | pitchful maybe_duration ')'
     {
       $$ = $1;
-      objExtend(onlyProperty($1), {
+      extend(onlyProperty($1), {
         duration: $2,
-        slur: ['end']
+        slurs: ['end']
       });
     }
   ;

@@ -34,19 +34,18 @@ var obj = {
     title: 'the title',
     composer: '...'
   },
-  parts: [
-    {
-      measures: [
-        [musicData11, musicData12, ...], [musicData21, ...], ...
-      ]
-    },
-    {
-      measures: [ data for the second part ]
-    }
-  ]
+  parts: [{
+    measures: [
+      { data: [musicData11, musicData12, ...] },  // a measure
+      { data: [musicData21, musicData22, ...] },  // another measure
+      ...
+    ]
+  }, {
+    measures: [
+      data for the second part
+    ]
+  }]
 };
-var score = new musje.Score(obj);
-// or use the wrapper function:
 var score = musje.score(obj or jsonString);
 ```
 

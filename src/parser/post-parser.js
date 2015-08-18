@@ -1,6 +1,7 @@
 
   musje.parse = function (input) {
-    return parser.parse(input);
+    var plainScore = parser.parse(input);
+    return musje.score(plainScore);
   };
 
 }(musje));

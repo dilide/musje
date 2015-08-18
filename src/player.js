@@ -27,14 +27,26 @@
     oscillator.stop(time + dur - 0.05);
   }
 
-  function midiPlayNote(note, time) {
+  function midiPlayNote(note, time, previousTie) {
     var
       midiNumber = note.pitch.midiNumber,
-      dur = note.duration.second;
+      dur = note.duration.second,
+      tieBegin = note.duration.tie;
 
     function play() {
-      MIDI.noteOn(0, midiNumber, 100, 0);
-      MIDI.noteOff(0, midiNumber, dur);
+      if (!previousTie) {
+        MIDI.noteOn(0, midiNumber, 100, 0);
+      }
+      if (!tieBegin) {
+        MIDI.noteOff(0, midiNumber, dur);
+      }
+
+      note.el.addClass('mus-playing');
+
+      setTimeout(function () {
+        note.el.removeClass('mus-playing');
+      }, dur * 800 + 100);
+
       console.log('Play: ' + note, time, dur, midiNumber);
     }
 
@@ -48,12 +60,14 @@
       measures = this.parts[0].measures,
       time = 0; //audioCtx.currentTime
 
-    measures.forEach(function (measure) {
-      measure.forEach(function (data) {
-        switch (data.$type) {
+    measures.forEach(function (cell) {
+      var previousTie = false;
+      cell.data.forEach(function (data) {
+        switch (data.$name) {
         case 'Note':
           // playNote(time, dur, freq);
-          timeouts.push(midiPlayNote(data, time));
+          timeouts.push(midiPlayNote(data, time, previousTie));
+          previousTie = data.duration.tie;
           time += data.duration.second;
           break;
         case 'Rest':

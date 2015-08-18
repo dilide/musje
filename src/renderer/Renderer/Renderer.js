@@ -1,16 +1,16 @@
-/* global musje */
+/* global musje, Snap */
 
-(function (musje) {
+(function (musje, Snap) {
   'use strict';
 
   function renderCell (cell, lo) {
     cell.data.forEach(function (data, i) {
-      switch (data.$type) {
+      switch (data.$name) {
       case 'Rest':  // fall through
       case 'Note':
-        data.el = cell.el.use(data.def.pitchDef.el).attr({
-          x: data.x, y: data.y
-        });
+        data.el = cell.el.g().transform(Snap.matrix()
+                                .translate(data.x, data.y));
+        data.el.use(data.def.pitchDef.el);
         Renderer.renderDuration(data, i, cell, lo);
         break;
       case 'Time':
@@ -24,7 +24,7 @@
 
 
   var Renderer = musje.Renderer = function (svg, lo) {
-    this._lo = musje.objExtend(musje.Layout.options, lo);
+    this._lo = musje.extend(musje.Layout.options, lo);
     this.layout = new musje.Layout(svg, this._lo);
   };
 
@@ -78,4 +78,4 @@
     new Renderer(svg, lo).render(this);
   };
 
-}(musje));
+}(musje, Snap));

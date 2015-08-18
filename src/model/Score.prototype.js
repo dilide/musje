@@ -4,7 +4,7 @@
   'use strict';
 
   var
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     near = musje.near;
 
   function getBeamedGroups(cell, groupDur) {
@@ -19,7 +19,7 @@
     }
 
     cell.data.forEach(function (musicData) {
-      if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
+      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
         return;
       }
       var
@@ -82,7 +82,7 @@
     });
   }
 
-  objExtend(musje.Score.prototype, {
+  extend(musje.Score.prototype, {
 
     init: function () {
       this.prepareTimewise();
@@ -128,12 +128,12 @@
           if (!len) { return; }
 
           // barRight
-          if (len && data[len - 1].$type === 'Bar') {
+          if (len && data[len - 1].$name === 'Bar') {
             measure.barRight = data.pop();
           }
 
           // barLeft
-          if (data[0] && data[0].$type === 'Bar') {
+          if (data[0] && data[0].$name === 'Bar') {
             measure.barLeft = data.shift();
           } else {
             if (m !== 0) {

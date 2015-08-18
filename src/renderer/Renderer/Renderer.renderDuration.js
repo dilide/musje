@@ -15,12 +15,12 @@
 
   function x2(note) {
     var def = note.def;
-    return note.x + def.pitchDef.width +
+    return def.pitchDef.width +
            def.durationDef.width * def.pitchDef.scale.x;
   }
 
-  function renderUnderbar(note, x, y, cell, lo) {
-    cell.el.line(x, y, x2(note), y)
+  function renderUnderbar(note1, note2, y, lo) {
+    note1.el.line(0, y, note2.x - note1.x + x2(note2), y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
@@ -29,31 +29,33 @@
     var pitchDef = note.def.pitchDef;
 
     var underbar = note.duration.underbar;
-    var x = note.x;
-    var y = note.y;
+    var y = 0;
 
     // Whole and half notes
     if (note.duration.type < 4) {
-      cell.el.use(durationDef.el).attr({
-        x: x + pitchDef.width,
-        y: y + pitchDef.stepCy
+      note.el.use(durationDef.el).attr({
+        x: pitchDef.width,
+        y: pitchDef.stepCy
       });
+
+    // Quarter or shorter notes
     } else {
-      // Dots for quarter or shorter notes
+
+      // Add dots
       if (note.duration.dot) {
-        cell.el.g().transform(Snap.matrix().translate(x + pitchDef.width, y))
+        note.el.g().transform(Snap.matrix().translate(pitchDef.width, 0))
           .use(durationDef.el).transform(pitchDef.matrix);
       }
 
-      // Underbar(s) for eigth or shorter notes
+      // Add underbars for eigth or shorter notes
       if (underbar) {
         for (var i = 0; i < underbar; i++) {
           if (note.beams && note.beams[i]) {
             if (note.beams[i] === 'begin') {
-              renderUnderbar(findEndBeamedNote(cell, noteIdx, i), x, y, cell, lo);
+              renderUnderbar(note, findEndBeamedNote(cell, noteIdx, i), y, lo);
             }
           } else {
-            renderUnderbar(note, x, y, cell, lo);
+            renderUnderbar(note, note, y, lo);
           }
           y -= lo.underbarSep;
         }

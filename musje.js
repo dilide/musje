@@ -12,8 +12,8 @@ if (typeof exports !== 'undefined') {
     return type === 'function' || type === 'object' && !!obj;
   }
 
-  var objForEach =
-  musje.objForEach = function (obj, cb) {
+  var objEach =
+  musje.objEach = function (obj, cb) {
     if (isObject(obj)) {
       Object.keys(obj).forEach(function (key) {
         cb(obj[key], key);
@@ -21,8 +21,8 @@ if (typeof exports !== 'undefined') {
     }
   };
 
-  musje.objExtend = function(obj, ext) {
-    objForEach(ext, function (val, key) { obj[key] = val; });
+  musje.extend = function(obj, ext) {
+    objEach(ext, function (val, key) { obj[key] = val; });
     return obj;
   };
 
@@ -39,22 +39,14 @@ if (typeof exports !== 'undefined') {
 
   var
     defineProperty = Object.defineProperty,
-    push = Array.prototype.push,
-    objForEach = musje.objForEach;
-
-  function camel(str) {
-    return str.charAt(0).toUpperCase() + str.substr(1);
-  }
+    keys = Object.keys,
+    objEach = musje.objEach,
+    extend = musje.extend;
 
   function defaultValue(model, $ref) {
     var tmp = $ref.split('/'), category = tmp[1], schemaName = tmp[2];
     return model[category] && model[category][schemaName] &&
            model[category][schemaName].default;
-  }
-
-  // @param $ref {string} Schema reference: '#/category/type'
-  function getType($ref) {
-    return $ref.split('/')[2];
   }
 
   function makeObjectProperty(namespace, obj, propName, type) {
@@ -75,56 +67,53 @@ if (typeof exports !== 'undefined') {
     });
   }
 
-  function makeObjectConstructor() {
-    return function (obj) {
-      var that = this;
-      objForEach(obj, function (value, key) {
-        that[key] = value;
-      });
-    };
-  }
-
-  function defineClass(namespace, category, type, model) {
+  function defineClass(namespace, model, category, type) {
     var
-      Constructor = namespace[type] = makeObjectConstructor(),
+      Constructor = namespace[type] = function (obj) { extend(this, obj); },
       proto = Constructor.prototype,
       propNames = [];
 
-    proto.$type = type;
+    proto.$name = type;
 
-    objForEach(model[category][type], function (descriptor, propName) {
+    objEach(model[category][type], function (descriptor, propName) {
       var defaultVal, objName;
 
       // ES5 accessor property
+      // -----------------------------------------------------------
       if (descriptor.get || descriptor.set) {
         defineProperty(proto, propName, descriptor);
 
+      // Method
+      // -----------------------------------------------------------
+      } else if (typeof descriptor === 'function') {
+        proto[propName] = descriptor;
+
       // Default value of primitive types
+      // -----------------------------------------------------------
       } else if (descriptor.default !== undefined) {
         proto[propName] = descriptor.default;
         propNames.push(propName);
 
       // Schema reference
+      // -----------------------------------------------------------
       } else if (descriptor.$ref) {
         defaultVal = defaultValue(model, descriptor.$ref);
-        objName = getType(descriptor.$ref);
+        objName = descriptor.$ref.split('/')[2];
         if (defaultVal !== undefined) {
           proto[propName] = defaultVal;
         } else if (objName) {
           makeObjectProperty(namespace, proto, propName, objName);
         }
         propNames.push(propName);
-
-      // Method
-      } else if (typeof descriptor === 'function') {
-        proto[propName] = descriptor;
       }
     });
 
-    if (category === 'namedObjects') {
+
+
+    if (category === 'elements') {
       proto.toJSON = function () {
         var result = {},
-          inner = result[this.$type] = {},
+          inner = result[this.$name] = {},
           i, propName;
         for (i = 0; i < propNames.length; i++) {
           propName = propNames[i];
@@ -144,17 +133,15 @@ if (typeof exports !== 'undefined') {
     }
   }
 
-  function defineSimpleClass(namespace, type, model) {
+  function makeSimpleClass(model, type) {
     var
-      Constructor = namespace[type] =  function (val) {
-        this.value = val;
-      },
+      Constructor = function (val) { this.value = val; },
       proto = Constructor.prototype,
-      defaultValue = model.namedObjects[type].default;
+      defaultValue = model.elements[type].default;
 
-    proto.$type = type;
+    proto.$name = type;
 
-    objForEach(model.namedObjects[type], function (descriptor, propName) {
+    objEach(model.elements[type], function (descriptor, propName) {
 
       if (descriptor.default !== undefined) {
         proto.value = descriptor.default;
@@ -170,73 +157,49 @@ if (typeof exports !== 'undefined') {
       result[type] = this.value;
       return result;
     };
+
+    return Constructor;
   }
 
-  function makeArrayOfArrayConstructor(namespace) {
-    return function (a) {
-      var arr = [];
 
-      // Overwrite array push function with applying the constructor.
-      arr.push = function () {
-        objForEach(arguments, function (item) {
-          var
-            propName = Object.keys(item)[0],
-            Constructor = namespace[camel(propName)];
+  // @constructor ClassMaker
+  // Makes classes from the model and stores them in the namespace.
+  var makeClasses = musje.makeClasses = function (namespace, model) {
 
-          push.call(arr, new Constructor(item[propName]));
-        });
-      };
-
-      arr.push.apply(arr, a);
-      return arr;
-    };
-  }
-
-  function makeArrayOfObjectConstructor(namespace, constructorName) {
-    return function (a) {
-      var arr = [];
-      arr.push = function () {
-        objForEach(arguments, function (item) {
-          push.call(arr, new namespace[constructorName](item));
-        });
-      };
-      arr.push.apply(arr, a);
-      return arr;
-    };
-  }
-
-  function defineArrayClass(namespace, type, model) {
-    var schema = model.arrays[type];
-    if (Array.isArray(schema)) {
-      namespace[type] = makeArrayOfArrayConstructor(namespace);
-    } else {
-      namespace[type] = makeArrayOfObjectConstructor(namespace, getType(schema.$ref));
-    }
-  }
-
-  function defineArrayClasses(namespace, model) {
-    objForEach(model.arrays, function (descriptor, type) {
-      defineArrayClass(namespace, type, model);
-    });
-  }
-
-  function defineClasses(namespace, model, category) {
-    objForEach(model[category], function (descriptor, type) {
-      if (category === 'namedObjects' && descriptor.type) {
-        defineSimpleClass(namespace, type, model);
+    // Make array classes
+    // ------------------------------------------------------------
+    objEach(model.arrays, function (descriptor, type) {
+      if (Array.isArray(descriptor)) {
+        namespace[type] = makeClasses.ArrayOfHetroObjects(namespace);
+      } else if (descriptor.$ref) {
+        namespace[type] = makeClasses.ArrayOfHomoObjects(namespace,
+                                        descriptor.$ref.split('/')[2]);
       } else {
-        defineClass(namespace, category, type, model);
+        namespace[type] = makeClasses.ArrayOfPrimitives();
       }
     });
-  }
 
-  musje.makeClasses = function (model) {
-    var rootName = Object.keys(model.root)[0];
-    defineArrayClasses(musje, model);
-    defineClasses(musje, model, 'objects');
-    defineClasses(musje, model, 'namedObjects');
-    defineClass(musje, 'root', rootName, model);
-    musje[rootName].prototype.stringify = function (replacer, space) {
+    // Make object classes
+    // ------------------------------------------------------------
+    keys(model.objects).forEach(function (type) {
+      defineClass(namespace, model, 'objects', type);
+    });
+
+    // Make element classes
+    // ------------------------------------------------------------
+    objEach(model.elements, function (descriptor, type) {
+      if (descriptor.type) {
+        namespace[type] = makeSimpleClass(model, type);
+      } else {
+        defineClass(namespace, model, 'elements', type);
+      }
+    });
+
+    // Make root class
+    // ------------------------------------------------------------
+    var rootName = keys(model.root)[0];
+    defineClass(namespace, model,'root', rootName);
+    namespace[rootName].prototype.stringify = function (replacer, space) {
       return JSON.stringify(this, replacer, space);
     };
   };
@@ -245,12 +208,79 @@ if (typeof exports !== 'undefined') {
 
 /* global musje */
 
+(function (makeClasses) {
+  'use strict';
+
+  var
+    slice = Array.prototype.slice,
+    push = Array.prototype.push,
+    keys = Object.keys;
+
+  function camel(str) {
+    return str.charAt(0).toUpperCase() + str.substr(1);
+  }
+
+  // The array construtors are not *real* constructors.
+
+  makeClasses.ArrayOfHetroObjects = function (namespace) {
+
+    // Overwrite array push function with applying the child constructor.
+    function ArrayOfHetroObjects(a) {
+      var arr = [];
+
+      arr.push = function () {
+        slice.call(arguments).forEach(function (item) {
+          var
+            propName = keys(item)[0],
+            ItemConstructor = namespace[camel(propName)];
+
+          push.call(arr, new ItemConstructor(item[propName]));
+        });
+      };
+
+      arr.push.apply(arr, a);
+      return arr;
+    }
+    return ArrayOfHetroObjects;
+  };
+
+  makeClasses.ArrayOfHomoObjects = function (namespace, type) {
+
+    function ArrayOfHomoObjects(a) {
+      var arr = [];
+      arr.push = function () {
+        slice.call(arguments).forEach(function (item) {
+          push.call(arr, new namespace[type](item));
+        });
+      };
+      arr.push.apply(arr, a);
+      return arr;
+    }
+
+    return ArrayOfHomoObjects;
+  };
+
+  makeClasses.ArrayOfPrimitives = function () {
+
+    function ArrayOfPrimitives(a) {
+      var arr = [];
+      arr.push.apply(arr, a);
+      return arr;
+    }
+
+    return ArrayOfPrimitives;
+  };
+
+}(musje.makeClasses));
+
+/* global musje */
+
 (function (musje) {
   'use strict';
 
   var
-    objExtend = musje.objExtend,
-    objForEach = musje.objForEach;
+    extend = musje.extend,
+    objEach = musje.objEach;
 
   // TODO: To be implemented without dependency...
   function objDeepClone(obj) {
@@ -259,26 +289,26 @@ if (typeof exports !== 'undefined') {
 
   function noAccessor(obj) {
     var result = objDeepClone(obj);
-    objForEach(result, function (val, key) {
+    objEach(result, function (val, key) {
       if (val.get || val.set) { delete result[key]; }
     });
     return result;
   }
 
   musje.makeJSONSchema = function (model) {
-    var schema = objExtend({
+    var schema = extend({
       $schema: 'http://json-schema.org/draft-04/schema#'
     }, model);
 
     // Group of schema definitions with name: integers, objects, arrays...
-    objForEach(schema, function (rawGroup, groupName) {
+    objEach(schema, function (rawGroup, groupName) {
       var newGroup;
 
       switch (groupName) {
       case 'integers':
         newGroup = schema.integers = {};
-        objForEach(rawGroup, function (val, key) {
-          newGroup[key] = objExtend({ type: 'integer' }, val);
+        objEach(rawGroup, function (val, key) {
+          newGroup[key] = extend({ type: 'integer' }, val);
         });
         break;
       case 'root':
@@ -289,7 +319,7 @@ if (typeof exports !== 'undefined') {
         break;
       case 'objects':
         newGroup = schema.objects = {};
-        objForEach(rawGroup, function (val, key) {
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: noAccessor(val),
@@ -297,9 +327,9 @@ if (typeof exports !== 'undefined') {
           };
         });
         break;
-      case 'namedObjects':
-        newGroup = schema.namedObjects = {};
-        objForEach(rawGroup, function (val, key) {
+      case 'elements':
+        newGroup = schema.elements = {};
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'object',
             properties: {},
@@ -314,7 +344,7 @@ if (typeof exports !== 'undefined') {
         break;
       case 'arrays':
         newGroup = schema.arrays = {};
-        objForEach(rawGroup, function (val, key) {
+        objEach(rawGroup, function (val, key) {
           newGroup[key] = {
             type: 'array',
             items: val,
@@ -340,6 +370,9 @@ if (typeof exports !== 'undefined') {
  */
 (function (musje) {
   'use strict';
+
+  // Constants and helpers
+  // =================================================================
 
   var
     A4_FREQUENCY = 440,
@@ -371,10 +404,14 @@ if (typeof exports !== 'undefined') {
            octave < 0 ? chars(',', -octave) : '';
   }
 
+  // Musje model definitions
+  // =================================================================
   musje.model = {
     title: 'Musje',
     description: '123 jianpu music score',
 
+    // Root object
+    // ---------------------------------------------------------------
     root: {
       Score: {
         head: { $ref: '#/objects/ScoreHead' },
@@ -388,6 +425,8 @@ if (typeof exports !== 'undefined') {
       }
     },
 
+    // Integers
+    // ---------------------------------------------------------------
     integers: {
       beatType: {
         enum: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
@@ -395,6 +434,8 @@ if (typeof exports !== 'undefined') {
       }
     },
 
+    // Objects
+    // ---------------------------------------------------------------
     objects: {
       ScoreHead: {
         title: { type: 'string' },
@@ -407,7 +448,6 @@ if (typeof exports !== 'undefined') {
         }
       },
 
-      // The part is partwise
       Part: {
         // head: { $ref: '#/objects/PartHead' },
         measures: { $ref: '#/arrays/Measures' },
@@ -459,11 +499,6 @@ if (typeof exports !== 'undefined') {
             return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
           }
         },
-        defId: {
-          get: function () {
-            return ['p', this.accidental.replace(/#/g, 's'), this.step, this.octave].join('');
-          }
-        },
         toString: function () {
           return this.accidental + this.step + octaveString(this.octave);
         }
@@ -476,6 +511,10 @@ if (typeof exports !== 'undefined') {
           minimum: 0,
           maximum: 2,
           default: 0
+        },
+        tie: {
+          type: 'boolean',
+          default: false
         },
         quarter: {
           get: function () {
@@ -494,18 +533,15 @@ if (typeof exports !== 'undefined') {
             return TYPE_TO_UNDERBAR[this.type] || 0;
           }
         },
-        defId: {
-          get: function () {
-            return 'd' + this.type + this.dot;
-          }
-        },
         toString: function () {
           return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
         }
       }
     },
 
-    namedObjects: {
+    // Elements are use inside an array
+    // ---------------------------------------------------------------
+    elements: {
       Time: {
         beats: {
           type: 'integer',
@@ -514,32 +550,13 @@ if (typeof exports !== 'undefined') {
         beatType: { $ref: '#/integers/beatType' },
         toString: function () {
           return this.beats + '/' + this.beatType;
-        },
-        defId: {
-          get: function () {
-            return ['t', this.beats, '-', this.beatType].join('');
-          }
         }
       },
 
       Note: {
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
-        slur: {
-          type: 'array',
-          items: {
-            enum: ['begin', 'end']
-          }
-        },
-        defId: {
-          get: function () {
-            var pitch = this.pitch, duration = this.duration;
-            return [
-              'n', pitch.accidental.replace(/#/g, 's'),
-              pitch.step, pitch.octave, duration.type, duration.dot
-            ].join('');
-          }
-        },
+        slurs: { $ref: '#/arrays/Slurs' },
         toString: function () {
           return this.pitch + this.duration;
         }
@@ -547,12 +564,6 @@ if (typeof exports !== 'undefined') {
 
       Rest: {
         duration: { $ref: '#/objects/Duration' },
-        defId: {
-          get: function () {
-            var duration = this.duration;
-            return 'r' + duration.type + duration.dot;
-          }
-        },
         toString: function () {
           return '0' + this.duration;
         }
@@ -575,9 +586,9 @@ if (typeof exports !== 'undefined') {
       //   type: 'array',
       //   items: {
       //     oneOf: [
-      //       { $ref: '#/namedObjects/Note' },
-      //       { $ref: '#/namedObjects/Rest' },
-      //       { $ref: '#/namedObjects/Chord' },
+      //       { $ref: '#/elements/Note' },
+      //       { $ref: '#/elements/Rest' },
+      //       { $ref: '#/elements/Chord' },
       //     ]
       //   }
       // }
@@ -595,22 +606,27 @@ if (typeof exports !== 'undefined') {
       }
     },
 
+    // Arrays
+    // ---------------------------------------------------------------
     arrays: {
       Parts: { $ref: '#/objects/Part' },
-      // Measures: { $ref: '#/arrays/Cell' },
       Measures: { $ref: '#/objects/Cell' },
       MusicData: [
-        { $ref: '#/namedObjects/Time' },
-        { $ref: '#/namedObjects/Note' },
-        { $ref: '#/namedObjects/Rest' },
-        { $ref: '#/namedObjects/Chord' },
-        // { $ref: '#/namedObjects/Voice' },
-        { $ref: '#/namedObjects/Bar' }
-      ]
+        { $ref: '#/elements/Time' },
+        { $ref: '#/elements/Note' },
+        { $ref: '#/elements/Rest' },
+        { $ref: '#/elements/Chord' },
+        // { $ref: '#/elements/Voice' },
+        { $ref: '#/elements/Bar' }
+      ],
+      Slurs: {
+        type: 'string',
+        enum: ['begin', 'end']
+      }
     }
   };
 
-  musje.makeClasses(musje.model);
+  musje.makeClasses(musje, musje.model);
 
   /**
    * Usage:
@@ -629,7 +645,7 @@ if (typeof exports !== 'undefined') {
   'use strict';
 
   var
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     near = musje.near;
 
   function getBeamedGroups(cell, groupDur) {
@@ -644,7 +660,7 @@ if (typeof exports !== 'undefined') {
     }
 
     cell.data.forEach(function (musicData) {
-      if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
+      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
         return;
       }
       var
@@ -707,7 +723,7 @@ if (typeof exports !== 'undefined') {
     });
   }
 
-  objExtend(musje.Score.prototype, {
+  extend(musje.Score.prototype, {
 
     init: function () {
       this.prepareTimewise();
@@ -753,12 +769,12 @@ if (typeof exports !== 'undefined') {
           if (!len) { return; }
 
           // barRight
-          if (len && data[len - 1].$type === 'Bar') {
+          if (len && data[len - 1].$name === 'Bar') {
             measure.barRight = data.pop();
           }
 
           // barLeft
-          if (data[0] && data[0].$type === 'Bar') {
+          if (data[0] && data[0].$name === 'Bar') {
             measure.barLeft = data.shift();
           } else {
             if (m !== 0) {
@@ -867,7 +883,7 @@ performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* actio
 var $0 = $$.length - 1;
 switch (yystate) {
 case 1:
- return musje.score($$[$0-1]); 
+ return $$[$0-1]; 
 break;
 case 2: case 3:
  this.$ = null; 
@@ -947,18 +963,18 @@ break;
 case 37:
 
       this.$ = $$[$0-1];
-      objExtend(onlyProperty($$[$0-1]), {
+      extend(onlyProperty($$[$0-1]), {
         duration: $$[$0],
-        slur: ['begin']
+        slurs: ['begin']
       });
     
 break;
 case 38:
 
       this.$ = $$[$0-2];
-      objExtend(onlyProperty($$[$0-2]), {
+      extend(onlyProperty($$[$0-2]), {
         duration: $$[$0-1],
-        slur: ['end']
+        slurs: ['end']
       });
     
 break;
@@ -1184,7 +1200,7 @@ parse: function parse(input) {
 }};
 
 
-  var objExtend = musje.objExtend;
+  var extend = musje.extend;
 
   function lastItem(arr) { return arr[arr.length - 1]; }
 
@@ -1206,7 +1222,7 @@ parse: function parse(input) {
 
     for (i = 0; i < parts.length; i++) {
       lastMeasure = lastItem(parts[i].measures);
-      if (lastMeasure.length === 0) {
+      if (lastMeasure.data.length === 0) {
         parts[i].measures.pop();
       }
     }
@@ -1641,7 +1657,8 @@ return new Parser;
 })();
 
   musje.parse = function (input) {
-    return parser.parse(input);
+    var plainScore = parser.parse(input);
+    return musje.score(plainScore);
   };
 
 }(musje));
@@ -1666,10 +1683,59 @@ return new Parser;
     n: 'M 0,14.112V41.52h-1.248V31.248l-6.672,1.728V5.232h1.2v10.704l6.72,-1.824zm-6.72,6.432v7.536l5.472,-1.44v-7.536l-5.472,1.44z',
 
     ACCIDENTAL_RATIOS: { '#': 0.043, 'n': 0.023, '##': 0.062, b: 0.057 },
-    ACCIDENTAL_SHIFTS: { '#': 1, 'n': 2, '##': -4, b: 0 }
+    ACCIDENTAL_SHIFTS: { '#': 1, 'n': 2, '##': -4, b: 0 },
+
+    // https://upload.wikimedia.org/wikipedia/commons/1/10/Musical_Slur.svg
+    slur: 'M124.62516,0.490562c-28.278198,55.580307 -95.61935,55.580307 -123.897534,0c28.278184,44.627869 95.619336,44.627869 123.897534,0'
 
   };
+
 }(musje));
+
+/* global musje, Snap */
+
+(function (musje) {
+  'use strict';
+
+  var BAR_TO_ID = {
+    single: 'bs', double: 'bd', end: 'be',
+    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
+  };
+
+  var defIds = {
+    Time: function () {
+      return ['t', this.beats, '-', this.beatType].join('');
+    },
+    Bar: function () {
+      return BAR_TO_ID[this.value];
+    },
+    Note: function () {
+      var pitch = this.pitch, duration = this.duration;
+      return [
+        'n', pitch.accidental.replace(/#/g, 's'),
+        pitch.step, pitch.octave, duration.type, duration.dot
+      ].join('');
+    },
+    Rest: function () {
+      var duration = this.duration;
+      return 'r' + duration.type + duration.dot;
+    },
+    Pitch: function () {
+      return ['p', this.accidental.replace(/#/g, 's'),
+                   this.step, this.octave].join('');
+    },
+    Duration: function () {
+      return 'd' + this.type + this.dot;
+    }
+  };
+
+  musje.objEach(defIds, function (getter, className) {
+    Object.defineProperty(musje[className].prototype, 'defId', {
+      get: getter
+    });
+  });
+
+}(musje, Snap));
 
 /* global musje */
 
@@ -1694,7 +1760,7 @@ return new Parser;
   };
 
   Defs.prototype._make = function (id, musicData) {
-    var maker = '_make' + musicData.$type;
+    var maker = '_make' + musicData.$name;
     return this[maker](id, musicData) || { width: 0, height: 0 };
   };
 
@@ -1910,7 +1976,7 @@ return new Parser;
   'use strict';
 
   var
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     near = musje.near,
     Defs = musje.Defs;
 
@@ -1958,7 +2024,7 @@ return new Parser;
     pbbox = el.getBBox();
     el.toDefs();
 
-    objExtend(this, {
+    extend(this, {
       scale: scale,
       matrix: matrix,
       width: pbbox.width,
@@ -2070,7 +2136,9 @@ return new Parser;
   };
 
   DurationDef.prototype._makeEl = function () {
-    this.el = this._layout.svg.el.g().attr('id', this._id).toDefs();
+    this.el = this._layout.svg.el.g()
+                .attr('id', this._id)
+                .toDefs();
   };
 
   // Add dot for type 1 (whole) or type 2 (half) note.
@@ -2089,32 +2157,33 @@ return new Parser;
   };
 
   DurationDef.prototype._makeType1 = function (id, dot) {
+    var
+      lo = this._layout.options,
+      x = lo.typebarOffset;
+
+    this._addLine(x);
+    x += lo.typebarLength + lo.typebarSep;
+    this._addLine(x);
+    x += lo.typebarLength + lo.typebarSep;
+    this._addLine(x);
+    x += lo.typebarLength;
+
+    this.width = this._addDot(x, dot, 1);
+  };
+
+  DurationDef.prototype._addLine = function (x) {
     var lo = this._layout.options;
-
-    this.el
-      .path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
-        off: lo.typebarOffset,
-        w: lo.typebarLength,
-        sep: lo.typebarSep
-      }))
-      .attr({
-        fill: 'none',
-        stroke: 'black',
-        strokeWidth: lo.typeStrokeWidth
-      });
-
-    this.width = this._addDot(lo.typebarOffset + 3 * lo.typebarLength +
-                              2 * lo.typebarSep, dot, 2);
+    this.el.rect(x, -lo.typeStrokeWidth,
+                 lo.typebarLength, lo.typeStrokeWidth);
   };
 
   DurationDef.prototype._makeType2 = function (id, dot) {
     var
       lo = this._layout.options,
-      x = lo.typebarOffset + lo.typebarLength;
+      x = lo.typebarOffset;
 
-    this.el.line(lo.typebarOffset, 0, x, 0)
-      .attr('stroke-width', lo.typeStrokeWidth);
-
+    this._addLine(lo.typebarOffset);
+    x += lo.typebarLength;
     this.width = this._addDot(x, dot, 2);
   };
 
@@ -2123,9 +2192,10 @@ return new Parser;
       lo = this._layout.options,
       x = lo.t4DotOffset;
 
-    this.el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
+    this.el.circle(x, -lo.t4DotBaselineShift, lo.dotRadius);
     if (dot > 1) {
-      this.el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
+      x += lo.t4DotSep;
+      this.el.circle(x, -lo.t4DotBaselineShift, lo.dotRadius);
     }
     this.width = x + lo.t4DotExt;
   };
@@ -2253,7 +2323,7 @@ return new Parser;
     dotOffset: '60%',       // for type = 2
     dotRadius: '6.6%',      // 1 - . .
     dotSep: '60%',          // off len dotOff . dotSep . ext
-    t4DotOffset: '15%',
+    t4DotOffset: '30%',
     t4DotSep: '50%',
     t4DotExt: '25%',
     t4DotBaselineShift: '20%'
@@ -2261,7 +2331,7 @@ return new Parser;
 
   var fontSize = options.fontSize;
 
-  musje.objForEach(options, function (value, key) {
+  musje.objEach(options, function (value, key) {
     if (typeof value !== 'string') { return; }
 
     var unit = value.replace(/[\d\.]+/, '');
@@ -2612,7 +2682,7 @@ return new Parser;
 
   var
     defineProperty = Object.defineProperty,
-    objExtend = musje.objExtend,
+    extend = musje.extend,
     Layout = musje.Layout;
 
   // @constructor Measure
@@ -2621,7 +2691,7 @@ return new Parser;
     this._defs = defs;
     this._lo = lo;
 
-    objExtend(this, measure);
+    extend(this, measure);
   };
 
   Measure.prototype.calcMinWidth = function () {
@@ -2809,7 +2879,7 @@ return new Parser;
 
 }(musje.Cell.prototype, Snap));
 
-/* global musje, Snap */
+/* global musje */
 
 (function (musje) {
   'use strict';
@@ -2852,32 +2922,21 @@ return new Parser;
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
 
 
-  var BAR_TO_ID = {
-    single: 'bs', double: 'bd', end: 'be',
-    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
-  };
+}(musje));
 
-  defineProperty(musje.Bar.prototype, 'defId', {
-    get: function () {
-      return BAR_TO_ID[this.value];
-    }
-  });
+/* global musje, Snap */
 
-}(musje, Snap));
-
-/* global musje */
-
-(function (musje) {
+(function (musje, Snap) {
   'use strict';
 
   function renderCell (cell, lo) {
     cell.data.forEach(function (data, i) {
-      switch (data.$type) {
+      switch (data.$name) {
       case 'Rest':  // fall through
       case 'Note':
-        data.el = cell.el.use(data.def.pitchDef.el).attr({
-          x: data.x, y: data.y
-        });
+        data.el = cell.el.g().transform(Snap.matrix()
+                                .translate(data.x, data.y));
+        data.el.use(data.def.pitchDef.el);
         Renderer.renderDuration(data, i, cell, lo);
         break;
       case 'Time':
@@ -2891,7 +2950,7 @@ return new Parser;
 
 
   var Renderer = musje.Renderer = function (svg, lo) {
-    this._lo = musje.objExtend(musje.Layout.options, lo);
+    this._lo = musje.extend(musje.Layout.options, lo);
     this.layout = new musje.Layout(svg, this._lo);
   };
 
@@ -2945,7 +3004,7 @@ return new Parser;
     new Renderer(svg, lo).render(this);
   };
 
-}(musje));
+}(musje, Snap));
 
 /* global musje, Snap */
 
@@ -3036,12 +3095,12 @@ return new Parser;
 
   function x2(note) {
     var def = note.def;
-    return note.x + def.pitchDef.width +
+    return def.pitchDef.width +
            def.durationDef.width * def.pitchDef.scale.x;
   }
 
-  function renderUnderbar(note, x, y, cell, lo) {
-    cell.el.line(x, y, x2(note), y)
+  function renderUnderbar(note1, note2, y, lo) {
+    note1.el.line(0, y, note2.x - note1.x + x2(note2), y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
@@ -3050,31 +3109,33 @@ return new Parser;
     var pitchDef = note.def.pitchDef;
 
     var underbar = note.duration.underbar;
-    var x = note.x;
-    var y = note.y;
+    var y = 0;
 
     // Whole and half notes
     if (note.duration.type < 4) {
-      cell.el.use(durationDef.el).attr({
-        x: x + pitchDef.width,
-        y: y + pitchDef.stepCy
+      note.el.use(durationDef.el).attr({
+        x: pitchDef.width,
+        y: pitchDef.stepCy
       });
+
+    // Quarter or shorter notes
     } else {
-      // Dots for quarter or shorter notes
+
+      // Add dots
       if (note.duration.dot) {
-        cell.el.g().transform(Snap.matrix().translate(x + pitchDef.width, y))
+        note.el.g().transform(Snap.matrix().translate(pitchDef.width, 0))
           .use(durationDef.el).transform(pitchDef.matrix);
       }
 
-      // Underbar(s) for eigth or shorter notes
+      // Add underbars for eigth or shorter notes
       if (underbar) {
         for (var i = 0; i < underbar; i++) {
           if (note.beams && note.beams[i]) {
             if (note.beams[i] === 'begin') {
-              renderUnderbar(findEndBeamedNote(cell, noteIdx, i), x, y, cell, lo);
+              renderUnderbar(note, findEndBeamedNote(cell, noteIdx, i), y, lo);
             }
           } else {
-            renderUnderbar(note, x, y, cell, lo);
+            renderUnderbar(note, note, y, lo);
           }
           y -= lo.underbarSep;
         }
@@ -3113,14 +3174,26 @@ return new Parser;
     oscillator.stop(time + dur - 0.05);
   }
 
-  function midiPlayNote(note, time) {
+  function midiPlayNote(note, time, previousTie) {
     var
       midiNumber = note.pitch.midiNumber,
-      dur = note.duration.second;
+      dur = note.duration.second,
+      tieBegin = note.duration.tie;
 
     function play() {
-      MIDI.noteOn(0, midiNumber, 100, 0);
-      MIDI.noteOff(0, midiNumber, dur);
+      if (!previousTie) {
+        MIDI.noteOn(0, midiNumber, 100, 0);
+      }
+      if (!tieBegin) {
+        MIDI.noteOff(0, midiNumber, dur);
+      }
+
+      note.el.addClass('mus-playing');
+
+      setTimeout(function () {
+        note.el.removeClass('mus-playing');
+      }, dur * 800 + 100);
+
       console.log('Play: ' + note, time, dur, midiNumber);
     }
 
@@ -3134,12 +3207,14 @@ return new Parser;
       measures = this.parts[0].measures,
       time = 0; //audioCtx.currentTime
 
-    measures.forEach(function (measure) {
-      measure.forEach(function (data) {
-        switch (data.$type) {
+    measures.forEach(function (cell) {
+      var previousTie = false;
+      cell.data.forEach(function (data) {
+        switch (data.$name) {
         case 'Note':
           // playNote(time, dur, freq);
-          timeouts.push(midiPlayNote(data, time));
+          timeouts.push(midiPlayNote(data, time, previousTie));
+          previousTie = data.duration.tie;
           time += data.duration.second;
           break;
         case 'Rest':

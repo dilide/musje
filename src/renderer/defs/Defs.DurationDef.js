@@ -31,7 +31,9 @@
   };
 
   DurationDef.prototype._makeEl = function () {
-    this.el = this._layout.svg.el.g().attr('id', this._id).toDefs();
+    this.el = this._layout.svg.el.g()
+                .attr('id', this._id)
+                .toDefs();
   };
 
   // Add dot for type 1 (whole) or type 2 (half) note.
@@ -50,32 +52,33 @@
   };
 
   DurationDef.prototype._makeType1 = function (id, dot) {
+    var
+      lo = this._layout.options,
+      x = lo.typebarOffset;
+
+    this._addLine(x);
+    x += lo.typebarLength + lo.typebarSep;
+    this._addLine(x);
+    x += lo.typebarLength + lo.typebarSep;
+    this._addLine(x);
+    x += lo.typebarLength;
+
+    this.width = this._addDot(x, dot, 1);
+  };
+
+  DurationDef.prototype._addLine = function (x) {
     var lo = this._layout.options;
-
-    this.el
-      .path(Snap.format('M{off},0h{w}m{sep},0h{w}m{sep},0h{w}', {
-        off: lo.typebarOffset,
-        w: lo.typebarLength,
-        sep: lo.typebarSep
-      }))
-      .attr({
-        fill: 'none',
-        stroke: 'black',
-        strokeWidth: lo.typeStrokeWidth
-      });
-
-    this.width = this._addDot(lo.typebarOffset + 3 * lo.typebarLength +
-                              2 * lo.typebarSep, dot, 2);
+    this.el.rect(x, -lo.typeStrokeWidth,
+                 lo.typebarLength, lo.typeStrokeWidth);
   };
 
   DurationDef.prototype._makeType2 = function (id, dot) {
     var
       lo = this._layout.options,
-      x = lo.typebarOffset + lo.typebarLength;
+      x = lo.typebarOffset;
 
-    this.el.line(lo.typebarOffset, 0, x, 0)
-      .attr('stroke-width', lo.typeStrokeWidth);
-
+    this._addLine(lo.typebarOffset);
+    x += lo.typebarLength;
     this.width = this._addDot(x, dot, 2);
   };
 
@@ -84,9 +87,10 @@
       lo = this._layout.options,
       x = lo.t4DotOffset;
 
-    this.el.circle(x += lo.t4DotOffset, -lo.t4DotBaselineShift, lo.dotRadius);
+    this.el.circle(x, -lo.t4DotBaselineShift, lo.dotRadius);
     if (dot > 1) {
-      this.el.circle(x += lo.t4DotSep, -lo.t4DotBaselineShift, lo.dotRadius);
+      x += lo.t4DotSep;
+      this.el.circle(x, -lo.t4DotBaselineShift, lo.dotRadius);
     }
     this.width = x + lo.t4DotExt;
   };

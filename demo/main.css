@@ -32,10 +32,6 @@ footer {
   border: dotted 1px gray;
 }
 
-line {
-  stroke: black;
-}
-
 .bbox {
   fill: none;
   stroke: #e59;
