@@ -147,10 +147,6 @@
           maximum: 2,
           default: 0
         },
-        tie: {
-          type: 'boolean',
-          default: false
-        },
         quarter: {
           get: function () {
             var d = 4 / this.type;
@@ -192,6 +188,10 @@
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
         slurs: { $ref: '#/arrays/Slurs' },
+        tie: {
+          type: 'boolean',
+          default: false
+        },
         toString: function () {
           return this.pitch + this.duration;
         }

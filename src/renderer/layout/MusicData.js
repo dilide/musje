@@ -28,6 +28,12 @@
       }
     });
 
+    defineProperty(musje[className].prototype, 'systemX', {
+      get: function () {
+        return this.x + this.cell.x + this.cell.measure.x;
+      }
+    });
+
     defineProperty(musje[className].prototype, 'width', {
       get: function () {
         return this.def.width;

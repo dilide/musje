@@ -3,9 +3,13 @@
 (function (Renderer, Snap) {
   'use strict';
 
-  function findEndBeamedNote(cell, begin, beamLevel) {
-    var i = begin + 1,
+  function findEndBeamedNote(note, beamLevel) {
+    var
+      begin = note.index,
+      cell = note.cell,
+      i = begin + 1,
       next = cell.data[i];
+
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
       next = cell.data[i];
@@ -24,7 +28,7 @@
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  Renderer.renderDuration = function (note, noteIdx, cell, lo) {
+  Renderer.renderDuration = function (note, lo) {
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 
@@ -52,7 +56,7 @@
         for (var i = 0; i < underbar; i++) {
           if (note.beams && note.beams[i]) {
             if (note.beams[i] === 'begin') {
-              renderUnderbar(note, findEndBeamedNote(cell, noteIdx, i), y, lo);
+              renderUnderbar(note, findEndBeamedNote(note, i), y, lo);
             }
           } else {
             renderUnderbar(note, note, y, lo);

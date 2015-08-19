@@ -27,17 +27,16 @@
     oscillator.stop(time + dur - 0.05);
   }
 
-  function midiPlayNote(note, time, previousTie) {
+  function midiPlayNote(note, time) {
     var
       midiNumber = note.pitch.midiNumber,
-      dur = note.duration.second,
-      tieBegin = note.duration.tie;
+      dur = note.duration.second;
 
     function play() {
-      if (!previousTie) {
+      if (!note.tie.prev) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!tieBegin) {
+      if (!note.tie.next) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 
@@ -61,13 +60,11 @@
       time = 0; //audioCtx.currentTime
 
     measures.forEach(function (cell) {
-      var previousTie = false;
       cell.data.forEach(function (data) {
         switch (data.$name) {
         case 'Note':
           // playNote(time, dur, freq);
-          timeouts.push(midiPlayNote(data, time, previousTie));
-          previousTie = data.duration.tie;
+          timeouts.push(midiPlayNote(data, time));
           time += data.duration.second;
           break;
         case 'Rest':

@@ -48,7 +48,7 @@
 
     $http.get(samplePath + 'song-list.txt').success(function (data) {
       $scope.songList = data.trim().split('\n');
-      $scope.selectedSong = "望春風";
+      $scope.selectedSong = "客家本色"// "望春風";
       $scope.loadSong();
     });
 
@@ -73,13 +73,12 @@
         // $scope.result = JSON.stringify(score, null, "  ");
         // $scope.converted = '' + score;
 
-        if (!tv4.validate(JSON.parse(score.stringify()), JSONSchema)) {
-          $scope.error =
-                'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
-              '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
-        } else {
-          $scope.error = false;
-        }
+        $scope.error = false;
+        // if (!tv4.validate(JSON.parse(score.stringify()), JSONSchema)) {
+        //   $scope.error =
+        //         'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
+        //       '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
+        // }
       } catch (err) {
         $scope.totalMeasures = 'N/A';
         $scope.error = '' + err;

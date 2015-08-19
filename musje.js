@@ -512,10 +512,6 @@ if (typeof exports !== 'undefined') {
           maximum: 2,
           default: 0
         },
-        tie: {
-          type: 'boolean',
-          default: false
-        },
         quarter: {
           get: function () {
             var d = 4 / this.type;
@@ -557,6 +553,10 @@ if (typeof exports !== 'undefined') {
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
         slurs: { $ref: '#/arrays/Slurs' },
+        tie: {
+          type: 'boolean',
+          default: false
+        },
         toString: function () {
           return this.pitch + this.duration;
         }
@@ -729,6 +729,7 @@ if (typeof exports !== 'undefined') {
       this.prepareTimewise();
       this.extractBars();
       this.makeBeams();
+      this.linkTies();
       return this;
     },
 
@@ -742,8 +743,8 @@ if (typeof exports !== 'undefined') {
     },
     walkMusicData: function (callback) {
       this.walkCells(function (cell, m, p) {
-        cell.data.forEach(function (musicData, md) {
-          callback(musicData, md, m, p);
+        cell.data.forEach(function (data, d) {
+          callback(data, d, m, p);
         });
       });
     },
@@ -788,6 +789,24 @@ if (typeof exports !== 'undefined') {
     makeBeams: function () {
       this.walkCells(function (cell) {
         makeBeams(cell, 1);
+      });
+    },
+
+    linkTies: function () {
+      var prev = null;
+
+      this.walkMusicData(function (data) {
+        var tie;
+
+        if (data.$name === 'Note') {
+          tie = data.tie;
+          data.tie = {};
+          if (prev) {
+            data.tie.prev = prev;
+            prev.tie.next = data;
+          }
+          prev = tie ? data : null;
+        }
       });
     }
 
@@ -949,7 +968,7 @@ case 30:
  this.$ = 'repeat-both'; 
 break;
 case 32:
- this.$ = $$[$0-1]; onlyProperty($$[$0-1]).duration.tie = true; 
+ this.$ = $$[$0-1]; onlyProperty($$[$0-1]).tie = true; 
 break;
 case 33:
  this.$ = { rest: { duration: $$[$0] } }; 
@@ -1683,11 +1702,7 @@ return new Parser;
     n: 'M 0,14.112V41.52h-1.248V31.248l-6.672,1.728V5.232h1.2v10.704l6.72,-1.824zm-6.72,6.432v7.536l5.472,-1.44v-7.536l-5.472,1.44z',
 
     ACCIDENTAL_RATIOS: { '#': 0.043, 'n': 0.023, '##': 0.062, b: 0.057 },
-    ACCIDENTAL_SHIFTS: { '#': 1, 'n': 2, '##': -4, b: 0 },
-
-    // https://upload.wikimedia.org/wikipedia/commons/1/10/Musical_Slur.svg
-    slur: 'M124.62516,0.490562c-28.278198,55.580307 -95.61935,55.580307 -123.897534,0c28.278184,44.627869 95.619336,44.627869 123.897534,0'
-
+    ACCIDENTAL_SHIFTS: { '#': 1, 'n': 2, '##': -4, b: 0 }
   };
 
 }(musje));
@@ -2029,9 +2044,11 @@ return new Parser;
       matrix: matrix,
       width: pbbox.width,
       height: -pbbox.y,
+      stepCx: sbbox.cx,
       stepY: sbbox.y,
       stepCy: sbbox.cy,
-      stepY2: sbbox.y2
+      stepY2: sbbox.y2,
+      stepTop: octave > 0 ? pbbox.y : sbbox.y + layout.options.fontSize * 0.2
     });
   };
 
@@ -2603,9 +2620,13 @@ return new Parser;
   };
 
   System.prototype.flow = function () {
-    var x = 0;
+    var
+      that = this,
+      x = 0;
+
     this._tuneMeasuresWidths(this.measures, this.width);
     this.measures.forEach(function (measure, m) {
+      measure.system = that;
       measure.m = m;
       measure.flow();
       measure.x = x;
@@ -2815,10 +2836,12 @@ return new Parser;
   var defineProperty = Object.defineProperty;
 
   CellPrototype.flow = function (defs, lo) {
-    var x = 0, minHeight;
+    var that = this, x = 0, minHeight;
 
-    this.data.forEach(function (data) {
+    this.data.forEach(function (data, d) {
       var def = data.def = defs.get(data);
+      data.cell = that;
+      data.index = d;
       data.x = x;
       data.y = 0;
       x += def.width + lo.musicDataSep;
@@ -2909,6 +2932,12 @@ return new Parser;
       }
     });
 
+    defineProperty(musje[className].prototype, 'systemX', {
+      get: function () {
+        return this.x + this.cell.x + this.cell.measure.x;
+      }
+    });
+
     defineProperty(musje[className].prototype, 'width', {
       get: function () {
         return this.def.width;
@@ -2928,26 +2957,6 @@ return new Parser;
 
 (function (musje, Snap) {
   'use strict';
-
-  function renderCell (cell, lo) {
-    cell.data.forEach(function (data, i) {
-      switch (data.$name) {
-      case 'Rest':  // fall through
-      case 'Note':
-        data.el = cell.el.g().transform(Snap.matrix()
-                                .translate(data.x, data.y));
-        data.el.use(data.def.pitchDef.el);
-        Renderer.renderDuration(data, i, cell, lo);
-        break;
-      case 'Time':
-        data.el = cell.el.use(data.def.el).attr({
-          x: data.x, y: data.y
-        });
-        break;
-      }
-    });
-  }
-
 
   var Renderer = musje.Renderer = function (svg, lo) {
     this._lo = musje.extend(musje.Layout.options, lo);
@@ -2993,10 +3002,95 @@ return new Parser;
       measures.forEach(function (measure) {
         Renderer.renderBar(measure, lo);
         measure.parts.forEach(function (cell) {
-          renderCell(cell, lo);
+          Renderer.renderCell(cell, lo);
         });
       });
     });
+  };
+
+
+  Renderer.renderCell = function (cell, lo) {
+    cell.data.forEach(function (data) {
+      switch (data.$name) {
+      case 'Rest':  // fall through
+      case 'Note':
+        data.el = cell.el.g().transform(Snap.matrix()
+                                .translate(data.x, data.y));
+        data.el.use(data.def.pitchDef.el);
+        Renderer.renderDuration(data, lo);
+        if (data.$name === 'Note') {
+          Renderer.renderTie(data);
+        }
+        break;
+      case 'Time':
+        data.el = cell.el.use(data.def.el).attr({
+          x: data.x, y: data.y
+        });
+        break;
+      }
+    });
+  };
+
+  function tiePath(x1, y1, x2, y2) {
+    var
+      dx = x2 - x1,
+      dy = y2 - y1,
+      c1x = -0.1 * dx,
+      c1y = -0.1 * dy,
+      c2x = 1.1 * dx,
+      c2y = 1.1 * dy;
+
+    return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
+      x1: x1,
+      y1: y1,
+      c1x: c1x,
+      c1y: c1y - 8,
+      c2x: c2x,
+      c2y: c2y - 8,
+      dx: dx,
+      dy: dy,
+      c3x: -c1x,
+      c3y: -c1y - 10,
+      c4x: -c2x,
+      c4y: -c2y - 10,
+      negDx: -dx,
+      negDy: -dy
+    });
+  }
+
+  Renderer.renderTie = function (note) {
+    var
+      next = note.tie.next,
+      prev = note.tie.prev,
+      system = note.cell.measure.system,
+      noteDx,
+      x1, x2, y1, y2;
+
+    // Tie end
+    if (prev && prev.cell.measure.system !== system) {
+      x1 = note.def.pitchDef.stepCx;
+      y1 = note.def.pitchDef.stepTop;
+      x2 = - note.systemX - 3;
+      note.el.path(tiePath(x1, y1, x2, y1 - 3));
+    }
+
+    if (next) {
+      x1 = note.def.pitchDef.stepCx;
+      y1 = note.def.pitchDef.stepTop;
+
+      // Tie begin
+      if (next.cell.measure.system !== system) {
+        x2 = system.width - note.systemX + 3;
+        note.el.path(tiePath(x1, y1, x2, y1 - 3));
+
+      // Tie complete
+      } else {
+        noteDx = next.systemX - note.systemX;
+        x2 = next.def.pitchDef.stepCx;
+        y2 = next.def.pitchDef.stepTop;
+        note.el.path(tiePath(x1, y1, noteDx + x2, y2));
+      }
+    }
   };
 
 
@@ -3083,9 +3177,13 @@ return new Parser;
 (function (Renderer, Snap) {
   'use strict';
 
-  function findEndBeamedNote(cell, begin, beamLevel) {
-    var i = begin + 1,
+  function findEndBeamedNote(note, beamLevel) {
+    var
+      begin = note.index,
+      cell = note.cell,
+      i = begin + 1,
       next = cell.data[i];
+
     while (next && next.beams && next.beams[beamLevel] !== 'end') {
       i++;
       next = cell.data[i];
@@ -3104,7 +3202,7 @@ return new Parser;
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 
-  Renderer.renderDuration = function (note, noteIdx, cell, lo) {
+  Renderer.renderDuration = function (note, lo) {
     var durationDef = note.def.durationDef;
     var pitchDef = note.def.pitchDef;
 
@@ -3132,7 +3230,7 @@ return new Parser;
         for (var i = 0; i < underbar; i++) {
           if (note.beams && note.beams[i]) {
             if (note.beams[i] === 'begin') {
-              renderUnderbar(note, findEndBeamedNote(cell, noteIdx, i), y, lo);
+              renderUnderbar(note, findEndBeamedNote(note, i), y, lo);
             }
           } else {
             renderUnderbar(note, note, y, lo);
@@ -3174,17 +3272,16 @@ return new Parser;
     oscillator.stop(time + dur - 0.05);
   }
 
-  function midiPlayNote(note, time, previousTie) {
+  function midiPlayNote(note, time) {
     var
       midiNumber = note.pitch.midiNumber,
-      dur = note.duration.second,
-      tieBegin = note.duration.tie;
+      dur = note.duration.second;
 
     function play() {
-      if (!previousTie) {
+      if (!note.tie.prev) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!tieBegin) {
+      if (!note.tie.next) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 
@@ -3208,13 +3305,11 @@ return new Parser;
       time = 0; //audioCtx.currentTime
 
     measures.forEach(function (cell) {
-      var previousTie = false;
       cell.data.forEach(function (data) {
         switch (data.$name) {
         case 'Note':
           // playNote(time, dur, freq);
-          timeouts.push(midiPlayNote(data, time, previousTie));
-          previousTie = data.duration.tie;
+          timeouts.push(midiPlayNote(data, time));
           time += data.duration.second;
           break;
         case 'Rest':

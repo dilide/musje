@@ -57,9 +57,11 @@
       matrix: matrix,
       width: pbbox.width,
       height: -pbbox.y,
+      stepCx: sbbox.cx,
       stepY: sbbox.y,
       stepCy: sbbox.cy,
-      stepY2: sbbox.y2
+      stepY2: sbbox.y2,
+      stepTop: octave > 0 ? pbbox.y : sbbox.y + layout.options.fontSize * 0.2
     });
   };
 

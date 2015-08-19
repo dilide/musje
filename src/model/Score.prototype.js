@@ -88,6 +88,7 @@
       this.prepareTimewise();
       this.extractBars();
       this.makeBeams();
+      this.linkTies();
       return this;
     },
 
@@ -101,8 +102,8 @@
     },
     walkMusicData: function (callback) {
       this.walkCells(function (cell, m, p) {
-        cell.data.forEach(function (musicData, md) {
-          callback(musicData, md, m, p);
+        cell.data.forEach(function (data, d) {
+          callback(data, d, m, p);
         });
       });
     },
@@ -147,6 +148,24 @@
     makeBeams: function () {
       this.walkCells(function (cell) {
         makeBeams(cell, 1);
+      });
+    },
+
+    linkTies: function () {
+      var prev = null;
+
+      this.walkMusicData(function (data) {
+        var tie;
+
+        if (data.$name === 'Note') {
+          tie = data.tie;
+          data.tie = {};
+          if (prev) {
+            data.tie.prev = prev;
+            prev.tie.next = data;
+          }
+          prev = tie ? data : null;
+        }
       });
     }
 
