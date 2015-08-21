@@ -6,12 +6,10 @@
   var defineProperty = Object.defineProperty;
 
   CellPrototype.flow = function (defs, lo) {
-    var that = this, x = 0, minHeight;
+    var x = 0, minHeight;
 
-    this.data.forEach(function (data, d) {
+    this.data.forEach(function (data) {
       var def = data.def = defs.get(data);
-      data.cell = that;
-      data.index = d;
       data.x = x;
       data.y = 0;
       x += def.width + lo.musicDataSep;

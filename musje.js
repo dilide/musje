@@ -404,6 +404,25 @@ if (typeof exports !== 'undefined') {
            octave < 0 ? chars(',', -octave) : '';
   }
 
+  function getAlter(pitch) {
+    var
+      note = pitch.note,
+      step = pitch.step,
+      data = note.cell.data,
+      datum,
+      i;
+
+    for (i = note.index - 1; i >= 0; i--) {
+      datum = data[i];
+      if (datum.$name === 'Note' &&
+          datum.pitch.step === step && datum.pitch.accidental) {
+        // note.alterLink = datum;
+        return datum.pitch.alter;
+      }
+    }
+    return 0;
+  }
+
   // Musje model definitions
   // =================================================================
   musje.model = {
@@ -487,11 +506,16 @@ if (typeof exports !== 'undefined') {
           enum: ['#', 'b', '', 'n', '##', 'bb'],
           default: ''
         },
+        alter: {
+          get: function () {
+            var acc = this.accidental;
+            return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
+          }
+        },
         midiNumber: {
           get: function () {
             return (this.octave + 5) * 12 +
-              STEP_TO_MIDI_NUMBER[this.step] +
-              (ACCIDENTAL_TO_ALTER[this.accidental] || 0);
+              STEP_TO_MIDI_NUMBER[this.step] + this.alter;
           }
         },
         frequency: {
@@ -723,12 +747,22 @@ if (typeof exports !== 'undefined') {
     });
   }
 
+  function linkCellData(cell) {
+    cell.data.forEach(function (data, d) {
+      data.cell = cell;
+      data.index = d;
+      if (data.pitch) {
+        data.pitch.note = data;
+      }
+    });
+  }
+
   extend(musje.Score.prototype, {
 
     init: function () {
       this.prepareTimewise();
       this.extractBars();
-      this.makeBeams();
+      this.prepareCells();
       this.linkTies();
       return this;
     },
@@ -786,8 +820,9 @@ if (typeof exports !== 'undefined') {
       });
     },
 
-    makeBeams: function () {
+    prepareCells: function () {
       this.walkCells(function (cell) {
+        linkCellData(cell);
         makeBeams(cell, 1);
       });
     },
@@ -2621,13 +2656,13 @@ return new Parser;
 
   System.prototype.flow = function () {
     var
-      that = this,
+      system = this,
       x = 0;
 
-    this._tuneMeasuresWidths(this.measures, this.width);
-    this.measures.forEach(function (measure, m) {
-      measure.system = that;
-      measure.m = m;
+    system._tuneMeasuresWidths();
+    system.measures.forEach(function (measure, m) {
+      measure.system = system;
+      measure.index = m;
       measure.flow();
       measure.x = x;
       x += measure.width;
@@ -2707,7 +2742,6 @@ return new Parser;
     Layout = musje.Layout;
 
   // @constructor Measure
-  // @param m {number} Index of measure in the system.
   var Measure = Layout.Measure = function (measure, defs, lo) {
     this._defs = defs;
     this._lo = lo;
@@ -2785,7 +2819,7 @@ return new Parser;
       var bar = this._bl;
       if (!bar) { return { width: 0, height: 0 }; }
 
-      if (this.m === 0) {
+      if (this.index === 0) {
         if (bar.value === 'end' || bar.value === 'repeat-end') {
           bar = new musje.Bar('single');
         } else if (bar.value === 'repeat-both') {
@@ -2810,7 +2844,7 @@ return new Parser;
       var bar = this._br, system = this.system;
       if (!bar) { return { width: 0, height: 0 }; }
 
-      if (system && this.m === system.measures.length - 1) {
+      if (system && this.index === system.measures.length - 1) {
         if (bar.value === 'repeat-begin') {
           bar = new musje.Bar('single');
         } else if (bar.value === 'repeat-both') {
@@ -2836,12 +2870,10 @@ return new Parser;
   var defineProperty = Object.defineProperty;
 
   CellPrototype.flow = function (defs, lo) {
-    var that = this, x = 0, minHeight;
+    var x = 0, minHeight;
 
-    this.data.forEach(function (data, d) {
+    this.data.forEach(function (data) {
       var def = data.def = defs.get(data);
-      data.cell = that;
-      data.index = d;
       data.x = x;
       data.y = 0;
       x += def.width + lo.musicDataSep;
@@ -3143,7 +3175,7 @@ return new Parser;
   // @param len {number} Length of measures.
   musje.Renderer.renderBar = function (measure, lo) {
     var
-      m = measure.m,
+      m = measure.index,
       len = measure.system.measures.length,
       bar = measure.barRight,
       el;

@@ -25,13 +25,13 @@
 
   System.prototype.flow = function () {
     var
-      that = this,
+      system = this,
       x = 0;
 
-    this._tuneMeasuresWidths(this.measures, this.width);
-    this.measures.forEach(function (measure, m) {
-      measure.system = that;
-      measure.m = m;
+    system._tuneMeasuresWidths();
+    system.measures.forEach(function (measure, m) {
+      measure.system = system;
+      measure.index = m;
       measure.flow();
       measure.x = x;
       x += measure.width;

@@ -41,7 +41,7 @@
   // @param len {number} Length of measures.
   musje.Renderer.renderBar = function (measure, lo) {
     var
-      m = measure.m,
+      m = measure.index,
       len = measure.system.measures.length,
       bar = measure.barRight,
       el;

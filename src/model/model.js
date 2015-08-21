@@ -39,6 +39,25 @@
            octave < 0 ? chars(',', -octave) : '';
   }
 
+  function getAlter(pitch) {
+    var
+      note = pitch.note,
+      step = pitch.step,
+      data = note.cell.data,
+      datum,
+      i;
+
+    for (i = note.index - 1; i >= 0; i--) {
+      datum = data[i];
+      if (datum.$name === 'Note' &&
+          datum.pitch.step === step && datum.pitch.accidental) {
+        // note.alterLink = datum;
+        return datum.pitch.alter;
+      }
+    }
+    return 0;
+  }
+
   // Musje model definitions
   // =================================================================
   musje.model = {
@@ -122,11 +141,16 @@
           enum: ['#', 'b', '', 'n', '##', 'bb'],
           default: ''
         },
+        alter: {
+          get: function () {
+            var acc = this.accidental;
+            return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
+          }
+        },
         midiNumber: {
           get: function () {
             return (this.octave + 5) * 12 +
-              STEP_TO_MIDI_NUMBER[this.step] +
-              (ACCIDENTAL_TO_ALTER[this.accidental] || 0);
+              STEP_TO_MIDI_NUMBER[this.step] + this.alter;
           }
         },
         frequency: {

@@ -82,12 +82,22 @@
     });
   }
 
+  function linkCellData(cell) {
+    cell.data.forEach(function (data, d) {
+      data.cell = cell;
+      data.index = d;
+      if (data.pitch) {
+        data.pitch.note = data;
+      }
+    });
+  }
+
   extend(musje.Score.prototype, {
 
     init: function () {
       this.prepareTimewise();
       this.extractBars();
-      this.makeBeams();
+      this.prepareCells();
       this.linkTies();
       return this;
     },
@@ -145,8 +155,9 @@
       });
     },
 
-    makeBeams: function () {
+    prepareCells: function () {
       this.walkCells(function (cell) {
+        linkCellData(cell);
         makeBeams(cell, 1);
       });
     },

@@ -9,7 +9,6 @@
     Layout = musje.Layout;
 
   // @constructor Measure
-  // @param m {number} Index of measure in the system.
   var Measure = Layout.Measure = function (measure, defs, lo) {
     this._defs = defs;
     this._lo = lo;
@@ -87,7 +86,7 @@
       var bar = this._bl;
       if (!bar) { return { width: 0, height: 0 }; }
 
-      if (this.m === 0) {
+      if (this.index === 0) {
         if (bar.value === 'end' || bar.value === 'repeat-end') {
           bar = new musje.Bar('single');
         } else if (bar.value === 'repeat-both') {
@@ -112,7 +111,7 @@
       var bar = this._br, system = this.system;
       if (!bar) { return { width: 0, height: 0 }; }
 
-      if (system && this.m === system.measures.length - 1) {
+      if (system && this.index === system.measures.length - 1) {
         if (bar.value === 'repeat-begin') {
           bar = new musje.Bar('single');
         } else if (bar.value === 'repeat-both') {
