@@ -178,6 +178,10 @@
                    this.dot === 1 ? d * 1.5 : d * 1.75;
           }
         },
+        tie: {
+          type: 'boolean',
+          default: false
+        },
         second: {
           get: function () {
             return this.quarter * 60 / TEMPO;
@@ -212,9 +216,9 @@
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
         slurs: { $ref: '#/arrays/Slurs' },
-        tie: {
-          type: 'boolean',
-          default: false
+
+        initialize: function () {
+          this.pitch.note = this;
         },
         toString: function () {
           return this.pitch + this.duration;

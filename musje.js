@@ -69,11 +69,15 @@ if (typeof exports !== 'undefined') {
 
   function defineClass(namespace, model, category, type) {
     var
-      Constructor = namespace[type] = function (obj) { extend(this, obj); },
+      Constructor = namespace[type] = function (obj) {
+        extend(this, obj);
+        this.initialize.apply(this, arguments);
+      },
       proto = Constructor.prototype,
       propNames = [];
 
     proto.$name = type;
+    proto.initialize = function () {};
 
     objEach(model[category][type], function (descriptor, propName) {
       var defaultVal, objName;
@@ -228,7 +232,7 @@ if (typeof exports !== 'undefined') {
     function ArrayOfHetroObjects(a) {
       var arr = [];
 
-      arr.push = function () {
+      arr.add = function () {
         slice.call(arguments).forEach(function (item) {
           var
             propName = keys(item)[0],
@@ -238,7 +242,7 @@ if (typeof exports !== 'undefined') {
         });
       };
 
-      arr.push.apply(arr, a);
+      arr.add.apply(arr, a);
       return arr;
     }
     return ArrayOfHetroObjects;
@@ -248,12 +252,12 @@ if (typeof exports !== 'undefined') {
 
     function ArrayOfHomoObjects(a) {
       var arr = [];
-      arr.push = function () {
+      arr.add = function () {
         slice.call(arguments).forEach(function (item) {
           push.call(arr, new namespace[type](item));
         });
       };
-      arr.push.apply(arr, a);
+      arr.add.apply(arr, a);
       return arr;
     }
 
@@ -543,6 +547,10 @@ if (typeof exports !== 'undefined') {
                    this.dot === 1 ? d * 1.5 : d * 1.75;
           }
         },
+        tie: {
+          type: 'boolean',
+          default: false
+        },
         second: {
           get: function () {
             return this.quarter * 60 / TEMPO;
@@ -577,9 +585,9 @@ if (typeof exports !== 'undefined') {
         pitch: { $ref: '#/objects/Pitch' },
         duration: { $ref: '#/objects/Duration' },
         slurs: { $ref: '#/arrays/Slurs' },
-        tie: {
-          type: 'boolean',
-          default: false
+
+        initialize: function () {
+          this.pitch.note = this;
         },
         toString: function () {
           return this.pitch + this.duration;
@@ -668,96 +676,7 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
-  var
-    extend = musje.extend,
-    near = musje.near;
-
-  function getBeamedGroups(cell, groupDur) {
-    var counter = 0, group = [], groups = [];
-
-    function inGroup() {
-      return counter < groupDur && !near(counter, groupDur);
-    }
-    function putGroup() {
-      if (group.length > 1) { groups.push(group); }
-      group = [];
-    }
-
-    cell.data.forEach(function (musicData) {
-      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
-        return;
-      }
-      var
-        duration = musicData.duration,
-        dur = duration.quarter;
-
-      counter += dur;
-
-      if (inGroup()) {
-        if (duration.underbar) { group.push(musicData); }
-      } else if (near(counter, groupDur)) {
-        group.push(musicData);
-        putGroup();
-        counter = 0;
-      } else {
-        putGroup();
-        counter %= groupDur;
-      }
-    });
-    putGroup();
-
-    return groups;
-  }
-
-  // @param cell {Array} either a measure in a part, or a part in a measure.
-  // @param groupDur {number} Duration of a beam group in quarter.
-  function makeBeams(cell, groupDur) {
-
-    getBeamedGroups(cell, groupDur).forEach(function (group) {
-      // beamLevel starts from 0 while underbar starts from 1
-      var beamLevel = {};
-
-      function nextHasSameBeamlevel(index, level) {
-        var next = group[index + 1];
-        return next && next.duration.underbar > level;
-      }
-
-      group.forEach(function(musicData, i) {
-        var
-          underbar = musicData.duration.underbar,
-          level;
-        for (level = 0; level < underbar; level++) {
-          if (nextHasSameBeamlevel(i, level)) {
-            musicData.beams = musicData.beams || {};
-            if (beamLevel[level]) {
-              musicData.beams[level] = 'continue';
-            } else {
-              beamLevel[level] = true;
-              musicData.beams[level] = 'begin';
-            }
-          } else {
-            if (beamLevel[level]) {
-              musicData.beams = musicData.beams || {};
-              musicData.beams[level] = 'end';
-              delete beamLevel[level];
-            }
-          }
-        }
-      });
-    });
-  }
-
-  function linkCellData(cell) {
-    cell.data.forEach(function (data, d) {
-      data.cell = cell;
-      data.index = d;
-      if (data.pitch) {
-        data.pitch.note = data;
-      }
-    });
-  }
-
-  extend(musje.Score.prototype, {
+  musje.extend(musje.Score.prototype, {
 
     init: function () {
       this.prepareTimewise();
@@ -775,6 +694,7 @@ if (typeof exports !== 'undefined') {
         });
       });
     },
+
     walkMusicData: function (callback) {
       this.walkCells(function (cell, m, p) {
         cell.data.forEach(function (data, d) {
@@ -822,8 +742,11 @@ if (typeof exports !== 'undefined') {
 
     prepareCells: function () {
       this.walkCells(function (cell) {
-        linkCellData(cell);
-        makeBeams(cell, 1);
+        cell.data.forEach(function (data, d) {
+          data.cell = cell;
+          data.index = d;
+        });
+        cell.makeBeams(1);
       });
     },
 
@@ -834,11 +757,11 @@ if (typeof exports !== 'undefined') {
         var tie;
 
         if (data.$name === 'Note') {
-          tie = data.tie;
-          data.tie = {};
+          tie = data.duration.tie;
+          data.duration.tie = {};
           if (prev) {
-            data.tie.prev = prev;
-            prev.tie.next = data;
+            data.duration.tie.prev = prev;
+            prev.duration.tie.next = data;
           }
           prev = tie ? data : null;
         }
@@ -846,6 +769,109 @@ if (typeof exports !== 'undefined') {
     }
 
   });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  var near = musje.near;
+
+  function getBeamedGroups(cell, groupDur) {
+    var counter = 0, group = [], groups = [];
+
+    function inGroup() {
+      return counter < groupDur && !near(counter, groupDur);
+    }
+    function putGroup() {
+      if (group.length > 1) { groups.push(group); }
+      group = [];
+    }
+
+    cell.data.forEach(function (musicData) {
+      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
+        return;
+      }
+      var
+        duration = musicData.duration,
+        dur = duration.quarter;
+
+      counter += dur;
+
+      if (inGroup()) {
+        if (duration.underbar) { group.push(musicData); }
+      } else if (near(counter, groupDur)) {
+        group.push(musicData);
+        putGroup();
+        counter = 0;
+      } else {
+        putGroup();
+        counter %= groupDur;
+      }
+    });
+    putGroup();
+
+    return groups;
+  }
+
+  function Beam(value, level, note) {
+    this.value = value;
+    this.level = level;
+    this.note = note;
+  }
+  Beam.prototype.endNote = function () {
+    var
+      begin = this.note.index,
+      cell = this.note.cell,
+      i = begin + 1,
+      next = cell.data[i];
+
+    while (next && next.beams && next.beams[this.level].value !== 'end') {
+      i++;
+      next = cell.data[i];
+    }
+    return next;
+  };
+
+
+  // @param groupDur {number} Duration of a beam group in quarter.
+  musje.Cell.prototype.makeBeams = function (groupDur) {
+
+    getBeamedGroups(this, groupDur).forEach(function (group) {
+      // beamLevel starts from 0 while underbar starts from 1
+      var beamLevel = {};
+
+      function nextHasSameBeamlevel(index, level) {
+        var next = group[index + 1];
+        return next && next.duration.underbar > level;
+      }
+
+      group.forEach(function(musicData, i) {
+        var
+          underbar = musicData.duration.underbar,
+          level;
+        for (level = 0; level < underbar; level++) {
+          if (nextHasSameBeamlevel(i, level)) {
+            musicData.beams = musicData.beams || {};
+            if (beamLevel[level]) {
+              musicData.beams[level] = new Beam('continue', level, musicData);
+            } else {
+              beamLevel[level] = true;
+              musicData.beams[level] = new Beam('begin', level, musicData);
+            }
+          } else {
+            if (beamLevel[level]) {
+              musicData.beams = musicData.beams || {};
+              musicData.beams[level] = new Beam('end', level, musicData);
+              delete beamLevel[level];
+            }
+          }
+        }
+      });
+    });
+  };
 
 }(musje));
 
@@ -1003,7 +1029,7 @@ case 30:
  this.$ = 'repeat-both'; 
 break;
 case 32:
- this.$ = $$[$0-1]; onlyProperty($$[$0-1]).tie = true; 
+ this.$ = $$[$0-1]; onlyProperty($$[$0-1]).duration.tie = true; 
 break;
 case 33:
  this.$ = { rest: { duration: $$[$0] } }; 
@@ -3067,10 +3093,10 @@ return new Parser;
     var
       dx = x2 - x1,
       dy = y2 - y1,
-      c1x = -0.1 * dx,
-      c1y = -0.1 * dy,
-      c2x = 1.1 * dx,
-      c2y = 1.1 * dy;
+      c1x = 0,//-0.1 * dx,
+      c1y = 0,//-0.1 * dy,
+      c2x = dx,//1.1 * dx,
+      c2y = dy;//1.1 * dy;
 
     return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
       x1: x1,
@@ -3092,8 +3118,8 @@ return new Parser;
 
   Renderer.renderTie = function (note) {
     var
-      next = note.tie.next,
-      prev = note.tie.prev,
+      next = note.duration.tie.next,
+      prev = note.duration.tie.prev,
       system = note.cell.measure.system,
       noteDx,
       x1, x2, y1, y2;
@@ -3209,20 +3235,6 @@ return new Parser;
 (function (Renderer, Snap) {
   'use strict';
 
-  function findEndBeamedNote(note, beamLevel) {
-    var
-      begin = note.index,
-      cell = note.cell,
-      i = begin + 1,
-      next = cell.data[i];
-
-    while (next && next.beams && next.beams[beamLevel] !== 'end') {
-      i++;
-      next = cell.data[i];
-    }
-    return next;
-  }
-
   function x2(note) {
     var def = note.def;
     return def.pitchDef.width +
@@ -3260,10 +3272,14 @@ return new Parser;
       // Add underbars for eigth or shorter notes
       if (underbar) {
         for (var i = 0; i < underbar; i++) {
+
+          // Only render beam for the begin one.
           if (note.beams && note.beams[i]) {
-            if (note.beams[i] === 'begin') {
-              renderUnderbar(note, findEndBeamedNote(note, i), y, lo);
+            if (note.beams[i].value === 'begin') {
+              renderUnderbar(note, note.beams[i].endNote(), y, lo);
             }
+
+          // Unbeamed underbar
           } else {
             renderUnderbar(note, note, y, lo);
           }
@@ -3282,27 +3298,27 @@ return new Parser;
 
   if (!musje.Score) { return; }
 
-  if (window.AudioContext) {
-    var audioCtx = new window.AudioContext();
-    var gainNode = audioCtx.createGain();
-    gainNode.connect(audioCtx.destination);
-    gainNode.gain.value = 0.5;  // set the volume
-  }
+  // if (window.AudioContext) {
+  //   var audioCtx = new window.AudioContext();
+  //   var gainNode = audioCtx.createGain();
+  //   gainNode.connect(audioCtx.destination);
+  //   gainNode.gain.value = 0.5;  // set the volume
+  // }
 
-  // var oscillator = audioCtx.createOscillator();
-  // oscillator.connect(gainNode);
-  // oscillator.type = 'square'; // sine | square | sawtooth | triangle | custom
+  // // var oscillator = audioCtx.createOscillator();
+  // // oscillator.connect(gainNode);
+  // // oscillator.type = 'square'; // sine | square | sawtooth | triangle | custom
 
-  function playNote(time, dur, freq) {
-    if (!audioCtx) { return; }
+  // function playNote(time, dur, freq) {
+  //   if (!audioCtx) { return; }
 
-    var oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.connect(audioCtx.destination);
-    oscillator.frequency.value = freq;
-    oscillator.start(time);
-    oscillator.stop(time + dur - 0.05);
-  }
+  //   var oscillator = audioCtx.createOscillator();
+  //   oscillator.type = 'sine';
+  //   oscillator.connect(audioCtx.destination);
+  //   oscillator.frequency.value = freq;
+  //   oscillator.start(time);
+  //   oscillator.stop(time + dur - 0.05);
+  // }
 
   function midiPlayNote(note, time) {
     var
@@ -3310,10 +3326,10 @@ return new Parser;
       dur = note.duration.second;
 
     function play() {
-      if (!note.tie.prev) {
+      if (!note.duration.tie.prev) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!note.tie.next) {
+      if (!note.duration.tie.next) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 

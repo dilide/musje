@@ -25,7 +25,8 @@ gulp.task('concat', function () {
       './src/model/makeClasses-arrayConstructors.js',
       './src/model/makeJSONSchema.js',  // only for development
       './src/model/model.js',
-      './src/model/Score.prototype.js',
+      './src/model/Score.js',
+      './src/model/Cell.js',
 
       './src/parser/pre-parser.js',
       './.tmp/parser.js',

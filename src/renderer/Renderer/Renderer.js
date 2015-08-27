@@ -80,10 +80,10 @@
     var
       dx = x2 - x1,
       dy = y2 - y1,
-      c1x = -0.1 * dx,
-      c1y = -0.1 * dy,
-      c2x = 1.1 * dx,
-      c2y = 1.1 * dy;
+      c1x = 0,//-0.1 * dx,
+      c1y = 0,//-0.1 * dy,
+      c2x = dx,//1.1 * dx,
+      c2y = dy;//1.1 * dy;
 
     return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
       x1: x1,
@@ -105,8 +105,8 @@
 
   Renderer.renderTie = function (note) {
     var
-      next = note.tie.next,
-      prev = note.tie.prev,
+      next = note.duration.tie.next,
+      prev = note.duration.tie.prev,
       system = note.cell.measure.system,
       noteDx,
       x1, x2, y1, y2;

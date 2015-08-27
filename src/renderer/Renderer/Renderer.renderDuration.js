@@ -3,20 +3,6 @@
 (function (Renderer, Snap) {
   'use strict';
 
-  function findEndBeamedNote(note, beamLevel) {
-    var
-      begin = note.index,
-      cell = note.cell,
-      i = begin + 1,
-      next = cell.data[i];
-
-    while (next && next.beams && next.beams[beamLevel] !== 'end') {
-      i++;
-      next = cell.data[i];
-    }
-    return next;
-  }
-
   function x2(note) {
     var def = note.def;
     return def.pitchDef.width +
@@ -54,10 +40,14 @@
       // Add underbars for eigth or shorter notes
       if (underbar) {
         for (var i = 0; i < underbar; i++) {
+
+          // Only render beam for the begin one.
           if (note.beams && note.beams[i]) {
-            if (note.beams[i] === 'begin') {
-              renderUnderbar(note, findEndBeamedNote(note, i), y, lo);
+            if (note.beams[i].value === 'begin') {
+              renderUnderbar(note, note.beams[i].endNote(), y, lo);
             }
+
+          // Unbeamed underbar
           } else {
             renderUnderbar(note, note, y, lo);
           }

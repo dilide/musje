@@ -5,27 +5,27 @@
 
   if (!musje.Score) { return; }
 
-  if (window.AudioContext) {
-    var audioCtx = new window.AudioContext();
-    var gainNode = audioCtx.createGain();
-    gainNode.connect(audioCtx.destination);
-    gainNode.gain.value = 0.5;  // set the volume
-  }
+  // if (window.AudioContext) {
+  //   var audioCtx = new window.AudioContext();
+  //   var gainNode = audioCtx.createGain();
+  //   gainNode.connect(audioCtx.destination);
+  //   gainNode.gain.value = 0.5;  // set the volume
+  // }
 
-  // var oscillator = audioCtx.createOscillator();
-  // oscillator.connect(gainNode);
-  // oscillator.type = 'square'; // sine | square | sawtooth | triangle | custom
+  // // var oscillator = audioCtx.createOscillator();
+  // // oscillator.connect(gainNode);
+  // // oscillator.type = 'square'; // sine | square | sawtooth | triangle | custom
 
-  function playNote(time, dur, freq) {
-    if (!audioCtx) { return; }
+  // function playNote(time, dur, freq) {
+  //   if (!audioCtx) { return; }
 
-    var oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.connect(audioCtx.destination);
-    oscillator.frequency.value = freq;
-    oscillator.start(time);
-    oscillator.stop(time + dur - 0.05);
-  }
+  //   var oscillator = audioCtx.createOscillator();
+  //   oscillator.type = 'sine';
+  //   oscillator.connect(audioCtx.destination);
+  //   oscillator.frequency.value = freq;
+  //   oscillator.start(time);
+  //   oscillator.stop(time + dur - 0.05);
+  // }
 
   function midiPlayNote(note, time) {
     var
@@ -33,10 +33,10 @@
       dur = note.duration.second;
 
     function play() {
-      if (!note.tie.prev) {
+      if (!note.duration.tie.prev) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!note.tie.next) {
+      if (!note.duration.tie.next) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 

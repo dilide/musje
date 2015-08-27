@@ -35,11 +35,15 @@
 
   function defineClass(namespace, model, category, type) {
     var
-      Constructor = namespace[type] = function (obj) { extend(this, obj); },
+      Constructor = namespace[type] = function (obj) {
+        extend(this, obj);
+        this.initialize.apply(this, arguments);
+      },
       proto = Constructor.prototype,
       propNames = [];
 
     proto.$name = type;
+    proto.initialize = function () {};
 
     objEach(model[category][type], function (descriptor, propName) {
       var defaultVal, objName;

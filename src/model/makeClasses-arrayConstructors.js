@@ -20,7 +20,7 @@
     function ArrayOfHetroObjects(a) {
       var arr = [];
 
-      arr.push = function () {
+      arr.add = function () {
         slice.call(arguments).forEach(function (item) {
           var
             propName = keys(item)[0],
@@ -30,7 +30,7 @@
         });
       };
 
-      arr.push.apply(arr, a);
+      arr.add.apply(arr, a);
       return arr;
     }
     return ArrayOfHetroObjects;
@@ -40,12 +40,12 @@
 
     function ArrayOfHomoObjects(a) {
       var arr = [];
-      arr.push = function () {
+      arr.add = function () {
         slice.call(arguments).forEach(function (item) {
           push.call(arr, new namespace[type](item));
         });
       };
-      arr.push.apply(arr, a);
+      arr.add.apply(arr, a);
       return arr;
     }
 
