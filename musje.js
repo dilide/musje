@@ -672,7 +672,7 @@ if (typeof exports !== 'undefined') {
    */
   musje.score = function (obj) {
     if (typeof obj === 'string') { obj = JSON.parse(obj); }
-    return new musje.Score(obj).init();
+    return new musje.Score(obj);
   };
 
 }(musje));
@@ -684,7 +684,7 @@ if (typeof exports !== 'undefined') {
 
   musje.extend(musje.Score.prototype, {
 
-    init: function () {
+    initialize: function () {
       this.prepareTimewise();
       this.extractBars();
       this.prepareCells();
@@ -711,11 +711,9 @@ if (typeof exports !== 'undefined') {
 
     prepareTimewise: function () {
       var measures = this.measures;
-      this.walkCells(function (cell, m, p) {
+      this.walkCells(function (cell, m) {
         measures[m] = measures[m] || new musje.TimewiseMeasure();
-        var measure = measures[m];
-        // measure.parts = measure.parts || [];
-        measure.parts.push(cell);
+        measures[m].parts.push(cell);
       });
     },
 

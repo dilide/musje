@@ -5,7 +5,7 @@
 
   musje.extend(musje.Score.prototype, {
 
-    init: function () {
+    initialize: function () {
       this.prepareTimewise();
       this.extractBars();
       this.prepareCells();
@@ -32,11 +32,9 @@
 
     prepareTimewise: function () {
       var measures = this.measures;
-      this.walkCells(function (cell, m, p) {
+      this.walkCells(function (cell, m) {
         measures[m] = measures[m] || new musje.TimewiseMeasure();
-        var measure = measures[m];
-        // measure.parts = measure.parts || [];
-        measure.parts.push(cell);
+        measures[m].parts.push(cell);
       });
     },
 

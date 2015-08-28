@@ -303,7 +303,7 @@
    */
   musje.score = function (obj) {
     if (typeof obj === 'string') { obj = JSON.parse(obj); }
-    return new musje.Score(obj).init();
+    return new musje.Score(obj);
   };
 
 }(musje));
