@@ -48,7 +48,7 @@ gulp.task('concat', function () {
       './src/renderer/Layout/Layout.Header.js',
       './src/renderer/Layout/Layout.Content.js',
       './src/renderer/Layout/Layout.System.js',
-      './src/renderer/Layout/Layout.Measure.js',
+      './src/renderer/Layout/TimewiseMeasure.js',
       './src/renderer/Layout/Cell.js',
       './src/renderer/Layout/MusicData.js',
 

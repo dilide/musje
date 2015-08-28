@@ -74,23 +74,24 @@
         return next && next.duration.underbar > level;
       }
 
-      group.forEach(function(musicData, i) {
+      group.forEach(function(data, i) {
         var
-          underbar = musicData.duration.underbar,
+          underbar = data.duration.underbar,
           level;
+
         for (level = 0; level < underbar; level++) {
           if (nextHasSameBeamlevel(i, level)) {
-            musicData.beams = musicData.beams || {};
+            data.beams = data.beams || {};
             if (beamLevel[level]) {
-              musicData.beams[level] = new Beam('continue', level, musicData);
+              data.beams[level] = new Beam('continue', level, data);
             } else {
               beamLevel[level] = true;
-              musicData.beams[level] = new Beam('begin', level, musicData);
+              data.beams[level] = new Beam('begin', level, data);
             }
           } else {
             if (beamLevel[level]) {
-              musicData.beams = musicData.beams || {};
-              musicData.beams[level] = new Beam('end', level, musicData);
+              data.beams = data.beams || {};
+              data.beams[level] = new Beam('end', level, data);
               delete beamLevel[level];
             }
           }

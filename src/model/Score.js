@@ -31,12 +31,12 @@
     },
 
     prepareTimewise: function () {
-      var measures = this.measures = [];
+      var measures = this.measures;
       this.walkCells(function (cell, m, p) {
-        measures[m] = measures[m] || [];
+        measures[m] = measures[m] || new musje.TimewiseMeasure();
         var measure = measures[m];
-        measure.parts = measure.parts || [];
-        measure.parts[p] = cell;
+        // measure.parts = measure.parts || [];
+        measure.parts.push(cell);
       });
     },
 

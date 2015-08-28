@@ -22,14 +22,15 @@
 
   Layout.prototype._init = function (score) {
     var
-      defs = this.defs,
-      lo = this.options,
+      layout = this,
       measures = score.measures;
 
     measures.forEach(function (measure, m) {
-      measure = measures[m] = new Layout.Measure(measure, defs, lo);
+      measure = measures[m];
+      measure.layout = layout;
       measure.parts.forEach(function (cell) {
-        cell.flow(defs, lo);
+        cell.layout = layout;
+        cell.flow();
       });
       measure.calcMinWidth();
     });

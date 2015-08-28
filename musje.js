@@ -438,7 +438,8 @@ if (typeof exports !== 'undefined') {
     root: {
       Score: {
         head: { $ref: '#/objects/ScoreHead' },
-        parts: { $ref: '#/arrays/Parts' },
+        parts: { $ref: '#/arrays/PartwiseParts' },
+        measures: { $ref: '#/arrays/TimewiseMeasures' },
 
         toString: function () {
           return this.head + this.parts.map(function (part) {
@@ -471,14 +472,18 @@ if (typeof exports !== 'undefined') {
         }
       },
 
-      Part: {
+      PartwisePart: {
         // head: { $ref: '#/objects/PartHead' },
-        measures: { $ref: '#/arrays/Measures' },
+        measures: { $ref: '#/arrays/Cells' },
         toString: function () {
           return this.measures.map(function (cell) {
             return cell;
           }).join(' ');
         }
+      },
+
+      TimewiseMeasure: {
+        parts: { $ref: '#/arrays/Cells' }
       },
 
       Cell: {
@@ -641,8 +646,9 @@ if (typeof exports !== 'undefined') {
     // Arrays
     // ---------------------------------------------------------------
     arrays: {
-      Parts: { $ref: '#/objects/Part' },
-      Measures: { $ref: '#/objects/Cell' },
+      PartwiseParts: { $ref: '#/objects/PartwisePart' },
+      TimewiseMeasures: { $ref: '#/objects/TimewiseMeasure' },
+      Cells: { $ref: '#/objects/Cell' },
       MusicData: [
         { $ref: '#/elements/Time' },
         { $ref: '#/elements/Note' },
@@ -704,12 +710,12 @@ if (typeof exports !== 'undefined') {
     },
 
     prepareTimewise: function () {
-      var measures = this.measures = [];
+      var measures = this.measures;
       this.walkCells(function (cell, m, p) {
-        measures[m] = measures[m] || [];
+        measures[m] = measures[m] || new musje.TimewiseMeasure();
         var measure = measures[m];
-        measure.parts = measure.parts || [];
-        measure.parts[p] = cell;
+        // measure.parts = measure.parts || [];
+        measure.parts.push(cell);
       });
     },
 
@@ -848,23 +854,24 @@ if (typeof exports !== 'undefined') {
         return next && next.duration.underbar > level;
       }
 
-      group.forEach(function(musicData, i) {
+      group.forEach(function(data, i) {
         var
-          underbar = musicData.duration.underbar,
+          underbar = data.duration.underbar,
           level;
+
         for (level = 0; level < underbar; level++) {
           if (nextHasSameBeamlevel(i, level)) {
-            musicData.beams = musicData.beams || {};
+            data.beams = data.beams || {};
             if (beamLevel[level]) {
-              musicData.beams[level] = new Beam('continue', level, musicData);
+              data.beams[level] = new Beam('continue', level, data);
             } else {
               beamLevel[level] = true;
-              musicData.beams[level] = new Beam('begin', level, musicData);
+              data.beams[level] = new Beam('begin', level, data);
             }
           } else {
             if (beamLevel[level]) {
-              musicData.beams = musicData.beams || {};
-              musicData.beams[level] = new Beam('end', level, musicData);
+              data.beams = data.beams || {};
+              data.beams[level] = new Beam('end', level, data);
               delete beamLevel[level];
             }
           }
@@ -1860,35 +1867,27 @@ return new Parser;
   Defs.prototype._makeNote = function (id, note) {
     var
       pitch = note.pitch,
-      underbar = note.duration.underbar,
+      duration = note.duration,
+      underbar = duration.underbar,
       pitchId = pitch.defId + underbar,
       pitchDef = this._getPitch(pitchId, pitch, underbar),
-      durationDef = this.get(note.duration);
-
-    return {
-      pitchDef: pitchDef,
-      durationDef: durationDef,
-      height: pitchDef.height,
-      width: pitchDef.width + durationDef.width,
-      minWidth: pitchDef.width + durationDef.minWidth,
-      maxWidth: pitchDef.width + durationDef.maxWidth
-    };
-  };
-
-  // Rest does not have its only RestDef class.
-  // It is just a trick to use a note with pitch.step = 0.
-  Defs.prototype._makeRest = function(id, rest) {
-    var
-      duration = rest.duration,
-      pitchDef = this._getPitch(id, { step: 0, octave: 0 }, duration.underbar),
       durationDef = this.get(duration);
 
     return {
       pitchDef: pitchDef,
       durationDef: durationDef,
       height: pitchDef.height,
-      width: pitchDef.width + durationDef.width
+      width: pitchDef.width + durationDef.width *
+                              (underbar ? pitchDef.scale.x : 1)
     };
+  };
+
+  // Make rest is a trick to use a note with pitch.step = 0.
+  Defs.prototype._makeRest = function(id, rest) {
+    return this._makeNote(id, new musje.Note({
+      pitch: { step: 0 },
+      duration: rest.duration
+    }));
   };
 
 }(musje));
@@ -2304,14 +2303,15 @@ return new Parser;
 
   Layout.prototype._init = function (score) {
     var
-      defs = this.defs,
-      lo = this.options,
+      layout = this,
       measures = score.measures;
 
     measures.forEach(function (measure, m) {
-      measure = measures[m] = new Layout.Measure(measure, defs, lo);
+      measure = measures[m];
+      measure.layout = layout;
       measure.parts.forEach(function (cell) {
-        cell.flow(defs, lo);
+        cell.layout = layout;
+        cell.flow();
       });
       measure.calcMinWidth();
     });
@@ -2759,24 +2759,13 @@ return new Parser;
 
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (TimewiseMeasurePrototype, Snap) {
   'use strict';
 
-  var
-    defineProperty = Object.defineProperty,
-    extend = musje.extend,
-    Layout = musje.Layout;
+  var defineProperty = Object.defineProperty;
 
-  // @constructor Measure
-  var Measure = Layout.Measure = function (measure, defs, lo) {
-    this._defs = defs;
-    this._lo = lo;
-
-    extend(this, measure);
-  };
-
-  Measure.prototype.calcMinWidth = function () {
-    var lo = this._lo, minWidth = 0;
+  TimewiseMeasurePrototype.calcMinWidth = function () {
+    var lo = this.layout.options, minWidth = 0;
 
     this.parts.forEach(function (cell) {
       minWidth = Math.max(minWidth, cell.minWidth);
@@ -2786,11 +2775,12 @@ return new Parser;
     this.minWidth = minWidth + this._padding;
   };
 
-  Measure.prototype.flow = function () {
+  TimewiseMeasurePrototype.flow = function () {
     var measure = this;
     measure.parts = measure.parts.map(function (cell) {
       cell.measure = measure;
-      cell._x = measure.barLeft.width / 2 + measure._lo.measurePaddingRight;
+      cell._x = measure.barLeft.width / 2 +
+                measure.layout.options.measurePaddingRight;
 
       cell.y2 = measure.system.height;
 
@@ -2801,7 +2791,7 @@ return new Parser;
     });
   };
 
-  defineProperty(Measure.prototype, 'system', {
+  defineProperty(TimewiseMeasurePrototype, 'system', {
     get: function () {
       return this._s;
     },
@@ -2812,7 +2802,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Measure.prototype, 'width', {
+  defineProperty(TimewiseMeasurePrototype, 'width', {
     get: function () {
       return this._w;
     },
@@ -2825,7 +2815,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Measure.prototype, 'x', {
+  defineProperty(TimewiseMeasurePrototype, 'x', {
     get: function () {
       return this._x;
     },
@@ -2835,7 +2825,7 @@ return new Parser;
     }
   });
 
-  defineProperty(Measure.prototype, 'barLeft', {
+  defineProperty(TimewiseMeasurePrototype, 'barLeft', {
 
     // barLeft at first measure of a system:
     // |]  -> |
@@ -2852,7 +2842,7 @@ return new Parser;
           bar = new musje.Bar('repeat-begin');
         }
       }
-      bar.def = this._defs.get(bar);
+      bar.def = this.layout.defs.get(bar);
       return bar;
     },
 
@@ -2861,12 +2851,14 @@ return new Parser;
     }
   });
 
-  defineProperty(Measure.prototype, 'barRight', {
+  defineProperty(TimewiseMeasurePrototype, 'barRight', {
 
     // barRight at last measure of a system:
     //  |: ->  |
     // :|: -> :|
     get: function () {
+      if (!this.layout) { return this._br; }
+
       var bar = this._br, system = this.system;
       if (!bar) { return { width: 0, height: 0 }; }
 
@@ -2877,7 +2869,7 @@ return new Parser;
           bar = new musje.Bar('repeat-end');
         }
       }
-      bar.def = this._defs.get(bar);
+      bar.def = this.layout.defs.get(bar);
       return bar;
     },
 
@@ -2886,7 +2878,7 @@ return new Parser;
     }
   });
 
-}(musje, Snap));
+}(musje.TimewiseMeasure.prototype, Snap));
 
 /* global musje, Snap */
 
@@ -2895,8 +2887,12 @@ return new Parser;
 
   var defineProperty = Object.defineProperty;
 
-  CellPrototype.flow = function (defs, lo) {
-    var x = 0, minHeight;
+  CellPrototype.flow = function () {
+    var
+      defs = this.layout.defs,
+      lo = this.layout.options,
+      x = 0,
+      minHeight;
 
     this.data.forEach(function (data) {
       var def = data.def = defs.get(data);
@@ -3008,7 +3004,6 @@ return new Parser;
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
 
-
 }(musje));
 
 /* global musje, Snap */
@@ -3066,19 +3061,22 @@ return new Parser;
     });
   };
 
+  function renderNote(note, cell, lo) {
+    note.el = cell.el.g().transform(Snap.matrix()
+                                .translate(note.x, note.y));
+    note.el.use(note.def.pitchDef.el);
+    Renderer.renderDuration(note, lo);
+  }
 
   Renderer.renderCell = function (cell, lo) {
     cell.data.forEach(function (data) {
       switch (data.$name) {
-      case 'Rest':  // fall through
+      case 'Rest':
+        renderNote(data, cell, lo);
+        break;
       case 'Note':
-        data.el = cell.el.g().transform(Snap.matrix()
-                                .translate(data.x, data.y));
-        data.el.use(data.def.pitchDef.el);
-        Renderer.renderDuration(data, lo);
-        if (data.$name === 'Note') {
-          Renderer.renderTie(data);
-        }
+        renderNote(data, cell, lo);
+        Renderer.renderTie(data);
         break;
       case 'Time':
         data.el = cell.el.use(data.def.el).attr({
@@ -3235,14 +3233,8 @@ return new Parser;
 (function (Renderer, Snap) {
   'use strict';
 
-  function x2(note) {
-    var def = note.def;
-    return def.pitchDef.width +
-           def.durationDef.width * def.pitchDef.scale.x;
-  }
-
   function renderUnderbar(note1, note2, y, lo) {
-    note1.el.line(0, y, note2.x - note1.x + x2(note2), y)
+    note1.el.line(0, y, note2.x - note1.x + note2.width, y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 

@@ -46,5 +46,4 @@
 
   ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
 
-
 }(musje));

@@ -53,19 +53,22 @@
     });
   };
 
+  function renderNote(note, cell, lo) {
+    note.el = cell.el.g().transform(Snap.matrix()
+                                .translate(note.x, note.y));
+    note.el.use(note.def.pitchDef.el);
+    Renderer.renderDuration(note, lo);
+  }
 
   Renderer.renderCell = function (cell, lo) {
     cell.data.forEach(function (data) {
       switch (data.$name) {
-      case 'Rest':  // fall through
+      case 'Rest':
+        renderNote(data, cell, lo);
+        break;
       case 'Note':
-        data.el = cell.el.g().transform(Snap.matrix()
-                                .translate(data.x, data.y));
-        data.el.use(data.def.pitchDef.el);
-        Renderer.renderDuration(data, lo);
-        if (data.$name === 'Note') {
-          Renderer.renderTie(data);
-        }
+        renderNote(data, cell, lo);
+        Renderer.renderTie(data);
         break;
       case 'Time':
         data.el = cell.el.use(data.def.el).attr({

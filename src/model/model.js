@@ -69,7 +69,8 @@
     root: {
       Score: {
         head: { $ref: '#/objects/ScoreHead' },
-        parts: { $ref: '#/arrays/Parts' },
+        parts: { $ref: '#/arrays/PartwiseParts' },
+        measures: { $ref: '#/arrays/TimewiseMeasures' },
 
         toString: function () {
           return this.head + this.parts.map(function (part) {
@@ -102,14 +103,18 @@
         }
       },
 
-      Part: {
+      PartwisePart: {
         // head: { $ref: '#/objects/PartHead' },
-        measures: { $ref: '#/arrays/Measures' },
+        measures: { $ref: '#/arrays/Cells' },
         toString: function () {
           return this.measures.map(function (cell) {
             return cell;
           }).join(' ');
         }
+      },
+
+      TimewiseMeasure: {
+        parts: { $ref: '#/arrays/Cells' }
       },
 
       Cell: {
@@ -272,8 +277,9 @@
     // Arrays
     // ---------------------------------------------------------------
     arrays: {
-      Parts: { $ref: '#/objects/Part' },
-      Measures: { $ref: '#/objects/Cell' },
+      PartwiseParts: { $ref: '#/objects/PartwisePart' },
+      TimewiseMeasures: { $ref: '#/objects/TimewiseMeasure' },
+      Cells: { $ref: '#/objects/Cell' },
       MusicData: [
         { $ref: '#/elements/Time' },
         { $ref: '#/elements/Note' },

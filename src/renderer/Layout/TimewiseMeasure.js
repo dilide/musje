@@ -1,23 +1,12 @@
 /* global musje, Snap */
 
-(function (musje, Snap) {
+(function (TimewiseMeasurePrototype, Snap) {
   'use strict';
 
-  var
-    defineProperty = Object.defineProperty,
-    extend = musje.extend,
-    Layout = musje.Layout;
+  var defineProperty = Object.defineProperty;
 
-  // @constructor Measure
-  var Measure = Layout.Measure = function (measure, defs, lo) {
-    this._defs = defs;
-    this._lo = lo;
-
-    extend(this, measure);
-  };
-
-  Measure.prototype.calcMinWidth = function () {
-    var lo = this._lo, minWidth = 0;
+  TimewiseMeasurePrototype.calcMinWidth = function () {
+    var lo = this.layout.options, minWidth = 0;
 
     this.parts.forEach(function (cell) {
       minWidth = Math.max(minWidth, cell.minWidth);
@@ -27,11 +16,12 @@
     this.minWidth = minWidth + this._padding;
   };
 
-  Measure.prototype.flow = function () {
+  TimewiseMeasurePrototype.flow = function () {
     var measure = this;
     measure.parts = measure.parts.map(function (cell) {
       cell.measure = measure;
-      cell._x = measure.barLeft.width / 2 + measure._lo.measurePaddingRight;
+      cell._x = measure.barLeft.width / 2 +
+                measure.layout.options.measurePaddingRight;
 
       cell.y2 = measure.system.height;
 
@@ -42,7 +32,7 @@
     });
   };
 
-  defineProperty(Measure.prototype, 'system', {
+  defineProperty(TimewiseMeasurePrototype, 'system', {
     get: function () {
       return this._s;
     },
@@ -53,7 +43,7 @@
     }
   });
 
-  defineProperty(Measure.prototype, 'width', {
+  defineProperty(TimewiseMeasurePrototype, 'width', {
     get: function () {
       return this._w;
     },
@@ -66,7 +56,7 @@
     }
   });
 
-  defineProperty(Measure.prototype, 'x', {
+  defineProperty(TimewiseMeasurePrototype, 'x', {
     get: function () {
       return this._x;
     },
@@ -76,7 +66,7 @@
     }
   });
 
-  defineProperty(Measure.prototype, 'barLeft', {
+  defineProperty(TimewiseMeasurePrototype, 'barLeft', {
 
     // barLeft at first measure of a system:
     // |]  -> |
@@ -93,7 +83,7 @@
           bar = new musje.Bar('repeat-begin');
         }
       }
-      bar.def = this._defs.get(bar);
+      bar.def = this.layout.defs.get(bar);
       return bar;
     },
 
@@ -102,12 +92,14 @@
     }
   });
 
-  defineProperty(Measure.prototype, 'barRight', {
+  defineProperty(TimewiseMeasurePrototype, 'barRight', {
 
     // barRight at last measure of a system:
     //  |: ->  |
     // :|: -> :|
     get: function () {
+      if (!this.layout) { return this._br; }
+
       var bar = this._br, system = this.system;
       if (!bar) { return { width: 0, height: 0 }; }
 
@@ -118,7 +110,7 @@
           bar = new musje.Bar('repeat-end');
         }
       }
-      bar.def = this._defs.get(bar);
+      bar.def = this.layout.defs.get(bar);
       return bar;
     },
 
@@ -127,4 +119,4 @@
     }
   });
 
-}(musje, Snap));
+}(musje.TimewiseMeasure.prototype, Snap));

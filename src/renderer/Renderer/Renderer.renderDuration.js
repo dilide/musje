@@ -3,14 +3,8 @@
 (function (Renderer, Snap) {
   'use strict';
 
-  function x2(note) {
-    var def = note.def;
-    return def.pitchDef.width +
-           def.durationDef.width * def.pitchDef.scale.x;
-  }
-
   function renderUnderbar(note1, note2, y, lo) {
-    note1.el.line(0, y, note2.x - note1.x + x2(note2), y)
+    note1.el.line(0, y, note2.x - note1.x + note2.width, y)
            .attr('stroke-width', lo.typeStrokeWidth);
   }
 

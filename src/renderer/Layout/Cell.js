@@ -5,8 +5,12 @@
 
   var defineProperty = Object.defineProperty;
 
-  CellPrototype.flow = function (defs, lo) {
-    var x = 0, minHeight;
+  CellPrototype.flow = function () {
+    var
+      defs = this.layout.defs,
+      lo = this.layout.options,
+      x = 0,
+      minHeight;
 
     this.data.forEach(function (data) {
       var def = data.def = defs.get(data);

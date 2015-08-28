@@ -45,35 +45,27 @@
   Defs.prototype._makeNote = function (id, note) {
     var
       pitch = note.pitch,
-      underbar = note.duration.underbar,
+      duration = note.duration,
+      underbar = duration.underbar,
       pitchId = pitch.defId + underbar,
       pitchDef = this._getPitch(pitchId, pitch, underbar),
-      durationDef = this.get(note.duration);
-
-    return {
-      pitchDef: pitchDef,
-      durationDef: durationDef,
-      height: pitchDef.height,
-      width: pitchDef.width + durationDef.width,
-      minWidth: pitchDef.width + durationDef.minWidth,
-      maxWidth: pitchDef.width + durationDef.maxWidth
-    };
-  };
-
-  // Rest does not have its only RestDef class.
-  // It is just a trick to use a note with pitch.step = 0.
-  Defs.prototype._makeRest = function(id, rest) {
-    var
-      duration = rest.duration,
-      pitchDef = this._getPitch(id, { step: 0, octave: 0 }, duration.underbar),
       durationDef = this.get(duration);
 
     return {
       pitchDef: pitchDef,
       durationDef: durationDef,
       height: pitchDef.height,
-      width: pitchDef.width + durationDef.width
+      width: pitchDef.width + durationDef.width *
+                              (underbar ? pitchDef.scale.x : 1)
     };
+  };
+
+  // Make rest is a trick to use a note with pitch.step = 0.
+  Defs.prototype._makeRest = function(id, rest) {
+    return this._makeNote(id, new musje.Note({
+      pitch: { step: 0 },
+      duration: rest.duration
+    }));
   };
 
 }(musje));
