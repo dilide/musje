@@ -1112,7 +1112,7 @@ if (typeof exports !== 'undefined') {
 
   /**
    * @class
-   * @alias musje.Cell~Beam
+   * @memberof musje.Cell~
    * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
    * @param {number} level - Beam level
    * @param {musje.Note} note
@@ -1122,6 +1122,12 @@ if (typeof exports !== 'undefined') {
     this.level = level;
     this.note = note;
   }
+
+  /**
+   * Get the end note of the beam group.
+   * @memberOf musje.Cell~
+   * @return {musje.Note} End note of the beam group.
+   */
   Beam.prototype.endNote = function () {
     var
       begin = this.note.index,
