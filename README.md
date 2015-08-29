@@ -49,6 +49,11 @@ var obj = {
 var score = musje.score(obj or jsonString);
 ```
 
+## Documentation
+
+http://jianpu.github.io/musje/doc/
+
+
 ## Develop
 
 ### Install

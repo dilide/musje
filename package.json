@@ -30,6 +30,7 @@
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
     "gulp-jison-cli": "^0.1.5",
+    "gulp-jsdoc": "^0.1.4",
     "gulp-sourcemaps": "^1.5.2",
     "run-sequence": "^1.1.2"
   }

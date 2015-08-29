@@ -1,11 +1,14 @@
 /* global musje, Snap */
 
-(function (Layout, Snap) {
+(function (musje, Snap) {
   'use strict';
 
-  var defineProperty = Object.defineProperty;
-
-  var Body = Layout.Body = function (layout) {
+  /**
+   * Body
+   * @class
+   * @param {musje.Layout} layout
+   */
+  musje.Layout.Body = function (layout) {
     this._layout = layout;
     var
       svg = layout.svg,
@@ -17,26 +20,43 @@
     this.width = lo.width - lo.marginLeft - lo.marginRight;
   };
 
-  defineProperty(Body.prototype, 'width', {
-    get: function () {
-      return this._w;
+  musje.defineProperties(musje.Layout.Body.prototype,
+  /** @lends musje.Layout.Body.prototype */
+  {
+    /**
+     * Width of the body.
+     * - (Getter) Get the body width.
+     * - (Setter) Set the body width and this also induces setting the
+     * header and content width if one exists.
+     * @type {number}
+     */
+    width: {
+      get: function () {
+        return this._w;
+      },
+      set: function (w) {
+        this._w = w;
+        var layout = this._layout;
+        if (layout.header) { layout.header.width = w; }
+        if (layout.content) { layout.content.width = w; }
+      }
     },
-    set: function (w) {
-      this._w = w;
-      var layout = this._layout;
-      if (layout.header) { layout.header.width = w; }
-      if (layout.content) { layout.content.width = w; }
+
+    /**
+     * Height of the body.
+     * - (Getter) Get the body height.
+     * - (Setter) Set the body height and this will also cause the height of svg to vary.
+     * @type {number}
+     */
+    height: {
+      get: function () {
+        return this._h;
+      },
+      set: function (h) {
+        var layout = this._layout, lo = layout.options;
+        layout.svg.height = h + lo.marginTop + lo.marginBottom;
+      }
     }
   });
 
-  defineProperty(Body.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      var layout = this._layout, lo = layout.options;
-      layout.svg.height = h + lo.marginTop + lo.marginBottom;
-    }
-  });
-
-}(musje.Layout, Snap));
+}(musje, Snap));

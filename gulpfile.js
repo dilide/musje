@@ -8,6 +8,8 @@ var jisonCli = require('gulp-jison-cli');
 var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var browserSync = require('browser-sync').create();
+var jsdoc = require('gulp-jsdoc');
+
 
 gulp.task('jison', function () {
   return gulp.src('./src/parser/parser.jison')
@@ -77,22 +79,46 @@ gulp.task('demo', ['build'], function() {
     startPath: '/demo/',
   });
 
-  gulp.watch('src/parser/parser.jison', function () {
+  gulp.watch('./src/parser/parser.jison', function () {
     runSequence('jison', 'concat', browserSync.reload);
   });
-  gulp.watch('src/**/*.js', function () {
+  gulp.watch('./src/**/*.js', function () {
     runSequence('concat', browserSync.reload);
   });
-  gulp.watch('musje.css', function () {
-    gulp.src('musje.css')
+  gulp.watch('./musje.css', function () {
+    gulp.src('./musje.css')
       .pipe(browserSync.stream());
   });
-  gulp.watch('demo/main.css', function () {
-    gulp.src('demo/main.css')
+  gulp.watch('./demo/main.css', function () {
+    gulp.src('./demo/main.css')
       .pipe(browserSync.stream());
   });
-  gulp.watch(['demo/*.html', 'demo/main.js'])
+  gulp.watch(['./demo/*.html', './demo/main.js'])
     .on('change', browserSync.reload);
+});
+
+gulp.task('doc', function () {
+  return gulp.src([
+    './README.md',
+    './src/**/*.js', '!./src/parser/*-parser.js'
+  ])
+    .pipe(jsdoc.parser({
+      plugins: ['plugins/markdown']
+    }))
+    .pipe(jsdoc.generator('./doc'));
+});
+
+gulp.task('watch-doc', ['doc'], function() {
+  browserSync.init({
+    server: {
+      baseDir: './'
+    },
+    startPath: '/doc/',
+  });
+
+  gulp.watch('./src/**/*.js', function () {
+    runSequence('doc', browserSync.reload);
+  });
 });
 
 

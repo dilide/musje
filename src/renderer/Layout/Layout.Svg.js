@@ -5,6 +5,11 @@
 
   var defineProperty = Object.defineProperty;
 
+  /**
+   * @class
+   * @alias musje.Layout.Svg
+   * @param layout {musje.Layout}
+   */
   var Svg = Layout.Svg = function (layout) {
     this._layout = layout;
     var lo = layout.options;
