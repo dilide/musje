@@ -84,11 +84,52 @@ if (typeof exports !== 'undefined') {
    * ```
    */
   musje.defineProperties = function (obj, props) {
-    musje.objEach(props, function (value, key) {
-      defineProperty(obj, key, value);
+    musje.objEach(props, function (value, prop) {
+      var
+        type = typeof value,
+        descriptor;
+
+      // Accessor property.
+      if (type === 'object' && (typeof value.get === 'function' ||
+                                typeof value.set === 'function')) {
+        descriptor = value;
+
+      // Function
+      } else if (type === 'function' || prop === '$type') {
+        descriptor = { value: value };
+
+      } else {
+        descriptor = {
+          value: value,
+          writable: true,
+          enumerable: true
+        };
+      }
+
+      defineProperty(obj, prop, descriptor);
     });
   };
 
+  musje.toJSONWithDefault = true;
+
+  musje.makeToJSON = function (values, elName) {
+    return function () {
+      var
+        that = this,
+        result = {};
+
+      musje.objEach(values, function (defaultValue, prop) {
+        if (musje.toJSONWithDefault || that[prop] !== defaultValue) {
+          result[prop] = that[prop];
+        }
+      });
+      if (!elName) { return result; }
+
+      var res = {};
+      res[elName] = result;
+      return res;
+    };
+  };
 
   /**
    * @member musje.parser
@@ -116,853 +157,91 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
-  var
-    defineProperty = Object.defineProperty,
-    keys = Object.keys,
-    objEach = musje.objEach,
-    extend = musje.extend;
-
-  function defaultValue(model, $ref) {
-    var tmp = $ref.split('/'), category = tmp[1], schemaName = tmp[2];
-    return model[category] && model[category][schemaName] &&
-           model[category][schemaName].default;
-  }
-
-  function makeObjectProperty(namespace, obj, propName, type) {
-    var
-      varName = '_' + propName,
-      Constructor = namespace[type];
-
-    if (!Constructor) { throw new Error('Undefined type: ' + type); }
-
-    defineProperty(obj, propName, {
-      get: function () {
-        if (this[varName] === undefined) {
-          this[varName] = new Constructor();
-        }
-        return this[varName];
-      },
-      set: function (v) { this[varName] = new Constructor(v); }
-    });
-  }
-
-  function defineClass(namespace, model, category, type) {
-    var
-      Constructor = namespace[type] = function (obj) {
-        extend(this, obj);
-        this.initialize.apply(this, arguments);
-      },
-      proto = Constructor.prototype,
-      propNames = [];
-
-    proto.$name = type;
-    proto.initialize = function () {};
-
-    objEach(model[category][type], function (descriptor, propName) {
-      var defaultVal, objName;
-
-      // ES5 accessor property
-      // -----------------------------------------------------------
-      if (descriptor.get || descriptor.set) {
-        defineProperty(proto, propName, descriptor);
-
-      // Method
-      // -----------------------------------------------------------
-      } else if (typeof descriptor === 'function') {
-        proto[propName] = descriptor;
-
-      // Default value of primitive types
-      // -----------------------------------------------------------
-      } else if (descriptor.default !== undefined) {
-        proto[propName] = descriptor.default;
-        propNames.push(propName);
-
-      // Schema reference
-      // -----------------------------------------------------------
-      } else if (descriptor.$ref) {
-        defaultVal = defaultValue(model, descriptor.$ref);
-        objName = descriptor.$ref.split('/')[2];
-        if (defaultVal !== undefined) {
-          proto[propName] = defaultVal;
-        } else if (objName) {
-          makeObjectProperty(namespace, proto, propName, objName);
-        }
-        propNames.push(propName);
-      }
-    });
-
-
-
-    if (category === 'elements') {
-      proto.toJSON = function () {
-        var result = {},
-          inner = result[this.$name] = {},
-          i, propName;
-        for (i = 0; i < propNames.length; i++) {
-          propName = propNames[i];
-          inner[propName] = this[propName];
-        }
-        return result;
-      };
-    } else {
-      proto.toJSON = function () {
-        var result = {}, i, propName;
-        for (i = 0; i < propNames.length; i++) {
-          propName = propNames[i];
-          result[propName] = this[propName];
-        }
-        return result;
-      };
-    }
-  }
-
-  function makeSimpleClass(model, type) {
-    var
-      Constructor = function (val) { this.value = val; },
-      proto = Constructor.prototype,
-      defaultValue = model.elements[type].default;
-
-    proto.$name = type;
-
-    objEach(model.elements[type], function (descriptor, propName) {
-
-      if (descriptor.default !== undefined) {
-        proto.value = descriptor.default;
-
-      // Method
-      } else if (typeof descriptor === 'function') {
-        proto[propName] = descriptor;
-      }
-    });
-
-    proto.toJSON = function () {
-      var result = {};
-      result[type] = this.value;
-      return result;
-    };
-
-    return Constructor;
-  }
-
-
-  // @constructor ClassMaker
-  // Makes classes from the model and stores them in the namespace.
-  var makeClasses = musje.makeClasses = function (namespace, model) {
-
-    // Make array classes
-    // ------------------------------------------------------------
-    objEach(model.arrays, function (descriptor, type) {
-      if (Array.isArray(descriptor)) {
-        namespace[type] = makeClasses.ArrayOfHetroObjects(namespace);
-      } else if (descriptor.$ref) {
-        namespace[type] = makeClasses.ArrayOfHomoObjects(namespace,
-                                        descriptor.$ref.split('/')[2]);
-      } else {
-        namespace[type] = makeClasses.ArrayOfPrimitives();
-      }
-    });
-
-    // Make object classes
-    // ------------------------------------------------------------
-    keys(model.objects).forEach(function (type) {
-      defineClass(namespace, model, 'objects', type);
-    });
-
-    // Make element classes
-    // ------------------------------------------------------------
-    objEach(model.elements, function (descriptor, type) {
-      if (descriptor.type) {
-        namespace[type] = makeSimpleClass(model, type);
-      } else {
-        defineClass(namespace, model, 'elements', type);
-      }
-    });
-
-    // Make root class
-    // ------------------------------------------------------------
-    var rootName = keys(model.root)[0];
-    defineClass(namespace, model,'root', rootName);
-    namespace[rootName].prototype.stringify = function (replacer, space) {
-      return JSON.stringify(this, replacer, space);
-    };
-  };
-
-}(musje));
-
-/* global musje */
-
-(function (makeClasses) {
-  'use strict';
-
-  var
-    slice = Array.prototype.slice,
-    push = Array.prototype.push,
-    keys = Object.keys;
-
-  function camel(str) {
-    return str.charAt(0).toUpperCase() + str.substr(1);
-  }
-
-  // The array construtors are not *real* constructors.
-
-  makeClasses.ArrayOfHetroObjects = function (namespace) {
-
-    // Overwrite array push function with applying the child constructor.
-    function ArrayOfHetroObjects(a) {
-      var arr = [];
-
-      arr.add = function () {
-        slice.call(arguments).forEach(function (item) {
-          var
-            propName = keys(item)[0],
-            ItemConstructor = namespace[camel(propName)];
-
-          push.call(arr, new ItemConstructor(item[propName]));
-        });
-      };
-
-      arr.add.apply(arr, a);
-      return arr;
-    }
-    return ArrayOfHetroObjects;
-  };
-
-  makeClasses.ArrayOfHomoObjects = function (namespace, type) {
-
-    function ArrayOfHomoObjects(a) {
-      var arr = [];
-      arr.add = function () {
-        slice.call(arguments).forEach(function (item) {
-          push.call(arr, new namespace[type](item));
-        });
-      };
-      arr.add.apply(arr, a);
-      return arr;
-    }
-
-    return ArrayOfHomoObjects;
-  };
-
-  makeClasses.ArrayOfPrimitives = function () {
-
-    function ArrayOfPrimitives(a) {
-      var arr = [];
-      arr.push.apply(arr, a);
-      return arr;
-    }
-
-    return ArrayOfPrimitives;
-  };
-
-}(musje.makeClasses));
-
-/* global musje */
-
-(function (musje) {
-  'use strict';
-
-  var
-    extend = musje.extend,
-    objEach = musje.objEach;
-
-  // TODO: To be implemented without dependency...
-  function objDeepClone(obj) {
-    return angular.copy(obj);
-  }
-
-  function noAccessor(obj) {
-    var result = objDeepClone(obj);
-    objEach(result, function (val, key) {
-      if (val.get || val.set) { delete result[key]; }
-    });
-    return result;
-  }
-
-  musje.makeJSONSchema = function (model) {
-    var schema = extend({
-      $schema: 'http://json-schema.org/draft-04/schema#'
-    }, model);
-
-    // Group of schema definitions with name: integers, objects, arrays...
-    objEach(schema, function (rawGroup, groupName) {
-      var newGroup;
-
-      switch (groupName) {
-      case 'integers':
-        newGroup = schema.integers = {};
-        objEach(rawGroup, function (val, key) {
-          newGroup[key] = extend({ type: 'integer' }, val);
-        });
-        break;
-      case 'root':
-        delete schema.root;
-        schema.type = 'object';
-        schema.properties = rawGroup[Object.keys(rawGroup)[0]];
-        schema.additionalProperties = false;
-        break;
-      case 'objects':
-        newGroup = schema.objects = {};
-        objEach(rawGroup, function (val, key) {
-          newGroup[key] = {
-            type: 'object',
-            properties: noAccessor(val),
-            additionalProperties: false
-          };
-        });
-        break;
-      case 'elements':
-        newGroup = schema.elements = {};
-        objEach(rawGroup, function (val, key) {
-          newGroup[key] = {
-            type: 'object',
-            properties: {},
-            additionalProperties: false
-          };
-          newGroup[key].properties[key] = val.type ? val : {
-            type: 'object',
-            properties: noAccessor(val),
-            additionalProperties: false
-          };
-        });
-        break;
-      case 'arrays':
-        newGroup = schema.arrays = {};
-        objEach(rawGroup, function (val, key) {
-          newGroup[key] = {
-            type: 'array',
-            items: val,
-            addtionalItems: false
-          };
-          if (Array.isArray(val)) {
-            newGroup[key].items = { oneOf: val };
-          }
-        });
-        break;
-      }
-    });
-
-    return schema;
-  };
-
-}(musje));
-
-/* global musje */
-
-(function (musje) {
-  'use strict';
-
-  // Constants and helpers
-  // =================================================================
-
-  var
-    A4_FREQUENCY = 440,
-    A4_MIDI_NUMBER = 69,
-    TEMPO = 80,
-    STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
-    ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, n: 0, b : -1, bb: -2 },
-    TYPE_TO_STRING = {
-      1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_',
-      64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '===='
-    },
-    // Convert from duration type to number of underbars.
-    TYPE_TO_UNDERBAR = {
-      1: 0, 2: 0, 4: 0, 8: 1, 16: 2, 32: 3,
-      64: 4, 128: 5, 256: 6, 512: 7, 1024: 8
-    },
-    DOT_TO_STRING = { 0: '', 1: '.', 2: '..' },
-    BAR_TO_STRING = {
-      single: '|', double: '||', end: '|]',
-      'repeat-begin': '|:', 'repeat-end': ':|', 'repeat-both': ':|:'
-    };
-
-  function chars(ch, num) {
-    return new Array(num + 1).join(ch);
-  }
-
-  function octaveString(octave) {
-    return octave > 0 ? chars('\'', octave) :
-           octave < 0 ? chars(',', -octave) : '';
-  }
-
-  function getAlter(pitch) {
-    var
-      note = pitch.note,
-      step = pitch.step,
-      data = note.cell.data,
-      datum,
-      i;
-
-    for (i = note.index - 1; i >= 0; i--) {
-      datum = data[i];
-      if (datum.$name === 'Note' &&
-          datum.pitch.step === step && datum.pitch.accidental) {
-        // note.alterLink = datum;
-        return datum.pitch.alter;
-      }
-    }
-    return 0;
-  }
-
-  // Musje model definitions
-  // =================================================================
-  musje.model = {
-    title: 'Musje',
-    description: '123 jianpu music score',
-
-    // Root object
-    // ---------------------------------------------------------------
-    root: {
-      /**
-       * @class
-       * @alias musje.Score
-       * @param {Object} score - plain score object {@link musje.PlainScore}.
-       */
-      Score:
-      /** @lends musje.Score.prototype */
-      {
-        /**
-         * Head of the score.
-         * @type {musje.ScoreHead}
-         */
-        head: { $ref: '#/objects/ScoreHead' },
-        /**
-         * Partwise parts.
-         * @type {musje.PartwiseParts}
-         */
-        parts: { $ref: '#/arrays/PartwiseParts' },
-
-        /**
-         * Timewise measures, generated by the initialize function.
-         * @type {musje.TimewiseMeasures}
-         */
-        measures: { $ref: '#/arrays/TimewiseMeasures' },
-
-        toString: function () {
-          return this.head + this.parts.map(function (part) {
-            return part.toString();
-          }).join('\n\n');
-        }
-      }
-    },
-
-    // Integers
-    // ---------------------------------------------------------------
-    integers: {
-      beatType: {
-        enum: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
-        default: 4
-      }
-    },
-
-    // Objects
-    // ---------------------------------------------------------------
-    objects:
-    /** @lends musje */
-    {
-      /**
-       * @class
-       * @param head {Object}
-       * @property title {string} Title of the song.
-       * @property composer {string} Composer of the song.
-       */
-      ScoreHead: {
-        title: { type: 'string' },
-        composer: { type: 'string' },
-        isEmpty: function () {
-          return !this.title && !this.composer;
-        },
-        toString: function () {
-          return '<<' + this.title + '>>' + this.composer + '\n';
-        }
-      },
-
-      /**
-       * @class
-       * @param part {Object}
-       * @property measures {musje.Cells}
-       */
-      PartwisePart: {
-        // head: { $ref: '#/objects/PartHead' },
-        measures: { $ref: '#/arrays/Cells' },
-        toString: function () {
-          return this.measures.map(function (cell) {
-            return cell;
-          }).join(' ');
-        }
-      },
-
-      /**
-       * @class
-       * @param measure {Object}
-       * @property parts {musje.Cells}
-       */
-      TimewiseMeasure: {
-        parts: { $ref: '#/arrays/Cells' }
-      },
-
-      /**
-       * @class
-       * @param cell {Object}
-       * @property data {musje.MusicData}
-       */
-      Cell:
-      /** @lends musje.Cell.prototype */
-      {
-        /**
-         * Music data
-         * @type {Array.<musje.MusicData>}
-         */
-        data: { $ref: '#/arrays/MusicData' },
-
-        /**
-         * @return {string}
-         */
-        toString: function () {
-          return this.data.map(function (musicData) {
-            return musicData.toString();
-          }).join(' ');
-        }
-      },
-
-      // partHead: TO BE DEFINED!,
-
-      /**
-       * @class
-       * @param pitch {Object}
-       */
-      Pitch:
-      /** @lends musje.Pitch.prototype */
-      {
-        /**
-         * Step is a value of `1`, `2`, `3`, `4`, `5`, `6`, or `7`.
-         * @type {number}
-         */
-        step: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 7,
-          default: 1
-        },
-
-        /**
-         * Octave is an integer value from `-5` to `5` inclusive.
-         * @type {number}
-         */
-        octave: {
-          type: 'integer',
-          minimum: -5,
-          maximum: 5,
-          default: 0
-        },
-
-        /**
-         * Accidental is either of
-         * - `'#'` - sharp
-         * - `'##'` - double sharp
-         * - `'b'` - flat
-         * - `'bb'` - double flat
-         * - `'n'` - natural
-         * - `''` - (none)
-         * @type {string}
-         */
-        accidental: {
-          type: 'string',
-          enum: ['#', 'b', '', 'n', '##', 'bb'],
-          default: ''
-        },
-        alter: {
-          get: function () {
-            var acc = this.accidental;
-            return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
-          }
-        },
-        midiNumber: {
-          get: function () {
-            return (this.octave + 5) * 12 +
-              STEP_TO_MIDI_NUMBER[this.step] + this.alter;
-          }
-        },
-        frequency: {
-          get: function () {
-            return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
-          }
-        },
-
-        /**
-         * @return {string}
-         */
-        toString: function () {
-          return this.accidental + this.step + octaveString(this.octave);
-        }
-      },
-
-      /**
-       * @class
-       * @param duration {Object}
-       */
-      Duration:
-      /** @lends musje.Duration.prototype */
-      {
-        /**
-         * Beat type
-         * @type {number}
-         */
-        type: { $ref: '#/integers/beatType' },
-
-        /**
-         * Dot with value of 0, 1, or 2.
-         * @type {number}
-         */
-        dot: {
-          type: 'integer',
-          minimum: 0,
-          maximum: 2,
-          default: 0
-        },
-
-        /**
-         * Tie
-         * @type {boolean}
-         */
-        tie: {
-          type: 'boolean',
-          default: false
-        },
-
-        /**
-         * `(Getter)` Duration measured in quarter note.
-         * @type {number}
-         */
-        quarter: {
-          get: function () {
-            var d = 4 / this.type;
-            return this.dot === 0 ? d :
-                   this.dot === 1 ? d * 1.5 : d * 1.75;
-          }
-        },
-
-        /**
-         * `(Getter)` Duration in second
-         * Affected by the tempo.
-         * @type {number}
-         */
-        second: {
-          get: function () {
-            return this.quarter * 60 / TEMPO;
-          }
-        },
-
-        /**
-         * `(Getter)` Underbar
-         * @type {number}
-         */
-        underbar: {
-          get: function () {
-            return TYPE_TO_UNDERBAR[this.type] || 0;
-          }
-        },
-
-        /**
-         * @return {string}
-         */
-        toString: function () {
-          return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
-        }
-      }
-    },
-
-    // Elements are use inside an array
-    // ---------------------------------------------------------------
-    elements:
-    /** @lends musje */
-    {
-      /**
-       * Time signature.
-       * @class
-       * @param time {Object}
-       */
-      Time:
-      /** @lends musje.Time.prototype */
-      {
-        /** @member {number} */
-        beats: {
-          type: 'integer',
-          default: 4
-        },
-
-        /**
-         * Beat type
-         * @member {number}
-         */
-        beatType: { $ref: '#/integers/beatType' },
-        toString: function () {
-          return this.beats + '/' + this.beatType;
-        }
-      },
-
-      /**
-       * @class
-       * @param {Object} note
-       */
-      Note:
-      /** @lends musje.Note.prototype */
-      {
-        /**
-         * @member {musje.Pitch}
-         */
-        pitch: { $ref: '#/objects/Pitch' },
-
-        /** @member {musje.Duration} */
-        duration: { $ref: '#/objects/Duration' },
-
-        /** @member {musje.Slurs} */
-        slurs: { $ref: '#/arrays/Slurs' },
-
-        /** @method */
-        initialize: function () {
-          this.pitch.note = this;
-        },
-
-        /** @method */
-        toString: function () {
-          return this.pitch + this.duration;
-        }
-      },
-
-      /**
-       * @class
-       * @param {rest} rest
-       */
-      Rest:
-      /** @lends musje.Rest.prototype */
-      {
-        /** @member {musje.Duration} */
-        duration: { $ref: '#/objects/Duration' },
-
-        /** @method */
-        toString: function () {
-          return '0' + this.duration;
-        }
-      },
-
-      /**
-       * @class
-       * @param {Object} chord
-       */
-      Chord:
-      /** @lends musje.Chord.prototype */
-      {
-        /** @member {Array.<musje.Pitch>} */
-        pitches: {
-          type: 'array',
-          items: { $ref: '#/objects/Pitch' }
-        },
-
-        /** @member {musje.Duration} */
-        duration: { $ref: '#/objects/Duration' },
-
-        /** @method */
-        toString: function () {
-          return '<' + this.pitches.map(function (pitch) {
-            return pitch.toString();
-          }).join('') + '>' + this.duration;
-        }
-      },
-
-      // Voice: {
-      //   type: 'array',
-      //   items: {
-      //     oneOf: [
-      //       { $ref: '#/elements/Note' },
-      //       { $ref: '#/elements/Rest' },
-      //       { $ref: '#/elements/Chord' },
-      //     ]
-      //   }
-      // }
-
-      /**
-       * @class
-       * @param {string} bar - The bar value, which can be either of
-       * `'single'`, `'double'`, `'end'`, `'repeat-begin'`, `'repeat-end'`, or `'repeat-both'`.
-       */
-      Bar:
-      /** @lends musje.Bar.prototype */
-      {
-        /**
-         * @member {string} - The bar value
-         * @alias musje.Bar.prototype.value
-         */
-        type: 'string',
-        enum: [
-          'single', 'double', 'end',
-          'repeat-begin', 'repeat-end', 'repeat-both'
-        ],
-
-        default: 'single',
-
-        /** @method */
-        toString: function () {
-          return BAR_TO_STRING[this.value];
-        }
-      }
-    },
-
-    // Arrays
-    // ---------------------------------------------------------------
-    arrays: {
-      PartwiseParts: { $ref: '#/objects/PartwisePart' },
-      TimewiseMeasures: { $ref: '#/objects/TimewiseMeasure' },
-      Cells: { $ref: '#/objects/Cell' },
-      MusicData: [
-        { $ref: '#/elements/Time' },
-        { $ref: '#/elements/Note' },
-        { $ref: '#/elements/Rest' },
-        { $ref: '#/elements/Chord' },
-        // { $ref: '#/elements/Voice' },
-        { $ref: '#/elements/Bar' }
-      ],
-      Slurs: {
-        type: 'string',
-        enum: ['begin', 'end']
-      }
-    }
-  };
-
-  musje.makeClasses(musje, musje.model);
-
   /**
-   * Wrapper function to creat a {@link musje.Score} instance.
-   * ### Usage:
-   * ```js
-   * var score = musje.score(JSONString or object);
-   * ```
-   * @param score {string|Object} JSONString or plain object.
-   * @return {musje.Score} - A musje.Score instance.
+   * @class
+   * @param {Object} score - plain score object {@link musje.PlainScore}.
    */
-  musje.score = function (obj) {
-    if (typeof obj === 'string') { obj = JSON.parse(obj); }
-    return new musje.Score(obj);
+  musje.Score = function (score) {
+    musje.extend(this, score);
+    this.prepareTimewise();
+    this.extractBars();
+    this.prepareCells();
+    this.linkTies();
+
+    console.log(JSON.stringify(this, null, 2))
   };
 
-}(musje));
-
-/* global musje */
-
-(function (musje) {
-  'use strict';
-
-  musje.extend(musje.Score.prototype,
+  musje.defineProperties(musje.Score.prototype,
   /** @lends musje.Score.prototype */
   {
     /**
-     * Initialize the score
+     * Head of the score.
+     * @type {musje.ScoreHead}
      */
-    initialize: function () {
-      this.prepareTimewise();
-      this.extractBars();
-      this.prepareCells();
-      this.linkTies();
+    head: {
+      get: function () {
+        return this._head || (this._head = new musje.ScoreHead());
+      },
+      set: function (head) {
+        this._head = new musje.ScoreHead(head);
+      }
     },
+    /**
+     * Partwise parts.
+     * - (Getter)
+     * - (Setter)
+     * @type {Array.<musje.PartwisePart>}
+     */
+    parts: {
+      get: function () {
+        return this._parts || (this._parts = []);
+      },
+      set: function (parts) {
+        this._parts = parts.map(function (part) {
+          return new musje.PartwisePart(part);
+        });
+      }
+    },
+
+    /**
+     * Timewise measures, generated by the initialize function.
+     * @type {Array.<musje.TimewiseMeasure>}
+     */
+    measures: {
+      get: function () {
+        return this._measures || (this._measures = []);
+      },
+      set: function (measures) {
+        this._measures = measures.map(function (measure) {
+          return new musje.TimewiseMeasure(measure);
+        });
+      }
+    },
+
+    /**
+     * Total numbers of measures.
+     * @type {number}
+     */
+    totalMeasures: {
+      get: function () {
+        return this.measures.length;
+      }
+    },
+
+    /**
+     * Convert score to string.
+     * @return {string} Musje source code.
+     */
+    toString: function () {
+      return this.head + this.parts.map(function (part) {
+        return part.toString();
+      }).join('\n\n');
+    },
+
+    toJSON: musje.makeToJSON({
+      head: undefined,
+      parts: undefined
+    }),
 
     /**
      * A cell is identically a measure in a part or a part in a measure.
@@ -1012,12 +291,12 @@ if (typeof exports !== 'undefined') {
           if (!len) { return; }
 
           // barRight
-          if (len && data[len - 1].$name === 'Bar') {
+          if (len && data[len - 1].$type === 'Bar') {
             measure.barRight = data.pop();
           }
 
           // barLeft
-          if (data[0] && data[0].$name === 'Bar') {
+          if (data[0] && data[0].$type === 'Bar') {
             measure.barLeft = data.shift();
           } else {
             if (m !== 0) {
@@ -1042,7 +321,7 @@ if (typeof exports !== 'undefined') {
     },
 
     /**
-     * Link ties
+     * Link ties for each {@link musje.Note} in the entire score.
      */
     linkTies: function () {
       var prev = null;
@@ -1050,11 +329,23 @@ if (typeof exports !== 'undefined') {
       this.walkMusicData(function (data) {
         var tie;
 
-        if (data.$name === 'Note') {
+        if (data.$type === 'Note') {
           tie = data.duration.tie;
           data.duration.tie = {};
           if (prev) {
+            /**
+             * Previous tied note. Produced by {@link musje.Score#linkTies}.
+             * @memberof musje.Duration#tie#
+             * @alias prev
+             * @type {(musje.Note|undefined)}
+             */
             data.duration.tie.prev = prev;
+            /**
+             * Next tied note. Produced by {@link musje.Score#linkTies}.
+             * @memberof musje.Duration##tie#
+             * @alias next
+             * @type {(musje.Note|undefined)}
+             */
             prev.duration.tie.next = data;
           }
           prev = tie ? data : null;
@@ -1071,9 +362,138 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
+  /**
+   * Construct head of the score.
+   * @class
+   * @param {Object} head
+   */
+  musje.ScoreHead = function (head) {
+    musje.extend(this, head);
+  };
+
+  musje.defineProperties(musje.ScoreHead.prototype,
+  /** @lends musje.ScoreHead# */
+  {
+    /**
+     * Title of the song.
+     * @type {string}
+     */
+    title: undefined,
+
+    /**
+     * Composer of the song.
+     * @type {string}
+     */
+    composer: undefined,
+
+    // isEmpty: function () {
+    //   return !this.title && !this.composer;
+    // },
+
+    /**
+     * Convert score head to string.
+     * @return {string} The converted musje head source code.
+     */
+    toString: function () {
+      return '<<' + this.title + '>>' + this.composer + '\n';
+    }
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param part {Object}
+   * @property measures {musje.Cells}
+   */
+  musje.PartwisePart = function (part) {
+    musje.extend(this, part);
+  };
+
+  musje.defineProperties(musje.PartwisePart.prototype,
+  /** @lends musje.PartwisePart# */
+  {
+    // head: { $ref: '#/objects/PartHead' },
+
+    /**
+     * Measure in a partwise part is cells.
+     * @type {Array.<musje.Cell>}
+     */
+    measures: {
+      get: function () {
+        return this._measures || (this._measures = []);
+      },
+      set: function (measures) {
+        this._measures = measures.map(function (cell) {
+          return new musje.Cell(cell);
+        });
+      }
+    },
+
+    /**
+     * Convert a partwise part to sting.
+     * @return {string} Musje partwise part source code.
+     */
+    toString: function () {
+      return this.measures.map(function (cell) {
+        return cell;
+      }).join(' ');
+    },
+
+    toJSON: musje.makeToJSON({
+      measures: undefined
+    })
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param measure {Object}
+   */
+  musje.TimewiseMeasure = function (measure) {
+    musje.extend(this, measure);
+  };
+
+  musje.defineProperties(musje.TimewiseMeasure.prototype,
+  /** @lends musje.TimewiseMeasure# */
+  {
+    /**
+     * Parts in timewise measure.
+     * @type {Array.<musje.Cells>}
+     */
+    parts: {
+      get: function () {
+        return this._parts || (this._parts = []);
+      },
+      set: function (parts) {
+        this._parts = parts.map(function (cell) {
+          return new musje.Cell(cell);
+        });
+      }
+    }
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
   var near = musje.near;
 
-  function getBeamedGroups(cell, groupDur) {
+  function getBeamGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
 
     function inGroup() {
@@ -1085,7 +505,7 @@ if (typeof exports !== 'undefined') {
     }
 
     cell.data.forEach(function (musicData) {
-      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
+      if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
         return;
       }
       var
@@ -1111,24 +531,732 @@ if (typeof exports !== 'undefined') {
   }
 
   /**
+   * Construct a cell.
+   * Cell is either a measure in a partwise part, or
+   * a part in a timewise measure.
    * @class
-   * @memberof musje.Cell~
-   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
-   * @param {number} level - Beam level
-   * @param {musje.Note} note
+   * @param cell {Object}
    */
-  function Beam(value, level, note) {
-    this.value = value;
-    this.level = level;
-    this.note = note;
+  musje.Cell = function (cell) {
+    musje.extend(this, cell);
+  };
+
+  musje.defineProperties(musje.Cell.prototype,
+  /** @lends musje.Cell# */
+  {
+    /**
+     * Music data
+     * @type {Array.<musje.MusicData>}
+     */
+    data: {
+      get: function () {
+        return this._data || (this._data = []);
+      },
+      set: function (data) {
+        this._data = data.map(function (datum) {
+          switch(Object.keys(datum)[0]) {
+          case 'note':
+            return new musje.Note(datum.note);
+          case 'rest':
+            return new musje.Rest(datum.rest);
+          case 'chord':
+            return new musje.Chord(datum.chord);
+          case 'voice':
+            return new musje.Voice(datum.voice);
+          case 'bar':
+            return new musje.Bar(datum.bar);
+          case 'time':
+            return new musje.Time(datum.time);
+          default:
+            throw new Error('Unknown music data: ' + datum);
+          }
+        });
+      }
+    },
+
+    /**
+     * Convert cell to string.
+     * @return {string} Converted cell in musje source code.
+     */
+    toString: function () {
+      return this.data.map(function (musicData) {
+        return musicData.toString();
+      }).join(' ');
+    },
+
+    toJSON: musje.makeToJSON({
+      data: undefined
+    }),
+
+    /**
+     * Make beams automatically in group by the groupDur.
+     * @param {number} groupDur - Duration of a beam group in quarter.
+     */
+    makeBeams: function (groupDur) {
+
+      getBeamGroups(this, groupDur).forEach(function (group) {
+        // beamLevel starts from 0 while underbar starts from 1
+        var beamLevel = {};
+
+        function nextHasSameBeamlevel(index, level) {
+          var next = group[index + 1];
+          return next && next.duration.underbar > level;
+        }
+
+        group.forEach(function(data, i) {
+          var
+            underbar = data.duration.underbar,
+            level;
+
+          for (level = 0; level < underbar; level++) {
+            if (nextHasSameBeamlevel(i, level)) {
+
+              /**
+               * Beams of the note.
+               * - Produced by the {@link musje.Cell#makeBeams} method.
+               * - The above method is call in {@link musje.Score#prepareCells}.
+               * @memberof musje.Note#
+               * @alias beams
+               * @type {Array.<musje.Beam>}
+               */
+              data.beams = data.beams || [];
+              if (beamLevel[level]) {
+                data.beams[level] = new musje.Beam('continue', level, data);
+              } else {
+                beamLevel[level] = true;
+                data.beams[level] = new musje.Beam('begin', level, data);
+              }
+            } else {
+              if (beamLevel[level]) {
+                data.beams = data.beams || [];
+                data.beams[level] = new musje.Beam('end', level, data);
+                delete beamLevel[level];
+              }
+            }
+          }
+        });
+      });
+    }
+
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  var BAR_TO_STRING = {
+      single: '|', double: '||', end: '|]',
+      'repeat-begin': '|:', 'repeat-end': ':|', 'repeat-both': ':|:'
+    };
+
+  /**
+   * @class
+   * @param {string} bar - The bar value, which can be either of
+   * - 'single' - `|`
+   * - 'double' - `||`
+   * - 'end' - `|]`
+   * - 'repeat-begin' - `|:`
+   * - 'repeat-end' - `:|`
+   * - 'repeat-both' - `:|:`
+   */
+  musje.Bar = function (bar) {
+    musje.extend(this, bar);
+  };
+
+  musje.defineProperties(musje.Bar.prototype,
+  /** @lends musje.Bar.prototype */
+  {
+    /**
+     * Type of bar.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Bar',
+
+    /**
+     * Value of the bar, which is the same as the bar parameter in the constructor.
+     * @member {string} - The bar value
+     * @alias musje.Bar.prototype.value
+     * @default
+     */
+    value: 'single',
+
+    /**
+     * Convert bar to string.
+     * @return {string} Converted string of the barline in musje source code.
+     */
+    toString: function () {
+      return BAR_TO_STRING[this.value];
+    },
+
+    toJSON: function () {
+      return { bar: this.value };
+    }
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * Time signature.
+   * @class
+   * @param time {Object}
+   */
+  musje.Time = function (time) {
+    musje.extend(this, time);
+  };
+
+  musje.defineProperties(musje.Time.prototype,
+  /** @lends musje.Time# */
+  {
+    /**
+     * Type of time.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Time',
+
+    /**
+     * How many beats per measure.
+     * @type {number}
+     * @default
+     */
+    beats: 4,
+
+    /**
+     * Beat type
+     * @type {number}
+     * @default
+     */
+    beatType: 4,
+
+    /**
+     * Convert to musje source code.
+     * @return {string} Musje source code.
+     */
+    toString: function () {
+      return this.beats + '/' + this.beatType;
+    },
+
+    toJSON: musje.makeToJSON({
+      beats: 4,
+      beatType: 4
+    }, 'time')
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param {Object} note
+   */
+  musje.Note = function (note) {
+    musje.extend(this, note);
+
+    /**
+     * Reference to the parent note.
+     * @memberof musje.Pitch#
+     * @alias note
+     * @type {musje.Note}
+     */
+    this.pitch.note = this;
+  };
+
+  musje.defineProperties(musje.Note.prototype,
+  /** @lends musje.Note.prototype */
+  {
+    /**
+     * Type of note.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Note',
+
+    /**
+     * Pitch of the note.
+     * @type {musje.Pitch}
+     */
+    pitch: {
+      get: function () {
+        return this._pitch || (this._pitch = new musje.Pitch());
+      },
+      set: function (pitch) {
+        this._pitch = new musje.Pitch(pitch);
+      }
+    },
+
+    /**
+     * Duration of the note.
+     * @type {musje.Duration}
+     */
+    duration: {
+      get: function () {
+        return this._duration || (this._duration = new musje.Duration());
+      },
+      set: function (duration) {
+        this._duration = new musje.Duration(duration);
+      }
+    },
+
+    /**
+     * Slurs attached to the note.
+     * @type {Array.<musje.Slur>}
+     */
+    slurs: {
+      get: function () {
+        return this._slurs;
+      },
+      set: function (slurs) {
+        this._slurs = slurs.map(function (slur) {
+          return new musje.Slur(slur);
+        });
+      }
+    },
+
+    /** @method */
+    toString: function () {
+      return this.pitch + this.duration;
+    },
+
+    toJSON: musje.makeToJSON({
+      pitch: undefined,
+      duration: undefined,
+      slurs: undefined
+    }, 'note')
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param {rest} rest
+   */
+  musje.Rest = function (rest) {
+    musje.extend(this, rest);
+  };
+
+  musje.defineProperties(musje.Rest.prototype,
+  /** @lends musje.Rest# */
+  {
+    /**
+     * Type of rest.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Rest',
+
+    /**
+     * Duration of the rest.
+     * @type {musje.Duration}
+     */
+    duration: {
+      get: function () {
+        return this._duration || (this._duration = new musje.Duration());
+      },
+      set: function (duration) {
+        this._duration = new musje.Duration(duration);
+      }
+    },
+
+    /**
+     * Convert the rest to musje source code string.
+     * @return {string} Converted musje source code.
+     */
+    toString: function () {
+      return '0' + this.duration;
+    },
+
+    toJSON: musje.makeToJSON({
+      duration: undefined,
+    }, 'rest')
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param {Object} chord
+   */
+  musje.Chord = function (chord) {
+    musje.extend(this, chord);
+  };
+
+  musje.defineProperties(musje.Chord.prototype,
+  /** @lends musje.Chord# */
+  {
+    /**
+     * Type of chord.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Chord',
+
+    /**
+     * Pitches in the chord.
+     * @type {Array.<musje.Pitch>}
+     */
+    pitches: {
+      get: function () {
+        return this._pitches || (this._pitches = []);
+      },
+      set: function (pitches) {
+        this._pitches = pitches.map(function (pitch) {
+          return new musje.Pitch(pitch);
+        });
+      }
+    },
+
+    /**
+     * Duration of the chord.
+     * @type {musje.Duration}
+     */
+    duration: {
+      get: function () {
+        return this._duration || (this._duration = new musje.Duration());
+      },
+      set: function (duration) {
+        this._duration = new musje.Duration(duration);
+      }
+    },
+
+    /**
+     * Convert chord to the musje source code string.
+     * @return {string} Converted musje source code of the chord.
+     */
+    toString: function () {
+      return '<' + this.pitches.map(function (pitch) {
+        return pitch.toString();
+      }).join('') + '>' + this.duration;
+    },
+
+    toJSON: musje.makeToJSON({
+      pitches: undefined,
+      duration: undefined,
+    }, 'chord')
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * @class
+   * @param {Object} voice
+   */
+  musje.Voice = function (voice) {
+    musje.extend(this, voice);
+  };
+
+  musje.defineProperties(musje.Voice.prototype,
+  /** @lends musje.Voice# */
+  {
+    /**
+     * Convert the voice to musje source code string.
+     * @return {string} Converted musje source code string.
+     */
+    toString: function () {
+
+    }
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  // Constants and helpers
+  // =================================================================
+
+  var
+    A4_FREQUENCY = 440,
+    A4_MIDI_NUMBER = 69,
+    STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
+    ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, n: 0, b : -1, bb: -2 };
+
+  function chars(ch, num) {
+    return new Array(num + 1).join(ch);
+  }
+
+  function octaveString(octave) {
+    return octave > 0 ? chars('\'', octave) :
+           octave < 0 ? chars(',', -octave) : '';
+  }
+
+  function getAlter(pitch) {
+    var
+      note = pitch.note,
+      step = pitch.step,
+      data = note.cell.data,
+      datum,
+      i;
+
+    for (i = note.index - 1; i >= 0; i--) {
+      datum = data[i];
+      if (datum.$type === 'Note' &&
+          datum.pitch.step === step && datum.pitch.accidental) {
+        // note.alterLink = datum;
+        return datum.pitch.alter;
+      }
+    }
+    return 0;
   }
 
   /**
+   * @class
+   * @param pitch {Object}
+   */
+  musje.Pitch = function (pitch) {
+    musje.extend(this, pitch);
+  };
+
+  musje.defineProperties(musje.Pitch.prototype,
+  /** @lends musje.Pitch.prototype */
+  {
+    /**
+     * Step is a value of `1`, `2`, `3`, `4`, `5`, `6`, or `7`.
+     * @type {number}
+     * @default
+     */
+    step: 1,
+
+    /**
+     * Octave is an integer value from `-5` to `5` inclusive.
+     * @type {number}
+     * @default
+     */
+    octave: 0,
+
+    /**
+     * Accidental is either of
+     * - `'#'` - sharp
+     * - `'##'` - double sharp
+     * - `'b'` - flat
+     * - `'bb'` - double flat
+     * - `'n'` - natural
+     * - `''` - (none)
+     * @type {string}
+     */
+    accidental: '',
+
+    /**
+     * Alter (from -2 to 2 inclusive)
+     * @type {number}
+     */
+    alter: {
+      get: function () {
+        var acc = this.accidental;
+        return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
+      }
+    },
+
+    /**
+     * The MIDI note number of the pitch
+     * @type {number}
+     */
+    midiNumber: {
+      get: function () {
+        return (this.octave + 5) * 12 +
+          STEP_TO_MIDI_NUMBER[this.step] + this.alter;
+      }
+    },
+
+    /**
+     * Frequency of the pitch
+     * @type {number}
+     */
+    frequency: {
+      get: function () {
+        return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
+      }
+    },
+
+    /**
+     * Convert to musje source code string.
+     * @return {string} Converted musje source code string.
+     */
+    toString: function () {
+      return this.accidental + this.step + octaveString(this.octave);
+    },
+
+    toJSON: musje.makeToJSON({
+      step: 1,
+      octave: 0,
+      accidental: ''
+    })
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  var
+    TYPE_TO_STRING = {
+      1: ' - - - ', 2: ' - ', 4: '', 8: '_', 16: '=', 32: '=_',
+      64: '==', 128: '==_', 256: '===', 512: '===_', 1024: '===='
+    },
+    // Convert from duration type to number of underbars.
+    TYPE_TO_UNDERBAR = {
+      1: 0, 2: 0, 4: 0, 8: 1, 16: 2, 32: 3,
+      64: 4, 128: 5, 256: 6, 512: 7, 1024: 8
+    },
+    DOT_TO_STRING = { 0: '', 1: '.', 2: '..' };
+
+  /**
+   * @class
+   * @param duration {Object}
+   */
+  musje.Duration = function (duration) {
+    musje.extend(this, duration);
+  };
+
+  musje.defineProperties(musje.Duration.prototype,
+  /** @lends musje.Duration# */
+  {
+    /**
+     * Type of duration.
+     * @type {string}
+     * @constant
+     * @default
+     */
+    $type: 'Duration',
+
+    /**
+     * Beat type
+     * @type {number}
+     * @default
+     */
+    type: 4,
+
+    /**
+     * Dot with value of 0, 1, or 2.
+     * @type {number}
+     * @default
+     */
+    dot: 0,
+
+    /**
+     * Tie
+     * @type {boolean}
+     */
+    tie: undefined,
+
+    /**
+     * `(Getter)` Duration measured in quarter note.
+     * @type {number}
+     */
+    quarter: {
+      get: function () {
+        var d = 4 / this.type;
+        return this.dot === 0 ? d :
+               this.dot === 1 ? d * 1.5 : d * 1.75;
+      }
+    },
+
+    /**
+     * `(Getter)` Duration in second
+     * Affected by the tempo.
+     * @type {number}
+     * @readonly
+     */
+    second: {
+      get: function () {
+        return this.quarter * 60 / 80; // / TEMPO;
+      }
+    },
+
+    /**
+     * `(Getter)` Underbar
+     * @type {number}
+     * @readonly
+     */
+    underbar: {
+      get: function () {
+        return TYPE_TO_UNDERBAR[this.type] || 0;
+      }
+    },
+
+    /**
+     * @return {string}
+     */
+    toString: function () {
+      return TYPE_TO_STRING[this.type] + DOT_TO_STRING[this.dot];
+    },
+
+    toJSON: musje.makeToJSON({
+      type: 4,
+      dot: 0,
+      // tie: undefined
+    })
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * A [beam][wiki] is a horizontal or diagonal line used to connect multiple consecutive notes (and occasionally rests) in order to indicate rhythmic grouping. Only eighth notes (quavers) or shorter can be beamed.
+   *
+   * [wiki]: https://en.wikipedia.org/wiki/Beam_(music)
+   *
+   * Beam is created by {@link musje.Cell#makeBeams} and
+   * attached to {@link musje.Note} in {@link musje.Note#beams}[level]
+   * @class
+   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
+   * @param {number} level - Beam level starting from 0 to up.
+   * @param {musje.Note} note - The parent note.
+   */
+  musje.Beam = function (value, level, note) {
+    /** @member */
+    this.value = value;
+    /** @member */
+    this.level = level;
+    /** @member */
+    this.note = note;
+  };
+
+  /**
    * Get the end note of the beam group.
-   * @memberOf musje.Cell~
    * @return {musje.Note} End note of the beam group.
    */
-  Beam.prototype.endNote = function () {
+  musje.Beam.prototype.endNote = function () {
     var
       begin = this.note.index,
       cell = this.note.cell,
@@ -1142,46 +1270,30 @@ if (typeof exports !== 'undefined') {
     return next;
   };
 
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
   /**
-   * Make beams automatically in group by the groupDur.
-   * @param {number} groupDur - Duration of a beam group in quarter.
+   * Slur
+   * @class
+   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
+   * @param {number} level - Beam level starting from 0 to up.
+   * @param {musje.Note} note - The parent note.
    */
-  musje.Cell.prototype.makeBeams = function (groupDur) {
-
-    getBeamedGroups(this, groupDur).forEach(function (group) {
-      // beamLevel starts from 0 while underbar starts from 1
-      var beamLevel = {};
-
-      function nextHasSameBeamlevel(index, level) {
-        var next = group[index + 1];
-        return next && next.duration.underbar > level;
-      }
-
-      group.forEach(function(data, i) {
-        var
-          underbar = data.duration.underbar,
-          level;
-
-        for (level = 0; level < underbar; level++) {
-          if (nextHasSameBeamlevel(i, level)) {
-            data.beams = data.beams || {};
-            if (beamLevel[level]) {
-              data.beams[level] = new Beam('continue', level, data);
-            } else {
-              beamLevel[level] = true;
-              data.beams[level] = new Beam('begin', level, data);
-            }
-          } else {
-            if (beamLevel[level]) {
-              data.beams = data.beams || {};
-              data.beams[level] = new Beam('end', level, data);
-              delete beamLevel[level];
-            }
-          }
-        }
-      });
-    });
+  musje.Slur = function (value, level, note) {
+    /** @member */
+    this.value = value;
+    /** @member */
+    this.level = level;
+    /** @member */
+    this.note = note;
   };
+
 
 }(musje));
 
@@ -1609,6 +1721,7 @@ parse: function parse(input) {
       parts = score.parts,
       lastMeasure,
       i;
+    if (!parts) { return; }
 
     for (i = 0; i < parts.length; i++) {
       lastMeasure = lastItem(parts[i].measures);
@@ -2123,70 +2236,83 @@ return new Parser;
 (function (musje) {
   'use strict';
 
-  // @constructor Defs
-  // SVG definitions
+  /**
+   * @class
+   * @alias musje.Defs
+   * @param {musje.Layout} layout
+   */
   var Defs = musje.Defs = function (layout) {
     this._layout = layout;
   };
 
-  Defs.prototype.get = function (musicData) {
-    var id = musicData.defId;
-    return this[id] || (this[id] = this._make(id, musicData));
-  };
+  musje.defineProperties(Defs.prototype,
+  /** @lends musje.Defs# */
+  {
+    get: function (musicData) {
+      var id = musicData.defId;
+      return this[id] || (this[id] = this._make(id, musicData));
+    },
 
-  Defs.prototype.getAccidental = function (accidental) {
-    var id = 'a' + accidental.replace(/#/g, 's');
-    return this[id] ||
-        (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
-  };
+    getAccidental: function (accidental) {
+      var id = 'a' + accidental.replace(/#/g, 's');
+      return this[id] ||
+          (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
+    },
 
-  Defs.prototype._make = function (id, musicData) {
-    var maker = '_make' + musicData.$name;
-    return this[maker](id, musicData) || { width: 0, height: 0 };
-  };
+    _make: function (id, musicData) {
+      var maker = '_make' + musicData.$type;
+      return this[maker](id, musicData) || { width: 0, height: 0 };
+    },
 
-  Defs.prototype._makeBar = function (id, bar) {
-    return new Defs.BarDef(id, bar, this._layout);
-  };
+    _makeBar: function (id, bar) {
+      return new Defs.BarDef(id, bar, this._layout);
+    },
 
-  Defs.prototype._makeTime = function (id, time) {
-    return new Defs.TimeDef(id, time, this._layout);
-  };
+    _makeTime: function (id, time) {
+      return new Defs.TimeDef(id, time, this._layout);
+    },
 
-  Defs.prototype._makeDuration = function (id, duration) {
-    return new Defs.DurationDef(id, duration, this._layout);
-  };
+    _makeDuration: function (id, duration) {
+      return new Defs.DurationDef(id, duration, this._layout);
+    },
 
-  Defs.prototype._getPitch = function (id, pitch, underbar) {
-    return this[id] ||
-        (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
-  };
+    _getPitch: function (id, pitch, underbar) {
+      return this[id] ||
+          (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
+    },
 
-  Defs.prototype._makeNote = function (id, note) {
-    var
-      pitch = note.pitch,
-      duration = note.duration,
-      underbar = duration.underbar,
-      pitchId = pitch.defId + underbar,
-      pitchDef = this._getPitch(pitchId, pitch, underbar),
-      durationDef = this.get(duration);
+    _makeNote: function (id, note) {
+      var
+        pitch = note.pitch,
+        duration = note.duration,
+        underbar = duration.underbar,
+        pitchId = pitch.defId + underbar,
+        pitchDef = this._getPitch(pitchId, pitch, underbar),
+        durationDef = this.get(duration);
 
-    return {
-      pitchDef: pitchDef,
-      durationDef: durationDef,
-      height: pitchDef.height,
-      width: pitchDef.width + durationDef.width *
-                              (underbar ? pitchDef.scale.x : 1)
-    };
-  };
+      return {
+        pitchDef: pitchDef,
+        durationDef: durationDef,
+        height: pitchDef.height,
+        width: pitchDef.width + durationDef.width *
+                                (underbar ? pitchDef.scale.x : 1)
+      };
+    },
 
-  // Make rest is a trick to use a note with pitch.step = 0.
-  Defs.prototype._makeRest = function(id, rest) {
-    return this._makeNote(id, new musje.Note({
-      pitch: { step: 0 },
-      duration: rest.duration
-    }));
-  };
+    /**
+     * Make rest is a trick to use a note with pitch.step = 0.
+     * @protected
+     * @param  {string} id   [description]
+     * @param  {string} rest [description]
+     * @return {musje.Defs.NoteDef}      [description]
+     */
+    _makeRest: function(id, rest) {
+      return this._makeNote(id, new musje.Note({
+        pitch: { step: 0 },
+        duration: rest.duration
+      }));
+    }
+  });
 
 }(musje));
 
@@ -3257,9 +3383,9 @@ return new Parser;
   /** @lends  musje.Cell.prototype */
   {
     /**
-     * A reference to the parent measure.
-     * (Getter)
-     * (Setter)
+     * A back reference to the parent measure.
+     * - (Getter)
+     * - (Setter)
      * @type {musje.TimewiseMeasure}
      */
     measure: {
@@ -3434,7 +3560,7 @@ return new Parser;
 
   Renderer.renderCell = function (cell, lo) {
     cell.data.forEach(function (data) {
-      switch (data.$name) {
+      switch (data.$type) {
       case 'Rest':
         renderNote(data, cell, lo);
         break;
@@ -3722,7 +3848,7 @@ return new Parser;
 
     measures.forEach(function (cell) {
       cell.data.forEach(function (data) {
-        switch (data.$name) {
+        switch (data.$type) {
         case 'Note':
           // playNote(time, dur, freq);
           timeouts.push(midiPlayNote(data, time));

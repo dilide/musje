@@ -126,7 +126,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line359">line 359</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line10">line 10</a>
     </li></ul></dd>
     
 
@@ -172,11 +172,156 @@
         <dl>
             
 <dt>
+    <h4 class="name" id="$type"><span class="type-signature">&lt;constant> </span>$type<span class="type-signature"> :string</span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>Type of note.</p>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">string</span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>Note</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line31">line 31</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="beams"><span class="type-signature"></span>beams<span class="type-signature"> :Array.&lt;<a href="musje.Beam.html">musje.Beam</a>></span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>Beams of the note.</p>
+<ul>
+<li>Produced by the <a href="musje.Cell.html#makeBeams">musje.Cell#makeBeams</a> method.</li>
+<li>The above method is call in <a href="musje.Score.html#prepareCells">musje.Score#prepareCells</a>.</li>
+</ul>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">Array.&lt;<a href="musje.Beam.html">musje.Beam</a>></span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Cell.js.html">model/Cell.js</a>, <a href="Cell.js.html#line134">line 134</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
     <h4 class="name" id="duration"><span class="type-signature"></span>duration<span class="type-signature"> :<a href="musje.Duration.html">musje.Duration</a></span></h4>
 
     
 </dt>
 <dd>
+    
+    <div class="description">
+        <p>Duration of the note.</p>
+    </div>
     
 
     
@@ -214,7 +359,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line368">line 368</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line50">line 50</a>
     </li></ul></dd>
     
 
@@ -239,6 +384,10 @@
     
 </dt>
 <dd>
+    
+    <div class="description">
+        <p>Pitch of the note.</p>
+    </div>
     
 
     
@@ -276,7 +425,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line365">line 365</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line37">line 37</a>
     </li></ul></dd>
     
 
@@ -296,11 +445,15 @@
         
             
 <dt>
-    <h4 class="name" id="slurs"><span class="type-signature"></span>slurs<span class="type-signature"> :musje.Slurs</span></h4>
+    <h4 class="name" id="slurs"><span class="type-signature"></span>slurs<span class="type-signature"> :Array.&lt;<a href="musje.Slur.html">musje.Slur</a>></span></h4>
 
     
 </dt>
 <dd>
+    
+    <div class="description">
+        <p>Slurs attached to the note.</p>
+    </div>
     
 
     
@@ -308,7 +461,7 @@
         <ul>
             <li>
                 
-<span class="param-type">musje.Slurs</span>
+<span class="param-type">Array.&lt;<a href="musje.Slur.html">musje.Slur</a>></span>
 
 
             </li>
@@ -338,7 +491,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line371">line 371</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line63">line 63</a>
     </li></ul></dd>
     
 
@@ -362,73 +515,6 @@
         <h3 class="subsection-title">Methods</h3>
 
         <dl>
-            
-<dt>
-    <h4 class="name" id="initialize"><span class="type-signature"></span>initialize<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-</dt>
-<dd>
-
-    
-
-    
-
-    
-
-    
-
-    
-<dl class="details">
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line374">line 374</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dd>
-
-        
             
 <dt>
     <h4 class="name" id="toString"><span class="type-signature"></span>toString<span class="signature">()</span><span class="type-signature"></span></h4>
@@ -468,7 +554,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="model.js.html">model/model.js</a>, <a href="model.js.html#line379">line 379</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -511,13 +597,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Cell-Beam.html">Beam</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sat Aug 29 2015 17:05:54 GMT+0800 (台北標準時間)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Aug 30 2015 17:56:23 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -66,7 +66,7 @@
 
     measures.forEach(function (cell) {
       cell.data.forEach(function (data) {
-        switch (data.$name) {
+        switch (data.$type) {
         case 'Note':
           // playNote(time, dur, freq);
           timeouts.push(midiPlayNote(data, time));

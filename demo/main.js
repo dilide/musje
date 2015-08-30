@@ -28,7 +28,7 @@
   var demo = angular.module('musjeDemo', []);
 
   demo.controller('MusjeDemoCtrl', function ($scope, $http, $document) {
-    var JSONSchema = musje.makeJSONSchema(musje.model);
+    // var JSONSchema = musje.makeJSONSchema(musje.model);
     // $scope.schema = JSON.stringify(JSONSchema, null, 2);
 
     $scope.playDisabled = true;
@@ -65,11 +65,11 @@
 
     $scope.run = function () {
       var t0 = now();
-      try {
+      // try {
         var score = $scope.score = musje.parse($scope.src);
         $scope.parseTime = now() - t0;
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
-        $scope.totalMeasures = score ? score.parts[0].measures.length : 0;
+        $scope.totalMeasures = score.measures.length;
         // $scope.result = JSON.stringify(score, null, "  ");
         // $scope.converted = '' + score;
 
@@ -79,10 +79,9 @@
         //         'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
         //       '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
         // }
-      } catch (err) {
-        $scope.totalMeasures = 'N/A';
-        $scope.error = '' + err;
-      }
+      //   $scope.totalMeasures = 'N/A';
+      //   $scope.error = '' + err;
+      // }
       t0 = now();
       $scope.render();
       $scope.renderTime = now() - t0;

@@ -84,11 +84,52 @@ if (typeof exports !== 'undefined') {
    * ```
    */
   musje.defineProperties = function (obj, props) {
-    musje.objEach(props, function (value, key) {
-      defineProperty(obj, key, value);
+    musje.objEach(props, function (value, prop) {
+      var
+        type = typeof value,
+        descriptor;
+
+      // Accessor property.
+      if (type === 'object' && (typeof value.get === 'function' ||
+                                typeof value.set === 'function')) {
+        descriptor = value;
+
+      // Function
+      } else if (type === 'function' || prop === '$type') {
+        descriptor = { value: value };
+
+      } else {
+        descriptor = {
+          value: value,
+          writable: true,
+          enumerable: true
+        };
+      }
+
+      defineProperty(obj, prop, descriptor);
     });
   };
 
+  musje.toJSONWithDefault = true;
+
+  musje.makeToJSON = function (values, elName) {
+    return function () {
+      var
+        that = this,
+        result = {};
+
+      musje.objEach(values, function (defaultValue, prop) {
+        if (musje.toJSONWithDefault || that[prop] !== defaultValue) {
+          result[prop] = that[prop];
+        }
+      });
+      if (!elName) { return result; }
+
+      var res = {};
+      res[elName] = result;
+      return res;
+    };
+  };
 
   /**
    * @member musje.parser

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: renderer/Layout/Cell.js</title>
+    <title>JSDoc: Source: model/Cell.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: renderer/Layout/Cell.js</h1>
+    <h1 class="page-title">Source: model/Cell.js</h1>
 
     
 
@@ -25,109 +25,161 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/* global musje, Snap */
+            <pre class="prettyprint source linenums"><code>/* global musje */
 
-(function (musje, Snap) {
+(function (musje) {
   'use strict';
 
-  /**
-   * Flow the cell.
-   */
-  musje.Cell.prototype.flow = function () {
-    var
-      defs = this.layout.defs,
-      lo = this.layout.options,
-      x = 0,
-      minHeight;
+  var near = musje.near;
 
-    this.data.forEach(function (data) {
-      var def = data.def = defs.get(data);
-      data.x = x;
-      data.y = 0;
-      x += def.width + lo.musicDataSep;
-      minHeight = Math.min(minHeight, def.height);
+  function getBeamGroups(cell, groupDur) {
+    var counter = 0, group = [], groups = [];
+
+    function inGroup() {
+      return counter &lt; groupDur &amp;&amp; !near(counter, groupDur);
+    }
+    function putGroup() {
+      if (group.length > 1) { groups.push(group); }
+      group = [];
+    }
+
+    cell.data.forEach(function (musicData) {
+      if (musicData.$type !== 'Note' &amp;&amp; musicData.$type !== 'Rest') {
+        return;
+      }
+      var
+        duration = musicData.duration,
+        dur = duration.quarter;
+
+      counter += dur;
+
+      if (inGroup()) {
+        if (duration.underbar) { group.push(musicData); }
+      } else if (near(counter, groupDur)) {
+        group.push(musicData);
+        putGroup();
+        counter = 0;
+      } else {
+        putGroup();
+        counter %= groupDur;
+      }
     });
+    putGroup();
 
-    this.minWidth = x;
-    this.minHeight = minHeight;
-  };
+    return groups;
+  }
 
   /**
-   * @protected
+   * Construct a cell.
+   * Cell is either a measure in a partwise part, or
+   * a part in a timewise measure.
+   * @class
+   * @param cell {Object}
    */
-  musje.Cell.prototype._reflow = function () {
-    var cell = this;
-    this.data.forEach(function (data) {
-      data.x *= cell.width / cell.minWidth;
-    });
+  musje.Cell = function (cell) {
+    musje.extend(this, cell);
   };
 
   musje.defineProperties(musje.Cell.prototype,
-  /** @lends  musje.Cell.prototype */
+  /** @lends musje.Cell# */
   {
     /**
-     * A reference to the parent measure.
-     * (Getter)
-     * (Setter)
-     * @type {musje.TimewiseMeasure}
+     * Music data
+     * @type {Array.&lt;musje.MusicData>}
      */
-    measure: {
+    data: {
       get: function () {
-        return this._m;
+        return this._data || (this._data = []);
       },
-      set: function (measure) {
-        this._m = measure;
-        this.el = measure.el.g().addClass('mus-cell');
-        this.height = measure.height;
+      set: function (data) {
+        this._data = data.map(function (datum) {
+          switch(Object.keys(datum)[0]) {
+          case 'note':
+            return new musje.Note(datum.note);
+          case 'rest':
+            return new musje.Rest(datum.rest);
+          case 'chord':
+            return new musje.Chord(datum.chord);
+          case 'voice':
+            return new musje.Voice(datum.voice);
+          case 'bar':
+            return new musje.Bar(datum.bar);
+          case 'time':
+            return new musje.Time(datum.time);
+          default:
+            throw new Error('Unknown music data: ' + datum);
+          }
+        });
       }
     },
 
     /**
-     * Width
-     * - (Getter) Get the cell width.
-     * - (Setter) Set the cell width, and this will cause the cell to reflow (`this._reflow()` will be called).
-     * @type {number}
+     * Convert cell to string.
+     * @return {string} Converted cell in musje source code.
      */
-    width: {
-      get: function () {
-        return this._w;
-      },
-      set: function (w) {
-        this._w = w;
-        this._reflow();
-      }
+    toString: function () {
+      return this.data.map(function (musicData) {
+        return musicData.toString();
+      }).join(' ');
     },
 
-    /**
-     * X
-     * @type {number}
-     */
-    x: {
-      get: function () {
-        return this._x;
-      },
-      set: function (x) {
-        this._x = x;
-        this.el.transform(Snap.matrix().translate(x, this.y2));
-      }
-    },
+    toJSON: musje.makeToJSON({
+      data: undefined
+    }),
 
     /**
-     * Y2
-     * @type {number}
+     * Make beams automatically in group by the groupDur.
+     * @param {number} groupDur - Duration of a beam group in quarter.
      */
-    y2: {
-      get: function () {
-        return this._y2;
-      },
-      set: function (y2) {
-        this._y2 = y2;
-        this.el.transform(Snap.matrix().translate(this.x, y2));
-      }
+    makeBeams: function (groupDur) {
+
+      getBeamGroups(this, groupDur).forEach(function (group) {
+        // beamLevel starts from 0 while underbar starts from 1
+        var beamLevel = {};
+
+        function nextHasSameBeamlevel(index, level) {
+          var next = group[index + 1];
+          return next &amp;&amp; next.duration.underbar > level;
+        }
+
+        group.forEach(function(data, i) {
+          var
+            underbar = data.duration.underbar,
+            level;
+
+          for (level = 0; level &lt; underbar; level++) {
+            if (nextHasSameBeamlevel(i, level)) {
+
+              /**
+               * Beams of the note.
+               * - Produced by the {@link musje.Cell#makeBeams} method.
+               * - The above method is call in {@link musje.Score#prepareCells}.
+               * @memberof musje.Note#
+               * @alias beams
+               * @type {Array.&lt;musje.Beam>}
+               */
+              data.beams = data.beams || [];
+              if (beamLevel[level]) {
+                data.beams[level] = new musje.Beam('continue', level, data);
+              } else {
+                beamLevel[level] = true;
+                data.beams[level] = new musje.Beam('begin', level, data);
+              }
+            } else {
+              if (beamLevel[level]) {
+                data.beams = data.beams || [];
+                data.beams[level] = new musje.Beam('end', level, data);
+                delete beamLevel[level];
+              }
+            }
+          }
+        });
+      });
     }
+
   });
 
-}(musje, Snap));
+}(musje));
 </code></pre>
         </article>
     </section>
@@ -138,13 +190,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Cell-Beam.html">Beam</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sat Aug 29 2015 17:05:54 GMT+0800 (台北標準時間)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Aug 30 2015 17:56:23 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

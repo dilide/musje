@@ -9,6 +9,7 @@ var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var browserSync = require('browser-sync').create();
 var jsdoc = require('gulp-jsdoc');
+var clean = require('gulp-clean');
 
 
 gulp.task('jison', function () {
@@ -23,12 +24,25 @@ gulp.task('concat', function () {
   return gulp.src([
       './src/utilities.js',
 
-      './src/model/makeClasses.js',
-      './src/model/makeClasses-arrayConstructors.js',
-      './src/model/makeJSONSchema.js',  // only for development
-      './src/model/model.js',
+      // './src/model/makeClasses.js',
+      // './src/model/makeClasses-arrayConstructors.js',
+      // './src/model/makeJSONSchema.js',  // only for development
+      // './src/model/model.js',
       './src/model/Score.js',
+      './src/model/ScoreHead.js',
+      './src/model/PartwisePart.js',
+      './src/model/TimewiseMeasure.js',
       './src/model/Cell.js',
+      './src/model/Bar.js',
+      './src/model/Time.js',
+      './src/model/Note.js',
+      './src/model/Rest.js',
+      './src/model/Chord.js',
+      './src/model/Voice.js',
+      './src/model/Pitch.js',
+      './src/model/Duration.js',
+      './src/model/Beam.js',
+      './src/model/Slur.js',
 
       './src/parser/pre-parser.js',
       './.tmp/parser.js',
@@ -66,12 +80,11 @@ gulp.task('concat', function () {
     .pipe(gulp.dest('./'));
 });
 
-gulp.task('build', function () {
+gulp.task('build-musje', function () {
   runSequence('jison', 'concat');
 });
 
-
-gulp.task('demo', ['build'], function() {
+gulp.task('demo', ['build-musje'], function() {
   browserSync.init({
     server: {
       baseDir: './'
@@ -97,7 +110,7 @@ gulp.task('demo', ['build'], function() {
     .on('change', browserSync.reload);
 });
 
-gulp.task('doc', function () {
+gulp.task('build-doc', function () {
   return gulp.src([
     './README.md',
     './src/**/*.js', '!./src/parser/*-parser.js'
@@ -108,7 +121,7 @@ gulp.task('doc', function () {
     .pipe(jsdoc.generator('./doc'));
 });
 
-gulp.task('watch-doc', ['doc'], function() {
+gulp.task('watch-doc', ['build-doc'], function() {
   browserSync.init({
     server: {
       baseDir: './'
@@ -121,5 +134,14 @@ gulp.task('watch-doc', ['doc'], function() {
   });
 });
 
+gulp.task('clean', function () {
+  return gulp.src('./doc', {read: false})
+        .pipe(clean());
+});
+
+
+gulp.task('build', function () {
+  runSequence('clean', ['build-musje', 'build-doc']);
+});
 
 gulp.task('default', ['build']);

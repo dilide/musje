@@ -77,6 +77,18 @@ or `gulp` will run the build by default.
 gulp demo
 ```
 
+### Documentation
+Build the documentation
+```
+gulp doc
+```
+
+or watch the documentation build
+```
+gulp watch-doc
+```
+
+
 [npm-url]: https://npmjs.org/package/musje
 [npm-image]: https://badge.fury.io/js/musje.png
 

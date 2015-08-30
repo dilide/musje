@@ -5,7 +5,7 @@
 
   var near = musje.near;
 
-  function getBeamedGroups(cell, groupDur) {
+  function getBeamGroups(cell, groupDur) {
     var counter = 0, group = [], groups = [];
 
     function inGroup() {
@@ -17,7 +17,7 @@
     }
 
     cell.data.forEach(function (musicData) {
-      if (musicData.$name !== 'Note' && musicData.$name !== 'Rest') {
+      if (musicData.$type !== 'Note' && musicData.$type !== 'Rest') {
         return;
       }
       var
@@ -43,76 +43,113 @@
   }
 
   /**
+   * Construct a cell.
+   * Cell is either a measure in a partwise part, or
+   * a part in a timewise measure.
    * @class
-   * @memberof musje.Cell~
-   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
-   * @param {number} level - Beam level
-   * @param {musje.Note} note
+   * @param cell {Object}
    */
-  function Beam(value, level, note) {
-    this.value = value;
-    this.level = level;
-    this.note = note;
-  }
-
-  /**
-   * Get the end note of the beam group.
-   * @memberOf musje.Cell~
-   * @return {musje.Note} End note of the beam group.
-   */
-  Beam.prototype.endNote = function () {
-    var
-      begin = this.note.index,
-      cell = this.note.cell,
-      i = begin + 1,
-      next = cell.data[i];
-
-    while (next && next.beams && next.beams[this.level].value !== 'end') {
-      i++;
-      next = cell.data[i];
-    }
-    return next;
+  musje.Cell = function (cell) {
+    musje.extend(this, cell);
   };
 
-  /**
-   * Make beams automatically in group by the groupDur.
-   * @param {number} groupDur - Duration of a beam group in quarter.
-   */
-  musje.Cell.prototype.makeBeams = function (groupDur) {
-
-    getBeamedGroups(this, groupDur).forEach(function (group) {
-      // beamLevel starts from 0 while underbar starts from 1
-      var beamLevel = {};
-
-      function nextHasSameBeamlevel(index, level) {
-        var next = group[index + 1];
-        return next && next.duration.underbar > level;
+  musje.defineProperties(musje.Cell.prototype,
+  /** @lends musje.Cell# */
+  {
+    /**
+     * Music data
+     * @type {Array.<musje.MusicData>}
+     */
+    data: {
+      get: function () {
+        return this._data || (this._data = []);
+      },
+      set: function (data) {
+        this._data = data.map(function (datum) {
+          switch(Object.keys(datum)[0]) {
+          case 'note':
+            return new musje.Note(datum.note);
+          case 'rest':
+            return new musje.Rest(datum.rest);
+          case 'chord':
+            return new musje.Chord(datum.chord);
+          case 'voice':
+            return new musje.Voice(datum.voice);
+          case 'bar':
+            return new musje.Bar(datum.bar);
+          case 'time':
+            return new musje.Time(datum.time);
+          default:
+            throw new Error('Unknown music data: ' + datum);
+          }
+        });
       }
+    },
 
-      group.forEach(function(data, i) {
-        var
-          underbar = data.duration.underbar,
-          level;
+    /**
+     * Convert cell to string.
+     * @return {string} Converted cell in musje source code.
+     */
+    toString: function () {
+      return this.data.map(function (musicData) {
+        return musicData.toString();
+      }).join(' ');
+    },
 
-        for (level = 0; level < underbar; level++) {
-          if (nextHasSameBeamlevel(i, level)) {
-            data.beams = data.beams || {};
-            if (beamLevel[level]) {
-              data.beams[level] = new Beam('continue', level, data);
+    toJSON: musje.makeToJSON({
+      data: undefined
+    }),
+
+    /**
+     * Make beams automatically in group by the groupDur.
+     * @param {number} groupDur - Duration of a beam group in quarter.
+     */
+    makeBeams: function (groupDur) {
+
+      getBeamGroups(this, groupDur).forEach(function (group) {
+        // beamLevel starts from 0 while underbar starts from 1
+        var beamLevel = {};
+
+        function nextHasSameBeamlevel(index, level) {
+          var next = group[index + 1];
+          return next && next.duration.underbar > level;
+        }
+
+        group.forEach(function(data, i) {
+          var
+            underbar = data.duration.underbar,
+            level;
+
+          for (level = 0; level < underbar; level++) {
+            if (nextHasSameBeamlevel(i, level)) {
+
+              /**
+               * Beams of the note.
+               * - Produced by the {@link musje.Cell#makeBeams} method.
+               * - The above method is call in {@link musje.Score#prepareCells}.
+               * @memberof musje.Note#
+               * @alias beams
+               * @type {Array.<musje.Beam>}
+               */
+              data.beams = data.beams || [];
+              if (beamLevel[level]) {
+                data.beams[level] = new musje.Beam('continue', level, data);
+              } else {
+                beamLevel[level] = true;
+                data.beams[level] = new musje.Beam('begin', level, data);
+              }
             } else {
-              beamLevel[level] = true;
-              data.beams[level] = new Beam('begin', level, data);
-            }
-          } else {
-            if (beamLevel[level]) {
-              data.beams = data.beams || {};
-              data.beams[level] = new Beam('end', level, data);
-              delete beamLevel[level];
+              if (beamLevel[level]) {
+                data.beams = data.beams || [];
+                data.beams[level] = new musje.Beam('end', level, data);
+                delete beamLevel[level];
+              }
             }
           }
-        }
+        });
       });
-    });
-  };
+    }
+
+  });
 
 }(musje));

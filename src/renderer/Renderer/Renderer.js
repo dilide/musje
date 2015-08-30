@@ -62,7 +62,7 @@
 
   Renderer.renderCell = function (cell, lo) {
     cell.data.forEach(function (data) {
-      switch (data.$name) {
+      switch (data.$type) {
       case 'Rest':
         renderNote(data, cell, lo);
         break;

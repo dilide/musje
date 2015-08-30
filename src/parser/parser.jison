@@ -21,6 +21,7 @@
       parts = score.parts,
       lastMeasure,
       i;
+    if (!parts) { return; }
 
     for (i = 0; i < parts.length; i++) {
       lastMeasure = lastItem(parts[i].measures);

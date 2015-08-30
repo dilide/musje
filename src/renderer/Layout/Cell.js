@@ -39,9 +39,9 @@
   /** @lends  musje.Cell.prototype */
   {
     /**
-     * A reference to the parent measure.
-     * (Getter)
-     * (Setter)
+     * A back reference to the parent measure.
+     * - (Getter)
+     * - (Setter)
      * @type {musje.TimewiseMeasure}
      */
     measure: {
