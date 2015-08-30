@@ -79,7 +79,7 @@
     });
   };
 
-  function tiePath(x1, y1, x2, y2) {
+  function getTiePath(x1, y1, x2, y2) {
     var
       dx = x2 - x1,
       dy = y2 - y1,
@@ -112,6 +112,7 @@
       prev = note.duration.tie.prev,
       system = note.cell.measure.system,
       noteDx,
+      tiePath,
       x1, x2, y1, y2;
 
     // Tie end
@@ -119,7 +120,7 @@
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
       x2 = - note.systemX - 3;
-      note.el.path(tiePath(x1, y1, x2, y1 - 3));
+      tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
     }
 
     if (next) {
@@ -129,15 +130,19 @@
       // Tie begin
       if (next.cell.measure.system !== system) {
         x2 = system.width - note.systemX + 3;
-        note.el.path(tiePath(x1, y1, x2, y1 - 3));
+        tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
 
       // Tie complete
       } else {
         noteDx = next.systemX - note.systemX;
         x2 = next.def.pitchDef.stepCx;
         y2 = next.def.pitchDef.stepTop;
-        note.el.path(tiePath(x1, y1, noteDx + x2, y2));
+        tiePath = note.el.path(getTiePath(x1, y1, noteDx + x2, y2));
       }
+    }
+
+    if (tiePath && note.duration.tie.error) {
+      tiePath.addClass('mus-error');
     }
   };
 

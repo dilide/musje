@@ -43,6 +43,7 @@ gulp.task('concat', function () {
       './src/model/Duration.js',
       './src/model/Beam.js',
       './src/model/Slur.js',
+      './src/model/Tie.js',
 
       './src/parser/pre-parser.js',
       './.tmp/parser.js',
@@ -130,7 +131,7 @@ gulp.task('watch-doc', ['build-doc'], function() {
   });
 
   gulp.watch('./src/**/*.js', function () {
-    runSequence('doc', browserSync.reload);
+    runSequence('build-doc', browserSync.reload);
   });
 });
 

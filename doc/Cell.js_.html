@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: model/Time.js</title>
+    <title>JSDoc: Source: renderer/Layout/Cell.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: model/Time.js</h1>
+    <h1 class="page-title">Source: renderer/Layout/Cell.js</h1>
 
     
 
@@ -25,60 +25,109 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/* global musje */
+            <pre class="prettyprint source linenums"><code>/* global musje, Snap */
 
-(function (musje) {
+(function (musje, Snap) {
   'use strict';
 
   /**
-   * Time signature.
-   * @class
-   * @param time {Object}
+   * Flow the cell.
    */
-  musje.Time = function (time) {
-    musje.extend(this, time);
+  musje.Cell.prototype.flow = function () {
+    var
+      defs = this.layout.defs,
+      lo = this.layout.options,
+      x = 0,
+      minHeight;
+
+    this.data.forEach(function (data) {
+      var def = data.def = defs.get(data);
+      data.x = x;
+      data.y = 0;
+      x += def.width + lo.musicDataSep;
+      minHeight = Math.min(minHeight, def.height);
+    });
+
+    this.minWidth = x;
+    this.minHeight = minHeight;
   };
 
-  musje.defineProperties(musje.Time.prototype,
-  /** @lends musje.Time# */
+  /**
+   * @protected
+   */
+  musje.Cell.prototype._reflow = function () {
+    var cell = this;
+    this.data.forEach(function (data) {
+      data.x *= cell.width / cell.minWidth;
+    });
+  };
+
+  musje.defineProperties(musje.Cell.prototype,
+  /** @lends  musje.Cell.prototype */
   {
     /**
-     * Type of time.
-     * @type {string}
-     * @constant
-     * @default
+     * A back reference to the parent measure.
+     * - (Getter)
+     * - (Setter)
+     * @type {musje.TimewiseMeasure}
      */
-    $type: 'Time',
-
-    /**
-     * How many beats per measure.
-     * @type {number}
-     * @default
-     */
-    beats: 4,
-
-    /**
-     * Beat type
-     * @type {number}
-     * @default
-     */
-    beatType: 4,
-
-    /**
-     * Convert to musje source code.
-     * @return {string} Musje source code.
-     */
-    toString: function () {
-      return this.beats + '/' + this.beatType;
+    measure: {
+      get: function () {
+        return this._m;
+      },
+      set: function (measure) {
+        this._m = measure;
+        this.el = measure.el.g().addClass('mus-cell');
+        this.height = measure.height;
+      }
     },
 
-    toJSON: musje.makeToJSON({
-      beats: 4,
-      beatType: 4
-    }, 'time')
+    /**
+     * Width
+     * - (Getter) Get the cell width.
+     * - (Setter) Set the cell width, and this will cause the cell to reflow (`this._reflow()` will be called).
+     * @type {number}
+     */
+    width: {
+      get: function () {
+        return this._w;
+      },
+      set: function (w) {
+        this._w = w;
+        this._reflow();
+      }
+    },
+
+    /**
+     * X
+     * @type {number}
+     */
+    x: {
+      get: function () {
+        return this._x;
+      },
+      set: function (x) {
+        this._x = x;
+        this.el.transform(Snap.matrix().translate(x, this.y2));
+      }
+    },
+
+    /**
+     * Y2
+     * @type {number}
+     */
+    y2: {
+      get: function () {
+        return this._y2;
+      },
+      set: function (y2) {
+        this._y2 = y2;
+        this.el.transform(Snap.matrix().translate(this.x, y2));
+      }
+    }
   });
 
-}(musje));
+}(musje, Snap));
 </code></pre>
         </article>
     </section>

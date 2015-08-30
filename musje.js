@@ -168,7 +168,7 @@ if (typeof exports !== 'undefined') {
     this.prepareCells();
     this.linkTies();
 
-    console.log(JSON.stringify(this, null, 2))
+    // console.log(JSON.stringify(this, null, 2))
   };
 
   musje.defineProperties(musje.Score.prototype,
@@ -324,31 +324,45 @@ if (typeof exports !== 'undefined') {
      * Link ties for each {@link musje.Note} in the entire score.
      */
     linkTies: function () {
-      var prev = null;
+      var prevNote = null;
 
       this.walkMusicData(function (data) {
         var tie;
 
         if (data.$type === 'Note') {
-          tie = data.duration.tie;
-          data.duration.tie = {};
-          if (prev) {
+          tie = data.duration.tie.value;
+
+          if (prevNote) {
+
             /**
              * Previous tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Duration#tie#
+             * @memberof musje.Tie#
              * @alias prev
              * @type {(musje.Note|undefined)}
              */
-            data.duration.tie.prev = prev;
+            data.duration.tie.prev = prevNote;
+
+            if (prevNote.pitch.midiNumber !== data.pitch.midiNumber) {
+
+              /**
+               * Tie should link to the note with the same pitch.
+               * @memberof musje.Tie#
+               * @alias error
+               * @type {Boolean}
+               */
+              data.duration.tie.error = true;
+              prevNote.duration.tie.error = true;
+            }
+
             /**
              * Next tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Duration##tie#
+             * @memberof musje.Tie#
              * @alias next
              * @type {(musje.Note|undefined)}
              */
-            prev.duration.tie.next = data;
+            prevNote.duration.tie.next = data;
           }
-          prev = tie ? data : null;
+          prevNote = tie ? data : null;
         }
       });
     }
@@ -1171,9 +1185,16 @@ if (typeof exports !== 'undefined') {
 
     /**
      * Tie
-     * @type {boolean}
+     * @type {musje.Tie}
      */
-    tie: undefined,
+    tie: {
+      get: function () {
+        return this._tie || (this._tie = new musje.Tie());
+      },
+      set: function (tie) {
+        this._tie = new musje.Tie(tie);
+      }
+    },
 
     /**
      * `(Getter)` Duration measured in quarter note.
@@ -1220,7 +1241,7 @@ if (typeof exports !== 'undefined') {
     toJSON: musje.makeToJSON({
       type: 4,
       dot: 0,
-      // tie: undefined
+      tie: undefined
     })
   });
 
@@ -1294,6 +1315,31 @@ if (typeof exports !== 'undefined') {
     this.note = note;
   };
 
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * Tie of the note.
+   * @class
+   * @param {boolean} tie - Whether the note tie to the next note.
+   */
+  musje.Tie = function (tie) {
+    /** @member */
+    this.value = tie;
+  };
+
+  musje.defineProperties(musje.Tie.prototype,
+  /** @lends musje.Tie# */
+  {
+    toJSON: function () {
+      return this.value;
+    }
+  });
 
 }(musje));
 
@@ -3577,7 +3623,7 @@ return new Parser;
     });
   };
 
-  function tiePath(x1, y1, x2, y2) {
+  function getTiePath(x1, y1, x2, y2) {
     var
       dx = x2 - x1,
       dy = y2 - y1,
@@ -3610,6 +3656,7 @@ return new Parser;
       prev = note.duration.tie.prev,
       system = note.cell.measure.system,
       noteDx,
+      tiePath,
       x1, x2, y1, y2;
 
     // Tie end
@@ -3617,7 +3664,7 @@ return new Parser;
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
       x2 = - note.systemX - 3;
-      note.el.path(tiePath(x1, y1, x2, y1 - 3));
+      tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
     }
 
     if (next) {
@@ -3627,15 +3674,19 @@ return new Parser;
       // Tie begin
       if (next.cell.measure.system !== system) {
         x2 = system.width - note.systemX + 3;
-        note.el.path(tiePath(x1, y1, x2, y1 - 3));
+        tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
 
       // Tie complete
       } else {
         noteDx = next.systemX - note.systemX;
         x2 = next.def.pitchDef.stepCx;
         y2 = next.def.pitchDef.stepTop;
-        note.el.path(tiePath(x1, y1, noteDx + x2, y2));
+        tiePath = note.el.path(getTiePath(x1, y1, noteDx + x2, y2));
       }
+    }
+
+    if (tiePath && note.duration.tie.error) {
+      tiePath.addClass('mus-error');
     }
   };
 

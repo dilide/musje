@@ -67,6 +67,17 @@ npm install
 ```
 
 ### Build
+Build musje
+```
+gulp build-musje
+```
+
+Build documentation
+```
+gulp build-doc
+```
+
+Build musje and documentation
 ```
 gulp build
 ```

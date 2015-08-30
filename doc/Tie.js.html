@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: model/PartwisePart.js</title>
+    <title>JSDoc: Source: model/Tie.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: model/PartwisePart.js</h1>
+    <h1 class="page-title">Source: model/Tie.js</h1>
 
     
 
@@ -31,47 +31,21 @@
   'use strict';
 
   /**
+   * Tie of the note.
    * @class
-   * @param part {Object}
-   * @property measures {musje.Cells}
+   * @param {boolean} tie - Whether the note tie to the next note.
    */
-  musje.PartwisePart = function (part) {
-    musje.extend(this, part);
+  musje.Tie = function (tie) {
+    /** @member */
+    this.value = tie;
   };
 
-  musje.defineProperties(musje.PartwisePart.prototype,
-  /** @lends musje.PartwisePart# */
+  musje.defineProperties(musje.Tie.prototype,
+  /** @lends musje.Tie# */
   {
-    // head: { $ref: '#/objects/PartHead' },
-
-    /**
-     * Measure in a partwise part is cells.
-     * @type {Array.&lt;musje.Cell>}
-     */
-    measures: {
-      get: function () {
-        return this._measures || (this._measures = []);
-      },
-      set: function (measures) {
-        this._measures = measures.map(function (cell) {
-          return new musje.Cell(cell);
-        });
-      }
-    },
-
-    /**
-     * Convert a partwise part to sting.
-     * @return {string} Musje partwise part source code.
-     */
-    toString: function () {
-      return this.measures.map(function (cell) {
-        return cell;
-      }).join(' ');
-    },
-
-    toJSON: musje.makeToJSON({
-      measures: undefined
-    })
+    toJSON: function () {
+      return this.value;
+    }
   });
 
 }(musje));

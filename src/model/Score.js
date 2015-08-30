@@ -14,7 +14,7 @@
     this.prepareCells();
     this.linkTies();
 
-    console.log(JSON.stringify(this, null, 2))
+    // console.log(JSON.stringify(this, null, 2))
   };
 
   musje.defineProperties(musje.Score.prototype,
@@ -170,31 +170,45 @@
      * Link ties for each {@link musje.Note} in the entire score.
      */
     linkTies: function () {
-      var prev = null;
+      var prevNote = null;
 
       this.walkMusicData(function (data) {
         var tie;
 
         if (data.$type === 'Note') {
-          tie = data.duration.tie;
-          data.duration.tie = {};
-          if (prev) {
+          tie = data.duration.tie.value;
+
+          if (prevNote) {
+
             /**
              * Previous tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Duration#tie#
+             * @memberof musje.Tie#
              * @alias prev
              * @type {(musje.Note|undefined)}
              */
-            data.duration.tie.prev = prev;
+            data.duration.tie.prev = prevNote;
+
+            if (prevNote.pitch.midiNumber !== data.pitch.midiNumber) {
+
+              /**
+               * Tie should link to the note with the same pitch.
+               * @memberof musje.Tie#
+               * @alias error
+               * @type {Boolean}
+               */
+              data.duration.tie.error = true;
+              prevNote.duration.tie.error = true;
+            }
+
             /**
              * Next tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Duration##tie#
+             * @memberof musje.Tie#
              * @alias next
              * @type {(musje.Note|undefined)}
              */
-            prev.duration.tie.next = data;
+            prevNote.duration.tie.next = data;
           }
-          prev = tie ? data : null;
+          prevNote = tie ? data : null;
         }
       });
     }

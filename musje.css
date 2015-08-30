@@ -3,6 +3,10 @@
   stroke: black;
 }
 
+.mus-error {
+  fill: red;
+}
+
 .mus-playing,
 .mus-playing line {
   fill: #d0e;

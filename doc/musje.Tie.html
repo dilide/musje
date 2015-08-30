@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Bar</title>
+    <title>JSDoc: Class: Tie</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Bar</h1>
+    <h1 class="page-title">Class: Tie</h1>
 
     
 
@@ -29,7 +29,7 @@
     <h2>
         <span class="ancestors"><a href="musje.html">musje</a>.</span>
     
-    Bar
+    Tie
     </h2>
     
 </header>
@@ -41,12 +41,16 @@
     
         
 <dt>
-    <h4 class="name" id="Bar"><span class="type-signature"></span>new Bar<span class="signature">(bar)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Tie"><span class="type-signature"></span>new Tie<span class="signature">(tie)</span><span class="type-signature"></span></h4>
 
     
 </dt>
 <dd>
 
+    
+    <div class="description">
+        <p>Tie of the note.</p>
+    </div>
     
 
     
@@ -79,13 +83,13 @@
 
         <tr>
             
-                <td class="name"><code>bar</code></td>
+                <td class="name"><code>tie</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">boolean</span>
 
 
             
@@ -95,15 +99,7 @@
 
             
 
-            <td class="description last"><p>The bar value, which can be either of</p>
-<ul>
-<li>'single' - <code>|</code></li>
-<li>'double' - <code>||</code></li>
-<li>'end' - <code>|]</code></li>
-<li>'repeat-begin' - <code>|:</code></li>
-<li>'repeat-end' - <code>:|</code></li>
-<li>'repeat-both' - <code>:|:</code></li>
-</ul></td>
+            <td class="description last"><p>Whether the note tie to the next note.</p></td>
         </tr>
 
     
@@ -134,7 +130,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Bar.js.html">model/Bar.js</a>, <a href="Bar.js.html#line21">line 21</a>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line11">line 11</a>
     </li></ul></dd>
     
 
@@ -180,14 +176,14 @@
         <dl>
             
 <dt>
-    <h4 class="name" id="$type"><span class="type-signature">&lt;constant> </span>$type<span class="type-signature"> :string</span></h4>
+    <h4 class="name" id="error"><span class="type-signature"></span>error<span class="type-signature"> :Boolean</span></h4>
 
     
 </dt>
 <dd>
     
     <div class="description">
-        <p>Type of bar.</p>
+        <p>Tie should link to the note with the same pitch.</p>
     </div>
     
 
@@ -196,7 +192,7 @@
         <ul>
             <li>
                 
-<span class="param-type">string</span>
+<span class="param-type">Boolean</span>
 
 
             </li>
@@ -222,16 +218,11 @@
     
 
     
-    <dt class="tag-default">Default Value:</dt>
-    <dd class="tag-default"><ul class="dummy">
-            <li>Bar</li>
-        </ul></dd>
-    
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Bar.js.html">model/Bar.js</a>, <a href="Bar.js.html#line34">line 34</a>
+        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line199">line 199</a>
     </li></ul></dd>
     
 
@@ -251,14 +242,14 @@
         
             
 <dt>
-    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="type-signature"> :string</span></h4>
+    <h4 class="name" id="next"><span class="type-signature"></span>next<span class="type-signature"> :<a href="musje.Note.html">musje.Note</a>|undefined</span></h4>
 
     
 </dt>
 <dd>
     
     <div class="description">
-        <p>Value of the bar, which is the same as the bar parameter in the constructor.</p>
+        <p>Next tied note. Produced by <a href="musje.Score.html#linkTies">musje.Score#linkTies</a>.</p>
     </div>
     
 
@@ -267,7 +258,10 @@
         <ul>
             <li>
                 
-<span class="param-type">string</span>
+<span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
+|
+
+<span class="param-type">undefined</span>
 
 
             </li>
@@ -293,16 +287,11 @@
     
 
     
-    <dt class="tag-default">Default Value:</dt>
-    <dd class="tag-default"><ul class="dummy">
-            <li>single</li>
-        </ul></dd>
-    
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Bar.js.html">model/Bar.js</a>, <a href="Bar.js.html#line42">line 42</a>
+        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -319,29 +308,83 @@
     
 </dd>
 
-        </dl>
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        <dl>
+        
             
 <dt>
-    <h4 class="name" id="toString"><span class="type-signature"></span>toString<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    <h4 class="name" id="prev"><span class="type-signature"></span>prev<span class="type-signature"> :<a href="musje.Note.html">musje.Note</a>|undefined</span></h4>
 
     
 </dt>
 <dd>
-
     
     <div class="description">
-        <p>Convert bar to string.</p>
+        <p>Previous tied note. Produced by <a href="musje.Score.html#linkTies">musje.Score#linkTies</a>.</p>
     </div>
     
 
     
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
+|
 
+<span class="param-type">undefined</span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line189">line 189</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
     
 
     
@@ -369,7 +412,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Bar.js.html">model/Bar.js</a>, <a href="Bar.js.html#line48">line 48</a>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line13">line 13</a>
     </li></ul></dd>
     
 
@@ -384,41 +427,11 @@
     
 
     
-
-    
-
-    
-
-    
-
-    
-    <h5>Returns:</h5>
-    
-            
-<div class="param-desc">
-    <p>Converted string of the barline in musje source code.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
-        
-
-    
 </dd>
 
         </dl>
+    
+
     
 
     
