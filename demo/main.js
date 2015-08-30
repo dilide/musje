@@ -79,6 +79,7 @@
         //         'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
         //       '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
         // }
+      // } catch (err) {
       //   $scope.totalMeasures = 'N/A';
       //   $scope.error = '' + err;
       // }
