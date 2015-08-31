@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: model/Note.js</title>
+    <title>JSDoc: Source: model/PartwiseParts.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: model/Note.js</h1>
+    <h1 class="page-title">Source: model/PartwiseParts.js</h1>
 
     
 
@@ -32,96 +32,50 @@
 
   /**
    * @class
-   * @param {Object} note
+   * @param parts {Array}
+   * @param score {musje.Score}
    */
-  musje.Note = function (note) {
-    musje.extend(this, note);
+  musje.PartwiseParts = function (score) {
+    this.score = score;
 
     /**
-     * Reference to the parent note.
-     * @memberof musje.Pitch#
-     * @alias note
-     * @type {musje.Note}
+     * Array value of the partwise parts.
+     * @member {Array}
+     * @readonly
      */
-    this.pitch.note = this;
+    this.value = [];
+
   };
 
-  musje.defineProperties(musje.Note.prototype,
-  /** @lends musje.Note.prototype */
+  musje.defineProperties(musje.PartwiseParts.prototype,
+  /** @lends musje.PartwiseParts# */
   {
-    /**
-     * Type of note.
-     * @type {string}
-     * @constant
-     * @default
-     */
-    $type: 'Note',
 
-    /**
-     * Pitch of the note.
-     * @type {musje.Pitch}
-     */
-    pitch: {
-      get: function () {
-        return this._pitch || (this._pitch = new musje.Pitch());
-      },
-      set: function (pitch) {
-        this._pitch = new musje.Pitch(pitch);
-      }
+    at: function (index) {
+      return this.value[index];
+    },
+
+    addParts: function (parts) {
+      var that = this;
+      parts.forEach(function (part) {
+        that.append(part);
+      });
     },
 
     /**
-     * Duration of the note.
-     * @type {musje.Duration}
+     * Append a partwise part.
+     * @param  {Object} part - Plain partwise part object.
      */
-    duration: {
-      get: function () {
-        return this._duration || (this._duration = new musje.Duration());
-      },
-      set: function (duration) {
-        this._duration = new musje.Duration(duration);
-      }
+    append: function (part) {
+      var index = this.value.length;
+      var musjePart = new musje.PartwisePart(index, this);
+      this.value.push(musjePart);
+      musjePart.measures = part.measures;
     },
 
-    /**
-     * Tie
-     * @type {musje.Tie}
-     */
-    tie: {
-      get: function () {
-        return this._tie || (this._tie = new musje.Tie());
-      },
-      set: function (tie) {
-        this._tie = new musje.Tie(tie);
-      }
-    },
-
-    /**
-     * Slurs attached to the note.
-     * @type {Array.&lt;musje.Slur>}
-     */
-    slurs: {
-      get: function () {
-        return this._slurs;
-      },
-      set: function (slurs) {
-        this._slurs = slurs.map(function (slur) {
-          return new musje.Slur(slur);
-        });
-      }
-    },
-
-    /** @method */
-    toString: function () {
-      return this.pitch + this.duration;
-    },
-
-    toJSON: musje.makeToJSON({
-      pitch: undefined,
-      duration: undefined,
-      tie: undefined,
-      slurs: undefined
-    }, 'note')
+    toJSON: function () {
+      return this.value;
+    }
   });
 
 }(musje));

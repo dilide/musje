@@ -41,7 +41,7 @@
     
         
 <dt>
-    <h4 class="name" id="PartwisePart"><span class="type-signature"></span>new PartwisePart<span class="signature">(part)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="PartwisePart"><span class="type-signature"></span>new PartwisePart<span class="signature">(part, index, parts)</span><span class="type-signature"></span></h4>
 
     
 </dt>
@@ -99,47 +99,39 @@
         </tr>
 
     
-    </tbody>
-</table>
-    
-
-    
-<dl class="details">
-    
-
-        <h5 class="subsection-title">Properties:</h5>
-
-        <dl>
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
 
         <tr>
             
-                <td class="name"><code>measures</code></td>
+                <td class="name"><code>index</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">musje.Cells</span>
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Index of this part in the parts.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>parts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="musje.PartwiseParts.html">musje.PartwiseParts</a></span>
 
 
             
@@ -154,8 +146,11 @@
 
     
     </tbody>
-</table></dl>
+</table>
+    
 
+    
+<dl class="details">
     
 
     
@@ -177,7 +172,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line11">line 11</a>
+        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line12">line 12</a>
     </li></ul></dd>
     
 
@@ -223,6 +218,72 @@
         <dl>
             
 <dt>
+    <h4 class="name" id="index"><span class="type-signature"></span>index<span class="type-signature"> :number</span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>Index of this part in the parts.</p>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">number</span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
     <h4 class="name" id="measures"><span class="type-signature"></span>measures<span class="type-signature"> :Array.&lt;<a href="musje.Cell.html">musje.Cell</a>></span></h4>
 
     
@@ -240,6 +301,72 @@
             <li>
                 
 <span class="param-type">Array.&lt;<a href="musje.Cell.html">musje.Cell</a>></span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="parts"><span class="type-signature"></span>parts<span class="type-signature"> :<a href="musje.PartwiseParts.html">musje.PartwiseParts</a></span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>Reference to the parent parts instance.</p>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type"><a href="musje.PartwiseParts.html">musje.PartwiseParts</a></span>
 
 
             </li>
@@ -336,7 +463,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line39">line 39</a>
+        <a href="PartwisePart.js.html">model/PartwisePart.js</a>, <a href="PartwisePart.js.html#line61">line 61</a>
     </li></ul></dd>
     
 
@@ -401,13 +528,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Aug 30 2015 19:18:38 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Mon Aug 31 2015 16:42:37 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

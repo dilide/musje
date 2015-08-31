@@ -57,6 +57,19 @@
     },
 
     /**
+     * Tie
+     * @type {musje.Tie}
+     */
+    tie: {
+      get: function () {
+        return this._tie || (this._tie = new musje.Tie());
+      },
+      set: function (tie) {
+        this._tie = new musje.Tie(tie);
+      }
+    },
+
+    /**
      * Slurs attached to the note.
      * @type {Array.<musje.Slur>}
      */
@@ -79,6 +92,7 @@
     toJSON: musje.makeToJSON({
       pitch: undefined,
       duration: undefined,
+      tie: undefined,
       slurs: undefined
     }, 'note')
   });

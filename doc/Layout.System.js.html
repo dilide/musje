@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: renderer/Layout/Layout.Svg.js</title>
+    <title>JSDoc: Source: renderer/Layout/Layout.System.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: renderer/Layout/Layout.Svg.js</h1>
+    <h1 class="page-title">Source: renderer/Layout/Layout.System.js</h1>
 
     
 
@@ -32,41 +32,105 @@
 
   var defineProperty = Object.defineProperty;
 
-  /**
-   * @class
-   * @alias musje.Layout.Svg
-   * @param layout {musje.Layout}
-   */
-  var Svg = Layout.Svg = function (layout) {
-    this._layout = layout;
-    var lo = layout.options;
+  function getPairs(measures) {
+    return measures.map(function (measure) {
+      return {
+        width: measure.minWidth,
+        measure: measure
+      };
+    }).sort(function (a, b) {
+      return b.width - a.width;   // descending sort
+    });
+  }
 
-    this.el = Snap(layout.svg).attr({
-        fontFamily: lo.fontFamily
-      }).addClass('musje');
-    this.el.clear();
-    this.width = lo.width;
+  var System = Layout.System = function (content, lo) {
+    this._lo = lo;
+    this.el = content.el.g().addClass('mus-system');
+    this.width = content.width;
+    this.measures = [];
   };
 
-  defineProperty(Svg.prototype, 'width', {
+  System.prototype.flow = function () {
+    var
+      system = this,
+      x = 0;
+
+    system._tuneMeasuresWidths();
+    system.measures.forEach(function (measure, m) {
+      measure.system = system;
+
+      /**
+       * Index of this measure in the system.
+       * Produced by {@link musje.Layout.System#flow}
+       * @memberof musje.TimewiseMeasure#
+       * @alias systemIndex
+       * @type {number}
+       * @readonly
+       */
+      measure.systemIndex = m;
+      measure.flow();
+      measure.x = x;
+      x += measure.width;
+    });
+  };
+
+  System.prototype._tuneMeasuresWidths = function () {
+    var
+      pairs = getPairs(this.measures),
+      length = pairs.length,
+      widthLeft = this.width,
+      itemLeft = length,
+      i = 0,    // i + itemLeft === length
+      width;
+
+    while (i &lt; length) {
+      if (widthLeft >= pairs[i].width * itemLeft) {
+        width = widthLeft / itemLeft;
+        do {
+          pairs[i].measure.width = width;
+          i++;
+        } while (i &lt; length);
+        break;
+      } else {
+        width = pairs[i].width;
+        pairs[i].measure.width = width;
+        widthLeft -= width;
+        i++;
+        itemLeft--;
+      }
+    }
+
+    // measures.forEach(function (measure) {
+    //   measure.el.rect(0, 0, measure.width, measure.height)
+    //         .attr({ stroke: 'green', fill: 'none' });
+    // });
+  };
+
+  defineProperty(System.prototype, 'y', {
+    get: function () {
+      return this._y;
+    },
+    set: function (y) {
+      this._y = y;
+      this.el.transform(Snap.matrix().translate(0, y));
+    }
+  });
+
+  defineProperty(System.prototype, 'width', {
     get: function () {
       return this._w;
     },
     set: function (w) {
       this._w = w;
-      this.el.attr('width', w);
-      var body = this._layout.body;
-      if (body) { body.width = w; }
     }
   });
 
-  defineProperty(Svg.prototype, 'height', {
+  defineProperty(System.prototype, 'height', {
     get: function () {
       return this._h;
     },
     set: function (h) {
       this._h = h;
-      this.el.attr('height', h);
     }
   });
 

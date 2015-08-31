@@ -19,5 +19,13 @@
     this.note = note;
   };
 
+  musje.defineProperties(musje.Slur.prototype,
+  /** @lends musje.Slur# */
+  {
+    toJSON: function () {
+      return this.value;
+    }
+  });
+
 
 }(musje));

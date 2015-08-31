@@ -108,8 +108,8 @@
 
   Renderer.renderTie = function (note) {
     var
-      next = note.duration.tie.next,
-      prev = note.duration.tie.prev,
+      next = note.tie.next,
+      prev = note.tie.prev,
       system = note.cell.measure.system,
       noteDx,
       tiePath,
@@ -141,7 +141,7 @@
       }
     }
 
-    if (tiePath && note.duration.tie.error) {
+    if (tiePath && note.tie.error) {
       tiePath.addClass('mus-error');
     }
   };

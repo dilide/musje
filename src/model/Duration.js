@@ -49,19 +49,6 @@
     dot: 0,
 
     /**
-     * Tie
-     * @type {musje.Tie}
-     */
-    tie: {
-      get: function () {
-        return this._tie || (this._tie = new musje.Tie());
-      },
-      set: function (tie) {
-        this._tie = new musje.Tie(tie);
-      }
-    },
-
-    /**
      * `(Getter)` Duration measured in quarter note.
      * @type {number}
      */
@@ -105,8 +92,7 @@
 
     toJSON: musje.makeToJSON({
       type: 4,
-      dot: 0,
-      tie: undefined
+      dot: 0
     })
   });
 

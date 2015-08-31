@@ -6,10 +6,22 @@
   /**
    * @class
    * @param part {Object}
-   * @property measures {musje.Cells}
+   * @param index {number} - Index of this part in the parts.
+   * @param parts {musje.PartwiseParts}
    */
-  musje.PartwisePart = function (part) {
-    musje.extend(this, part);
+  musje.PartwisePart = function (index, parts) {
+
+    /**
+     * Index of this part in the parts.
+     * @member {number}
+     */
+    this.index = index;
+
+    /**
+     * Reference to the parent parts instance.
+     * @member {musje.PartwiseParts}
+     */
+    this.parts = parts;
   };
 
   musje.defineProperties(musje.PartwisePart.prototype,
@@ -26,9 +38,19 @@
         return this._measures || (this._measures = []);
       },
       set: function (measures) {
-        this._measures = measures.map(function (cell) {
-          return new musje.Cell(cell);
+        var
+          p = this.index, score = this.parts.score,
+          mea = this._measures = [];
+
+        measures.forEach(function (cell, m) {
+          mea.push(new musje.Cell(cell, m, p, score));
         });
+      }
+    },
+
+    prev: {
+      get: function () {
+        return this.parts.at(this.index - 1);
       }
     },
 

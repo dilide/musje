@@ -48,9 +48,34 @@
    * a part in a timewise measure.
    * @class
    * @param cell {Object}
+   * @param mIndex {number} - Measure index of this cell.
+   * @param pIndex {number} - Part index of this cell.
    */
-  musje.Cell = function (cell) {
+  musje.Cell = function (cell, mIndex, pIndex, score) {
+
+    /**
+     * Measure index of this cell.
+     * @member {number}
+     * @readonly
+     */
+    this.mIndex = mIndex;
+
+    /**
+     * Part index of this cell.
+     * @member {number}
+     * @readonly
+     */
+    this.pIndex = pIndex;
+
+    /**
+     * Reference to the root score instance.
+     * @member {musje.Score}
+     * @readonly
+     */
+    this.score = score;
+
     musje.extend(this, cell);
+    this.extractBars();
   };
 
   musje.defineProperties(musje.Cell.prototype,
@@ -83,6 +108,36 @@
             throw new Error('Unknown music data: ' + datum);
           }
         });
+      }
+    },
+
+    measures: {
+      get: function () {
+        return this.score.measures;
+      }
+    },
+
+    measure: {
+      get: function () {
+        return this.measures.at(this.mIndex);
+      }
+    },
+
+    parts: {
+      get: function () {
+        return this.score.parts;
+      }
+    },
+
+    part: {
+      get: function () {
+        return this.parts.at(this.pIndex);
+      }
+    },
+
+    prev: {
+      get: function () {
+        return this.part.measures[this.mIndex - 1];
       }
     },
 
@@ -148,6 +203,35 @@
           }
         });
       });
+    },
+
+    /**
+     * Extract bars in each cell out into the cell.
+     */
+    extractBars: function () {
+      var
+        data = this.data,
+        len = data.length;
+
+      if (!len) { return; }
+
+      // barRight: the last item
+      if (len && data[len - 1].$type === 'Bar') {
+        this.barRight = data.pop();
+      }
+
+      // barLeft:
+
+      // The first item in the first measure.
+      if (data[0] && data[0].$type === 'Bar') {
+        this.barLeft = data.shift();
+
+      // Take from the previous measure.
+      } else {
+        if (this.mIndex !== 0) {
+          this.barLeft = this.prev.barRight;
+        }
+      }
     }
 
   });

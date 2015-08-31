@@ -19,7 +19,7 @@
    * - 'repeat-both' - `:|:`
    */
   musje.Bar = function (bar) {
-    musje.extend(this, bar);
+    this.value = bar;
   };
 
   musje.defineProperties(musje.Bar.prototype,

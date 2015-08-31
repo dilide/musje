@@ -197,7 +197,7 @@ bar
 music_data
   : slurable
   | slurable TIE
-    { $$ = $1; onlyProperty($1).duration.tie = true; }
+    { $$ = $1; onlyProperty($1).tie = true; }
   | '0' maybe_duration
     { $$ = { rest: { duration: $2 } }; }
   | voice

@@ -33,10 +33,10 @@
       dur = note.duration.second;
 
     function play() {
-      if (!note.duration.tie.prev) {
+      if (!note.tie.prev) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!note.duration.tie.next) {
+      if (!note.tie.next) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 
@@ -61,7 +61,7 @@
    */
   musje.Score.prototype.play = function() {
     var
-      measures = this.parts[0].measures,
+      measures = this.parts.value[0].measures,
       time = 0; //audioCtx.currentTime
 
     measures.forEach(function (cell) {
