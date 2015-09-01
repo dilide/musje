@@ -6,6 +6,8 @@
   /**
    * @class
    * @param {Object} chord
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Chord = function (chord) {
     musje.extend(this, chord);

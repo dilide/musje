@@ -1,11 +1,19 @@
 /* global musje, Snap */
 
-(function (TimewiseMeasurePrototype, Snap) {
+(function (musje, Snap) {
   'use strict';
 
-  musje.defineProperties(musje.TimewiseMeasure.prototype,
-  /** @lends musje.TimewiseMeasure# */
+  /**
+   * TimewiseMeasure Layout mixin.
+   * @mixin
+   */
+  musje.LayoutTimewiseMeasure =
+  /** @lends musje.LayoutTimewiseMeasure# */
   {
+    /**
+     * Calculate minimum measure width.
+     * @return {number} The minimum measure width.
+     */
     calcMinWidth: function () {
       var lo = this.layout.options, minWidth = 0;
 
@@ -17,18 +25,29 @@
       this.minWidth = minWidth + this._padding;
     },
 
+    /**
+     * Flow the measure.
+     */
     flow: function () {
       var measure = this;
       measure.parts = measure.parts.map(function (cell) {
+
+        /**
+         * Cell SVG group element
+         * @memberof musje.LayoutCell#
+         * @alias el
+         * @type {Element}
+         * @readonly
+         */
         cell.el = measure.el.g().addClass('mus-cell');
+
         cell.height = measure.height;
-        cell._x = measure.barLeft.width / 2 +
+        cell._x = measure.barLeftInSystem.width / 2 +
                   measure.layout.options.measurePaddingRight;
 
         cell.y2 = measure.system.height;
 
-        // cell.el.rect(0, -cell.height, cell.width, cell.height)
-        //   .addClass('bbox');
+        // cell.drawBorder();
 
         return cell;
       });
@@ -68,18 +87,20 @@
       }
     },
 
-    barLeft: {
+    barLeftInSystem: {
       get: function () {
-        return this.parts[0].barLeft;
+        return this.parts[0].barLeftInSystem;
       }
     },
 
-    barRight: {
+    barRightInSystem: {
       get: function () {
-        return this.parts[0].barRight;
+        return this.parts[0].barRightInSystem;
       }
     }
+  };
 
-  });
+  musje.defineProperties(musje.TimewiseMeasure.prototype,
+                         musje.LayoutTimewiseMeasure);
 
-}(musje.TimewiseMeasure.prototype, Snap));
+}(musje, Snap));

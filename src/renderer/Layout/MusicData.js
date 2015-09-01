@@ -3,10 +3,18 @@
 (function (musje) {
   'use strict';
 
-  var defineProperty = Object.defineProperty;
-
-  function extendClass(className) {
-    defineProperty(musje[className].prototype, 'x', {
+  /**
+   * Layout mixin for the music data
+   * @mixin
+   */
+  musje.LayoutMusicData =
+  /** @lends musje.LayoutMusicData# */
+  {
+    /**
+     * The x position of the music data in the cell.
+     * @type {number}
+     */
+    x: {
       get: function () {
         return this._x;
       },
@@ -16,9 +24,13 @@
           this.el.attr('x', x);
         }
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'y', {
+    /**
+     * The y position of the music data in the cell.
+     * @type {number}
+     */
+    y: {
       get: function () {
         return this._y;
       },
@@ -26,24 +38,32 @@
         this._y = y;
         if (this.el) { this.el.attr('y', y); }
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'systemX', {
+    /**
+     * The x position of the music data in the system.
+     * @type {number}
+     */
+    systemX: {
       get: function () {
         return this.x + this.cell.x + this.cell.measure.x;
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'width', {
+    /**
+     * The width of the music data.
+     * @type {number}
+     * @readonly
+     */
+    width: {
       get: function () {
         return this.def.width;
-      },
-      // set: function (w) {
-      //   this._w = w;
-      // }
-    });
-  }
+      }
+    }
+  };
 
-  ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
+  ['Time', 'Bar', 'Note', 'Rest', 'Chord', 'Voice'].forEach(function (className) {
+    musje.defineProperties(musje[className].prototype, musje.LayoutMusicData);
+  });
 
 }(musje));

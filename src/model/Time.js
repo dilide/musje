@@ -7,6 +7,8 @@
    * Time signature.
    * @class
    * @param time {Object}
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Time = function (time) {
     musje.extend(this, time);

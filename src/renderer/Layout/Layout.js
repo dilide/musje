@@ -38,8 +38,8 @@
       layout = this,
       measures = score.measures;
 
-    measures.value.forEach(function (measure, m) {
-      measure = measures.value[m];
+    measures.forEach(function (measure, m) {
+      measure = measures[m];
       measure.layout = layout;
       measure.parts.forEach(function (cell) {
         cell.layout = layout;

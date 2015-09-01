@@ -47,13 +47,12 @@
         return s * (height + lo.systemSep);
       }
 
-      scoreMeasures.value.forEach(function (measure) {
-        var notCellWidth = (measure.barLeft.width + measure.barRight.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
+      scoreMeasures.forEach(function (measure) {
+        var notCellWidth = (measure.barLeftInSystem.width + measure.barRightInSystem.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
         x += measure.minWidth + notCellWidth;
 
         // Continue putting this measure in the system.
         if (x < width) {
-          measure.system = system;
           system.measures.push(measure);
           x += lo.measurePaddingLeft;
 
@@ -63,7 +62,6 @@
           system = systems[s] = new musje.Layout.System(content, lo);
           system.y = y();
           system.height = height;
-          measure.system = system;
           system.measures.push(measure);
           x = measure.minWidth + notCellWidth;
         }

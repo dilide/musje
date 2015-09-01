@@ -3,46 +3,44 @@
 (function (musje) {
   'use strict';
 
-  /**
-   * @class
-   * @param measures {Array}
-   * @param score {musje.Score}
-   */
-  musje.TimewiseMeasures = function (score) {
-    this.score = score;
-
-    /**
-     * Array value of the timewise measures.
-     * @member {Array}
-     * @readonly
-     */
-    this.value = [];
-  };
-
-  musje.defineProperties(musje.TimewiseMeasures.prototype,
+  var properties =
   /** @lends musje.TimewiseMeasures# */
   {
-
-    at: function (index) {
-      return this.value[index];
-    },
-
+    /**
+     * Make timewise score measures from the partwise parts.
+     */
     fromPartwise: function () {
-      var
-        that = this,
-        value = that.value;
+      var that = this;
 
-      value.length = 0; // remove all data if exists
+      that.length = 0; // remove all data if exists
 
       this.score.walkCells(function (cell, m) {
-        value[m] = value[m] || new musje.TimewiseMeasure(that, m, that.score);
-        value[m].parts.push(cell);
+        that[m] = that[m] || new musje.TimewiseMeasure(m, that);
+        that[m].parts.push(cell);
       });
-    },
-
-    toJSON: function () {
-      return this.value;
     }
-  });
+  };
+
+  /**
+   * Construct timewise score measures.
+   * @class
+   * @classdesc Timewise score measures.
+   * @param score {musje.Score}
+   * @augments {Array}
+   */
+  musje.TimewiseMeasures = function (score) {
+
+    var measures = [];
+
+    /**
+     * Reference to the parent score.
+     * @memberof musje.TimewiseMeasures#
+     * @alias score
+     * @type {musje.Score}
+     */
+    measures.score = score;
+    musje.defineProperties(measures, properties);
+    return measures;
+  };
 
 }(musje));

@@ -3,10 +3,12 @@
 (function (musje, Snap) {
   'use strict';
 
-  musje.defineProperties(musje.Cell.prototype,
-  /** @lends  musje.Cell.prototype */
+  /**
+   * @mixin
+   */
+  musje.LayoutCell =
+  /** @lends  musje.LayoutCell# */
   {
-
     /**
      * Flow the cell.
      */
@@ -30,6 +32,7 @@
     },
 
     /**
+     * Reflow the cell.
      * @protected
      */
     _reflow: function () {
@@ -56,7 +59,8 @@
     },
 
     /**
-     * X
+     * The x position of the cell in parent timewise measure.
+     * - Set the x value will cause the cell element translate.
      * @type {number}
      */
     x: {
@@ -70,7 +74,8 @@
     },
 
     /**
-     * Y2
+     * The y2 position of the cell in parent timewise measure.
+     * - Set the y2 value will cause the cell element translate.
      * @type {number}
      */
     y2: {
@@ -83,18 +88,24 @@
       }
     },
 
-    barLeft: {
-
-      // barLeft at first measure of a system:
-      // |]  -> |
-      // :|  -> |
-      // :|: -> |:
+    /**
+     * The left bar of this cell.
+     * - barLeft at first measure of a system:
+     * ```
+     * |]  -> |
+     * :|  -> |
+     * :|: -> |:
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barLeftInSystem: {
       get: function () {
-        var bar = this._bl;
+        var bar = this.barLeft;
         if (!bar) { return { width: 0, height: 0 }; }
 
         // First measure in the system.
-        if (this.measure.systemIndex === 0) {
+        if (this.measure.inSystemBegin) {
           if (bar.value === 'end' || bar.value === 'repeat-end') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -103,29 +114,29 @@
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._bl = bar;
       }
     },
 
-    barRight: {
-
-      // barRight at last measure of a system:
-      //  |: ->  |
-      // :|: -> :|
+    /**
+     * The right bar of this cell.
+     * - barRight at last measure of a system:
+     * ```
+     *  |: ->  |
+     * :|: -> :|
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barRightInSystem: {
       get: function () {
-        if (!this.layout) { return this._br; }
-
         var
-          bar = this._br,
+          bar = this.barRight,
           system = this.measure.system;
 
         if (!bar) { return { width: 0, height: 0 }; }
 
         // Last measure in the system.
-        if (system && this.measure.systemIndex === system.measures.length - 1) {
+        if (system && this.measure.inSystemEnd) {
           if (bar.value === 'repeat-begin') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -134,13 +145,19 @@
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._br = bar;
       }
-    }
+    },
 
-  });
+    drawBorder: function () {
+      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
+                              .addClass('bbox');
+    },
+
+    clearBorder: function () {
+      this._borderEl.remove();
+    }
+  };
+
+  musje.defineProperties(musje.Cell.prototype, musje.LayoutCell);
 
 }(musje, Snap));

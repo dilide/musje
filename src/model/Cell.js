@@ -50,22 +50,23 @@
    * @param cell {Object}
    * @param mIndex {number} - Measure index of this cell.
    * @param pIndex {number} - Part index of this cell.
+   * @mixes musje.LayoutCell
    */
   musje.Cell = function (cell, mIndex, pIndex, score) {
 
     /**
      * Measure index of this cell.
      * @member {number}
-     * @readonly
+     * @protected
      */
-    this.mIndex = mIndex;
+    this._mIndex = mIndex;
 
     /**
      * Part index of this cell.
      * @member {number}
-     * @readonly
+     * @protected
      */
-    this.pIndex = pIndex;
+    this._pIndex = pIndex;
 
     /**
      * Reference to the root score instance.
@@ -75,7 +76,8 @@
     this.score = score;
 
     musje.extend(this, cell);
-    this.extractBars();
+
+    this.makeBeams(1);
   };
 
   musje.defineProperties(musje.Cell.prototype,
@@ -90,55 +92,146 @@
         return this._data || (this._data = []);
       },
       set: function (data) {
-        this._data = data.map(function (datum) {
-          switch(Object.keys(datum)[0]) {
-          case 'note':
-            return new musje.Note(datum.note);
-          case 'rest':
-            return new musje.Rest(datum.rest);
-          case 'chord':
-            return new musje.Chord(datum.chord);
-          case 'voice':
-            return new musje.Voice(datum.voice);
-          case 'bar':
-            return new musje.Bar(datum.bar);
-          case 'time':
-            return new musje.Time(datum.time);
-          default:
-            throw new Error('Unknown music data: ' + datum);
-          }
+        var that = this;
+        that.length = 0;
+        data.forEach(function (datum) {
+          that.append(datum);
         });
       }
     },
 
+    /**
+     * Reference to the parent measures.
+     * @type {musje.TimewiseMeasures}
+     * @readonly
+     */
     measures: {
       get: function () {
         return this.score.measures;
       }
     },
 
+    /**
+     * Reference to the parent measure.
+     * @type {musje.TimewiseMeasure}
+     * @readonly
+     */
     measure: {
       get: function () {
-        return this.measures.at(this.mIndex);
+        return this.measures[this._mIndex];
       }
     },
 
+    /**
+     * Reference to the parent parts.
+     * @type {musje.PartwiseParts}
+     * @readonly
+     */
     parts: {
       get: function () {
         return this.score.parts;
       }
     },
 
+    /**
+     * Reference to the parent part.
+     * @type {musje.PartwisePart}
+     * @readonly
+     */
     part: {
       get: function () {
-        return this.parts.at(this.pIndex);
+        return this.parts[this._pIndex];
       }
     },
 
+    /**
+     * Previous cell in the part.
+     * @type {musje.Cell|undefined}
+     * @readonly
+     */
     prev: {
       get: function () {
-        return this.part.measures[this.mIndex - 1];
+        return this.part.measures[this._mIndex - 1];
       }
+    },
+
+    firstData: {
+      get: function () {
+        return this.data[0];
+      }
+    },
+
+    lastData: {
+      get: function () {
+        return this.data[this.data.length - 1];
+      }
+    },
+
+    /**
+     * The left bar of this cell.
+     * @type {musje.Bar|undefined}
+     * @readonly
+     */
+    barLeft: {
+      get: function () {
+        var firstData = this.firstData;
+
+        if (firstData && firstData.$type === 'Bar') {
+          return firstData;
+        }
+
+        // Take from the previous measure.
+        var prevCell = this.prev;
+        if (prevCell) {
+          return prevCell.barRight;
+        }
+      }
+    },
+
+    /**
+     * The right bar of this cell.
+     * @type {musje.Bar|undefined}
+     * @readonly
+     */
+    barRight: {
+      get: function () {
+        var lastData = this.lastData;
+
+        if (lastData && lastData.$type === 'Bar') {
+          return lastData;
+        }
+      }
+    },
+
+    /**
+     * Append a music data to the cell.
+     * @param  {Object} musicData - Music data
+     */
+    append: function (musicData) {
+      var
+        name = Object.keys(musicData)[0],
+        className = name[0].toUpperCase() + name.substr(1),
+        instance = new musje[className](musicData[name]);
+
+      /**
+       * Reference to the parent cell
+       * @memberof musje.MusicData#
+       * @alias cell
+       * @type {musje.Cell}
+       * @readonly
+       */
+      instance.cell = this;
+
+      /**
+       * Index of the music data in the cell
+       * @memberof musje.MusicData#
+       * @alias _index
+       * @type {number}
+       * @protected
+       */
+      instance._index = this.data.length;
+
+      this.data.push(instance);
     },
 
     /**
@@ -203,35 +296,6 @@
           }
         });
       });
-    },
-
-    /**
-     * Extract bars in each cell out into the cell.
-     */
-    extractBars: function () {
-      var
-        data = this.data,
-        len = data.length;
-
-      if (!len) { return; }
-
-      // barRight: the last item
-      if (len && data[len - 1].$type === 'Bar') {
-        this.barRight = data.pop();
-      }
-
-      // barLeft:
-
-      // The first item in the first measure.
-      if (data[0] && data[0].$type === 'Bar') {
-        this.barLeft = data.shift();
-
-      // Take from the previous measure.
-      } else {
-        if (this.mIndex !== 0) {
-          this.barLeft = this.prev.barRight;
-        }
-      }
     }
 
   });

@@ -41,27 +41,25 @@
   // @param len {number} Length of measures.
   musje.Renderer.renderBar = function (measure, lo) {
     var
-      m = measure.systemIndex,
-      len = measure.system.measures.length,
-      bar = measure.barRight,
+      bar = measure.barRightInSystem,
       el;
 
     if (bar.def) {
       el = render(bar, measure, lo);
 
-      // Last measure in a system align end
-      if (m === len - 1) {
+      // Align end in system end.
+      if (measure.inSystemEnd) {
         translate(el, measure.width - bar.width);
 
-      // Others align middle
+      // Others align middle.
       } else {
         translate(el, measure.width - bar.width / 2);
       }
     }
 
-    // First measure in a system, render right bar, align begin
-    if (m === 0) {
-      bar = measure.barLeft;
+    // Render right bar and align begin in system begin.
+    if (measure.inSystemBegin) {
+      bar = measure.barLeftInSystem;
       if (bar.def) {
         render(bar, measure, lo);
       }

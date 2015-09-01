@@ -132,12 +132,11 @@ if (typeof exports !== 'undefined') {
   };
 
   /**
-   * @member musje.parser
-   */
-
-  /**
-   * @function musje.parser.parse
+   * @memberof musje
+   * @member {Object} parser.parse
+   * @function
    * @param {string} input
+   * @return {Object} A plain musje score object.
    */
 
   /**

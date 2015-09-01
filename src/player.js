@@ -61,7 +61,7 @@
    */
   musje.Score.prototype.play = function() {
     var
-      measures = this.parts.value[0].measures,
+      measures = this.parts[0].measures,
       time = 0; //audioCtx.currentTime
 
     measures.forEach(function (cell) {

@@ -46,6 +46,7 @@ gulp.task('concat', function () {
       './src/model/Beam.js',
       './src/model/Slur.js',
       './src/model/Tie.js',
+      './src/model/MusicData.js',
 
       './src/parser/pre-parser.js',
       './.tmp/parser.js',

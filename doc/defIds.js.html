@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: renderer/Defs/defIds.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: renderer/Defs/defIds.js</h1>
+
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* global musje, Snap */
+
+(function (musje) {
+  'use strict';
+
+  var BAR_TO_ID = {
+    single: 'bs', double: 'bd', end: 'be',
+    'repeat-begin': 'brb', 'repeat-end': 'bre', 'repeat-both': 'brbe'
+  };
+
+  var defIds = {
+
+    /**
+     * Def id used in the SVG &lt;defs> element.
+     * ```
+     * id := 't' beats '-' beatType
+     * ```
+     * E.g. `t3-4`
+     * @member
+     * @alias musje.Time#defId
+     * @type {string}
+     * @readonly
+     */
+    Time: function () {
+      return ['t', this.beats, '-', this.beatType].join('');
+    },
+
+    /**
+     * Def id used in the SVG &lt;defs> element.
+     * ```
+     * defId    Bar value
+     * ----------------------
+     * 'bs'   - single
+     * 'bd'   - double
+     * 'be'   - repeat-end
+     * 'brb'  - repeat-begin
+     * 'bre'  - repeat-end
+     * 'brbe' - repeat-both
+     * ```
+     * @member
+     * @alias musje.Bar#defId
+     * @type {string}
+     * @readonly
+     */
+    Bar: function () {
+      return BAR_TO_ID[this.value];
+    },
+
+    /**
+     * Unique def id of the note used in the SVG &lt;defs> element.
+     * ```
+     * defId := 'n' accidental step octave type dot
+     * ```
+     * E.g.
+     * ```
+     * Note     defId
+     * ------------------
+     * 1        n1040
+     * b3-      nb3020
+     * #5'_.    ns5181
+     * 6,,      n6-2
+     * ```
+     * @member
+     * @alias musje.Note#defId
+     * @type {string}
+     * @readonly
+     */
+    Note: function () {
+      var pitch = this.pitch, duration = this.duration;
+      return [
+        'n', pitch.accidental.replace(/#/g, 's'),
+        pitch.step, pitch.octave, duration.type, duration.dot
+      ].join('');
+    },
+
+    /**
+     * Unique def id of the rest used in the SVG &lt;defs> element.
+     * ```
+     * defId := 'r' type dot
+     * ```
+     * E.g.
+     * ```
+     * Rest     defId
+     * ----------------
+     * 0        r40
+     * 0 -      r20
+     * 0=.      r161
+     * ```
+     *
+     * @member
+     * @alias musje.Rest#defId
+     * @type {string}
+     * @readonly
+     */
+    Rest: function () {
+      var duration = this.duration;
+      return 'r' + duration.type + duration.dot;
+    },
+
+    /**
+     * Def id used in the SVG &lt;defs> element.
+     * ```
+     * defId := 'p' accidental step octave
+     * ```
+     * @member
+     * @alias musje.Pitch#defId
+     * @type {string}
+     * @readonly
+     */
+    Pitch: function () {
+      return ['p', this.accidental.replace(/#/g, 's'),
+                   this.step, this.octave].join('');
+    },
+
+    /**
+     * Def id used in the SVG &lt;defs> element.
+     * ```
+     * defId := 'd' type dot
+     * ```
+     * *E.g.*
+     * ```
+     * Note     defId
+     * ----------------
+     * 1.       d41
+     * 1_       d80
+     * 1=       d160
+     * 1-..     d22
+     * ```
+     * @member
+     * @alias musje.Duration#defId
+     * @type {string}
+     * @readonly
+     */
+    Duration: function () {
+      return 'd' + this.type + this.dot;
+    }
+  };
+
+  musje.objEach(defIds, function (getter, className) {
+    Object.defineProperty(musje[className].prototype, 'defId', {
+      get: getter
+    });
+  });
+
+}(musje, Snap));
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

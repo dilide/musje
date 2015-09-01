@@ -6,6 +6,8 @@
   /**
    * @class
    * @param {rest} rest
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Rest = function (rest) {
     musje.extend(this, rest);

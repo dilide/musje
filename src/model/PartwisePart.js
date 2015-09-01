@@ -14,8 +14,9 @@
     /**
      * Index of this part in the parts.
      * @member {number}
+     * @protected
      */
-    this.index = index;
+    this._index = index;
 
     /**
      * Reference to the parent parts instance.
@@ -39,18 +40,13 @@
       },
       set: function (measures) {
         var
-          p = this.index, score = this.parts.score,
+          p = this._index,
+          score = this.parts.score,
           mea = this._measures = [];
 
         measures.forEach(function (cell, m) {
           mea.push(new musje.Cell(cell, m, p, score));
         });
-      }
-    },
-
-    prev: {
-      get: function () {
-        return this.parts.at(this.index - 1);
       }
     },
 

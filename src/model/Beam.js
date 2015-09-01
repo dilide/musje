@@ -29,15 +29,10 @@
    * @return {musje.Note} End note of the beam group.
    */
   musje.Beam.prototype.endNote = function () {
-    var
-      begin = this.note.index,
-      cell = this.note.cell,
-      i = begin + 1,
-      next = cell.data[i];
+    var next = this.note.next;
 
     while (next && next.beams && next.beams[this.level].value !== 'end') {
-      i++;
-      next = cell.data[i];
+      next = next.next;
     }
     return next;
   };

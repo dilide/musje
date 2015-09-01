@@ -132,12 +132,11 @@ if (typeof exports !== 'undefined') {
   };
 
   /**
-   * @member musje.parser
-   */
-
-  /**
-   * @function musje.parser.parse
+   * @memberof musje
+   * @member {Object} parser.parse
+   * @function
    * @param {string} input
+   * @return {Object} A plain musje score object.
    */
 
   /**
@@ -163,7 +162,6 @@ if (typeof exports !== 'undefined') {
    */
   musje.Score = function (score) {
     musje.extend(this, score);
-    this.prepareCells();
     this.linkTies();
 
     // console.log(JSON.stringify(this, null, 2))
@@ -194,9 +192,11 @@ if (typeof exports !== 'undefined') {
      */
     parts: {
       get: function () {
-        return this._parts || (this._parts = new musje.PartwiseParts(this));
+        return this._parts ||
+              (this._parts = new musje.PartwiseParts(this));
       },
       set: function (parts) {
+        this.parts.length = 0;
         this.parts.addParts(parts);
         this.measures.fromPartwise();
       }
@@ -209,11 +209,9 @@ if (typeof exports !== 'undefined') {
      */
     measures: {
       get: function () {
-        return this._measures || (this._measures = new musje.TimewiseMeasures(this));
-      },
-      // set: function (measures) {
-      //   this.measures.addMeasures(measures);
-      // }
+        return this._measures ||
+              (this._measures = new musje.TimewiseMeasures(this));
+      }
     },
 
     /**
@@ -231,7 +229,7 @@ if (typeof exports !== 'undefined') {
      * @return {string} Musje source code.
      */
     toString: function () {
-      return this.head + this.parts.value.map(function (part) {
+      return this.head + this.parts.map(function (part) {
         return part.toString();
       }).join('\n\n');
     },
@@ -246,7 +244,7 @@ if (typeof exports !== 'undefined') {
      * @param  {Function}
      */
     walkCells: function (callback) {
-      this.parts.value.forEach(function (part, p) {
+      this.parts.forEach(function (part, p) {
         part.measures.forEach(function (cell, m) {
           callback(cell, m, p);
         });
@@ -262,19 +260,6 @@ if (typeof exports !== 'undefined') {
         cell.data.forEach(function (data, d) {
           callback(data, d, m, p);
         });
-      });
-    },
-
-    /**
-     * Prepare cells
-     */
-    prepareCells: function () {
-      this.walkCells(function (cell) {
-        cell.data.forEach(function (data, d) {
-          data.cell = cell;
-          data.index = d;
-        });
-        cell.makeBeams(1);
       });
     },
 
@@ -378,30 +363,9 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
-  /**
-   * @class
-   * @param parts {Array}
-   * @param score {musje.Score}
-   */
-  musje.PartwiseParts = function (score) {
-    this.score = score;
-
-    /**
-     * Array value of the partwise parts.
-     * @member {Array}
-     * @readonly
-     */
-    this.value = [];
-
-  };
-
-  musje.defineProperties(musje.PartwiseParts.prototype,
-  /** @lends musje.PartwiseParts# */
+  var properties =
+  /** @lends musje.PartwiseParts */
   {
-
-    at: function (index) {
-      return this.value[index];
-    },
 
     addParts: function (parts) {
       var that = this;
@@ -412,19 +376,38 @@ if (typeof exports !== 'undefined') {
 
     /**
      * Append a partwise part.
-     * @param  {Object} part - Plain partwise part object.
+     * @param {Object} part - Plain partwise part object.
      */
     append: function (part) {
-      var index = this.value.length;
+      var index = this.length;
       var musjePart = new musje.PartwisePart(index, this);
-      this.value.push(musjePart);
+      this.push(musjePart);
       musjePart.measures = part.measures;
-    },
-
-    toJSON: function () {
-      return this.value;
     }
-  });
+  };
+
+
+  /**
+   * Construct partwise score parts.
+   * @class
+   * @classdesc Partwise score parts.
+   * @param score {musje.Score}
+   * @augments {Array}
+   */
+  musje.PartwiseParts = function (score) {
+
+    var parts = [];
+
+    /**
+     * Reference to the parent score.
+     * @memberof musje.PartwiseParts#
+     * @alias score
+     * @type {musje.Score}
+     */
+    parts.score = score;
+    musje.defineProperties(parts, properties);
+    return parts;
+  };
 
 }(musje));
 
@@ -444,8 +427,9 @@ if (typeof exports !== 'undefined') {
     /**
      * Index of this part in the parts.
      * @member {number}
+     * @protected
      */
-    this.index = index;
+    this._index = index;
 
     /**
      * Reference to the parent parts instance.
@@ -469,18 +453,13 @@ if (typeof exports !== 'undefined') {
       },
       set: function (measures) {
         var
-          p = this.index, score = this.parts.score,
+          p = this._index,
+          score = this.parts.score,
           mea = this._measures = [];
 
         measures.forEach(function (cell, m) {
           mea.push(new musje.Cell(cell, m, p, score));
         });
-      }
-    },
-
-    prev: {
-      get: function () {
-        return this.parts.at(this.index - 1);
       }
     },
 
@@ -506,47 +485,45 @@ if (typeof exports !== 'undefined') {
 (function (musje) {
   'use strict';
 
-  /**
-   * @class
-   * @param measures {Array}
-   * @param score {musje.Score}
-   */
-  musje.TimewiseMeasures = function (score) {
-    this.score = score;
-
-    /**
-     * Array value of the timewise measures.
-     * @member {Array}
-     * @readonly
-     */
-    this.value = [];
-  };
-
-  musje.defineProperties(musje.TimewiseMeasures.prototype,
+  var properties =
   /** @lends musje.TimewiseMeasures# */
   {
-
-    at: function (index) {
-      return this.value[index];
-    },
-
+    /**
+     * Make timewise score measures from the partwise parts.
+     */
     fromPartwise: function () {
-      var
-        that = this,
-        value = that.value;
+      var that = this;
 
-      value.length = 0; // remove all data if exists
+      that.length = 0; // remove all data if exists
 
       this.score.walkCells(function (cell, m) {
-        value[m] = value[m] || new musje.TimewiseMeasure(that, m, that.score);
-        value[m].parts.push(cell);
+        that[m] = that[m] || new musje.TimewiseMeasure(m, that);
+        that[m].parts.push(cell);
       });
-    },
-
-    toJSON: function () {
-      return this.value;
     }
-  });
+  };
+
+  /**
+   * Construct timewise score measures.
+   * @class
+   * @classdesc Timewise score measures.
+   * @param score {musje.Score}
+   * @augments {Array}
+   */
+  musje.TimewiseMeasures = function (score) {
+
+    var measures = [];
+
+    /**
+     * Reference to the parent score.
+     * @memberof musje.TimewiseMeasures#
+     * @alias score
+     * @type {musje.Score}
+     */
+    measures.score = score;
+    musje.defineProperties(measures, properties);
+    return measures;
+  };
 
 }(musje));
 
@@ -558,22 +535,22 @@ if (typeof exports !== 'undefined') {
   /**
    * @class
    * @param measure {Object}
+   * @mixes musje.LayoutTimewiseMeasure
    */
-  musje.TimewiseMeasure = function (measure, index, measures) {
+  musje.TimewiseMeasure = function (index, measures) {
 
     /**
-     * Index of this part in the measures.
+     * Index of this measure in the timewise score measures.
      * @member {number}
+     * @protected
      */
-    this.index = index;
+    this._index = index;
 
     /**
      * Reference to the parent measures instance.
      * @member {musje.TimewiseMeasures}
      */
     this.measures = measures;
-
-    musje.extend(this, measure);
   };
 
   musje.defineProperties(musje.TimewiseMeasure.prototype,
@@ -592,9 +569,25 @@ if (typeof exports !== 'undefined') {
       }
     },
 
-    prev: {
+    /**
+     * If the measure in the beginning of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemBegin: {
       get: function () {
-        return this.measures.at(this.index - 1);
+        return this._sIndex === 0;
+      }
+    },
+
+    /**
+     * If the measure in the end of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemEnd: {
+      get: function () {
+        return this._sIndex === this.system.measures.length - 1;
       }
     }
 
@@ -654,22 +647,23 @@ if (typeof exports !== 'undefined') {
    * @param cell {Object}
    * @param mIndex {number} - Measure index of this cell.
    * @param pIndex {number} - Part index of this cell.
+   * @mixes musje.LayoutCell
    */
   musje.Cell = function (cell, mIndex, pIndex, score) {
 
     /**
      * Measure index of this cell.
      * @member {number}
-     * @readonly
+     * @protected
      */
-    this.mIndex = mIndex;
+    this._mIndex = mIndex;
 
     /**
      * Part index of this cell.
      * @member {number}
-     * @readonly
+     * @protected
      */
-    this.pIndex = pIndex;
+    this._pIndex = pIndex;
 
     /**
      * Reference to the root score instance.
@@ -679,7 +673,8 @@ if (typeof exports !== 'undefined') {
     this.score = score;
 
     musje.extend(this, cell);
-    this.extractBars();
+
+    this.makeBeams(1);
   };
 
   musje.defineProperties(musje.Cell.prototype,
@@ -694,55 +689,146 @@ if (typeof exports !== 'undefined') {
         return this._data || (this._data = []);
       },
       set: function (data) {
-        this._data = data.map(function (datum) {
-          switch(Object.keys(datum)[0]) {
-          case 'note':
-            return new musje.Note(datum.note);
-          case 'rest':
-            return new musje.Rest(datum.rest);
-          case 'chord':
-            return new musje.Chord(datum.chord);
-          case 'voice':
-            return new musje.Voice(datum.voice);
-          case 'bar':
-            return new musje.Bar(datum.bar);
-          case 'time':
-            return new musje.Time(datum.time);
-          default:
-            throw new Error('Unknown music data: ' + datum);
-          }
+        var that = this;
+        that.length = 0;
+        data.forEach(function (datum) {
+          that.append(datum);
         });
       }
     },
 
+    /**
+     * Reference to the parent measures.
+     * @type {musje.TimewiseMeasures}
+     * @readonly
+     */
     measures: {
       get: function () {
         return this.score.measures;
       }
     },
 
+    /**
+     * Reference to the parent measure.
+     * @type {musje.TimewiseMeasure}
+     * @readonly
+     */
     measure: {
       get: function () {
-        return this.measures.at(this.mIndex);
+        return this.measures[this._mIndex];
       }
     },
 
+    /**
+     * Reference to the parent parts.
+     * @type {musje.PartwiseParts}
+     * @readonly
+     */
     parts: {
       get: function () {
         return this.score.parts;
       }
     },
 
+    /**
+     * Reference to the parent part.
+     * @type {musje.PartwisePart}
+     * @readonly
+     */
     part: {
       get: function () {
-        return this.parts.at(this.pIndex);
+        return this.parts[this._pIndex];
       }
     },
 
+    /**
+     * Previous cell in the part.
+     * @type {musje.Cell|undefined}
+     * @readonly
+     */
     prev: {
       get: function () {
-        return this.part.measures[this.mIndex - 1];
+        return this.part.measures[this._mIndex - 1];
       }
+    },
+
+    firstData: {
+      get: function () {
+        return this.data[0];
+      }
+    },
+
+    lastData: {
+      get: function () {
+        return this.data[this.data.length - 1];
+      }
+    },
+
+    /**
+     * The left bar of this cell.
+     * @type {musje.Bar|undefined}
+     * @readonly
+     */
+    barLeft: {
+      get: function () {
+        var firstData = this.firstData;
+
+        if (firstData && firstData.$type === 'Bar') {
+          return firstData;
+        }
+
+        // Take from the previous measure.
+        var prevCell = this.prev;
+        if (prevCell) {
+          return prevCell.barRight;
+        }
+      }
+    },
+
+    /**
+     * The right bar of this cell.
+     * @type {musje.Bar|undefined}
+     * @readonly
+     */
+    barRight: {
+      get: function () {
+        var lastData = this.lastData;
+
+        if (lastData && lastData.$type === 'Bar') {
+          return lastData;
+        }
+      }
+    },
+
+    /**
+     * Append a music data to the cell.
+     * @param  {Object} musicData - Music data
+     */
+    append: function (musicData) {
+      var
+        name = Object.keys(musicData)[0],
+        className = name[0].toUpperCase() + name.substr(1),
+        instance = new musje[className](musicData[name]);
+
+      /**
+       * Reference to the parent cell
+       * @memberof musje.MusicData#
+       * @alias cell
+       * @type {musje.Cell}
+       * @readonly
+       */
+      instance.cell = this;
+
+      /**
+       * Index of the music data in the cell
+       * @memberof musje.MusicData#
+       * @alias _index
+       * @type {number}
+       * @protected
+       */
+      instance._index = this.data.length;
+
+      this.data.push(instance);
     },
 
     /**
@@ -807,35 +893,6 @@ if (typeof exports !== 'undefined') {
           }
         });
       });
-    },
-
-    /**
-     * Extract bars in each cell out into the cell.
-     */
-    extractBars: function () {
-      var
-        data = this.data,
-        len = data.length;
-
-      if (!len) { return; }
-
-      // barRight: the last item
-      if (len && data[len - 1].$type === 'Bar') {
-        this.barRight = data.pop();
-      }
-
-      // barLeft:
-
-      // The first item in the first measure.
-      if (data[0] && data[0].$type === 'Bar') {
-        this.barLeft = data.shift();
-
-      // Take from the previous measure.
-      } else {
-        if (this.mIndex !== 0) {
-          this.barLeft = this.prev.barRight;
-        }
-      }
     }
 
   });
@@ -861,6 +918,8 @@ if (typeof exports !== 'undefined') {
    * - 'repeat-begin' - `|:`
    * - 'repeat-end' - `:|`
    * - 'repeat-both' - `:|:`
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Bar = function (bar) {
     this.value = bar;
@@ -909,6 +968,8 @@ if (typeof exports !== 'undefined') {
    * Time signature.
    * @class
    * @param time {Object}
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Time = function (time) {
     musje.extend(this, time);
@@ -963,6 +1024,8 @@ if (typeof exports !== 'undefined') {
   /**
    * @class
    * @param {Object} note
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Note = function (note) {
     musje.extend(this, note);
@@ -1064,6 +1127,8 @@ if (typeof exports !== 'undefined') {
   /**
    * @class
    * @param {rest} rest
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Rest = function (rest) {
     musje.extend(this, rest);
@@ -1116,6 +1181,8 @@ if (typeof exports !== 'undefined') {
   /**
    * @class
    * @param {Object} chord
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Chord = function (chord) {
     musje.extend(this, chord);
@@ -1464,15 +1531,10 @@ if (typeof exports !== 'undefined') {
    * @return {musje.Note} End note of the beam group.
    */
   musje.Beam.prototype.endNote = function () {
-    var
-      begin = this.note.index,
-      cell = this.note.cell,
-      i = begin + 1,
-      next = cell.data[i];
+    var next = this.note.next;
 
     while (next && next.beams && next.beams[this.level].value !== 'end') {
-      i++;
-      next = cell.data[i];
+      next = next.next;
     }
     return next;
   };
@@ -1533,6 +1595,51 @@ if (typeof exports !== 'undefined') {
     toJSON: function () {
       return this.value;
     }
+  });
+
+}(musje));
+
+/* global musje */
+
+(function (musje) {
+  'use strict';
+
+  /**
+   * Music data mixin
+   * @mixin
+   */
+  musje.MusicData =
+  /** @lends musje.MusicData# */
+  {
+
+    /**
+     * Previous music data.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    prev: {
+      get: function () {
+        return this.cell.data[this._index - 1];
+      }
+    },
+
+    /**
+     * Next music data.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    next: {
+      get: function () {
+        return this.cell.data[this._index + 1];
+      }
+    }
+
+  };
+
+  [
+    'Time', 'Bar', 'Note', 'Rest', 'Chord', 'Voice'
+  ].forEach(function (className) {
+    musje.defineProperties(musje[className].prototype, musje.MusicData);
   });
 
 }(musje));
@@ -2437,12 +2544,62 @@ return new Parser;
   };
 
   var defIds = {
+
+    /**
+     * Def id used in the SVG <defs> element.
+     * ```
+     * id := 't' beats '-' beatType
+     * ```
+     * E.g. `t3-4`
+     * @member
+     * @alias musje.Time#defId
+     * @type {string}
+     * @readonly
+     */
     Time: function () {
       return ['t', this.beats, '-', this.beatType].join('');
     },
+
+    /**
+     * Def id used in the SVG <defs> element.
+     * ```
+     * defId    Bar value
+     * ----------------------
+     * 'bs'   - single
+     * 'bd'   - double
+     * 'be'   - repeat-end
+     * 'brb'  - repeat-begin
+     * 'bre'  - repeat-end
+     * 'brbe' - repeat-both
+     * ```
+     * @member
+     * @alias musje.Bar#defId
+     * @type {string}
+     * @readonly
+     */
     Bar: function () {
       return BAR_TO_ID[this.value];
     },
+
+    /**
+     * Unique def id of the note used in the SVG <defs> element.
+     * ```
+     * defId := 'n' accidental step octave type dot
+     * ```
+     * E.g.
+     * ```
+     * Note     defId
+     * ------------------
+     * 1        n1040
+     * b3-      nb3020
+     * #5'_.    ns5181
+     * 6,,      n6-2
+     * ```
+     * @member
+     * @alias musje.Note#defId
+     * @type {string}
+     * @readonly
+     */
     Note: function () {
       var pitch = this.pitch, duration = this.duration;
       return [
@@ -2450,14 +2607,65 @@ return new Parser;
         pitch.step, pitch.octave, duration.type, duration.dot
       ].join('');
     },
+
+    /**
+     * Unique def id of the rest used in the SVG <defs> element.
+     * ```
+     * defId := 'r' type dot
+     * ```
+     * E.g.
+     * ```
+     * Rest     defId
+     * ----------------
+     * 0        r40
+     * 0 -      r20
+     * 0=.      r161
+     * ```
+     *
+     * @member
+     * @alias musje.Rest#defId
+     * @type {string}
+     * @readonly
+     */
     Rest: function () {
       var duration = this.duration;
       return 'r' + duration.type + duration.dot;
     },
+
+    /**
+     * Def id used in the SVG <defs> element.
+     * ```
+     * defId := 'p' accidental step octave
+     * ```
+     * @member
+     * @alias musje.Pitch#defId
+     * @type {string}
+     * @readonly
+     */
     Pitch: function () {
       return ['p', this.accidental.replace(/#/g, 's'),
                    this.step, this.octave].join('');
     },
+
+    /**
+     * Def id used in the SVG <defs> element.
+     * ```
+     * defId := 'd' type dot
+     * ```
+     * *E.g.*
+     * ```
+     * Note     defId
+     * ----------------
+     * 1.       d41
+     * 1_       d80
+     * 1=       d160
+     * 1-..     d22
+     * ```
+     * @member
+     * @alias musje.Duration#defId
+     * @type {string}
+     * @readonly
+     */
     Duration: function () {
       return 'd' + this.type + this.dot;
     }
@@ -2983,8 +3191,8 @@ return new Parser;
       layout = this,
       measures = score.measures;
 
-    measures.value.forEach(function (measure, m) {
-      measure = measures.value[m];
+    measures.forEach(function (measure, m) {
+      measure = measures[m];
       measure.layout = layout;
       measure.parts.forEach(function (cell) {
         cell.layout = layout;
@@ -3300,13 +3508,12 @@ return new Parser;
         return s * (height + lo.systemSep);
       }
 
-      scoreMeasures.value.forEach(function (measure) {
-        var notCellWidth = (measure.barLeft.width + measure.barRight.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
+      scoreMeasures.forEach(function (measure) {
+        var notCellWidth = (measure.barLeftInSystem.width + measure.barRightInSystem.width) / 2 + lo.measurePaddingLeft + lo.measurePaddingRight;
         x += measure.minWidth + notCellWidth;
 
         // Continue putting this measure in the system.
         if (x < width) {
-          measure.system = system;
           system.measures.push(measure);
           x += lo.measurePaddingLeft;
 
@@ -3316,7 +3523,6 @@ return new Parser;
           system = systems[s] = new musje.Layout.System(content, lo);
           system.y = y();
           system.height = height;
-          measure.system = system;
           system.measures.push(measure);
           x = measure.minWidth + notCellWidth;
         }
@@ -3396,17 +3602,26 @@ return new Parser;
 
     system._tuneMeasuresWidths();
     system.measures.forEach(function (measure, m) {
+
+      /**
+       * Reference to the system.
+       * Produced by {@link musje.Layout.System#flow}
+       * @memberof musje.TimewiseMeasure#
+       * @alias system
+       * @type {musje.Layout.System}
+       * @readonly
+       */
       measure.system = system;
 
       /**
        * Index of this measure in the system.
        * Produced by {@link musje.Layout.System#flow}
        * @memberof musje.TimewiseMeasure#
-       * @alias systemIndex
+       * @alias _sIndex
        * @type {number}
-       * @readonly
+       * @protected
        */
-      measure.systemIndex = m;
+      measure._sIndex = m;
       measure.flow();
       measure.x = x;
       x += measure.width;
@@ -3477,12 +3692,20 @@ return new Parser;
 
 /* global musje, Snap */
 
-(function (TimewiseMeasurePrototype, Snap) {
+(function (musje, Snap) {
   'use strict';
 
-  musje.defineProperties(musje.TimewiseMeasure.prototype,
-  /** @lends musje.TimewiseMeasure# */
+  /**
+   * TimewiseMeasure Layout mixin.
+   * @mixin
+   */
+  musje.LayoutTimewiseMeasure =
+  /** @lends musje.LayoutTimewiseMeasure# */
   {
+    /**
+     * Calculate minimum measure width.
+     * @return {number} The minimum measure width.
+     */
     calcMinWidth: function () {
       var lo = this.layout.options, minWidth = 0;
 
@@ -3494,18 +3717,29 @@ return new Parser;
       this.minWidth = minWidth + this._padding;
     },
 
+    /**
+     * Flow the measure.
+     */
     flow: function () {
       var measure = this;
       measure.parts = measure.parts.map(function (cell) {
+
+        /**
+         * Cell SVG group element
+         * @memberof musje.LayoutCell#
+         * @alias el
+         * @type {Element}
+         * @readonly
+         */
         cell.el = measure.el.g().addClass('mus-cell');
+
         cell.height = measure.height;
-        cell._x = measure.barLeft.width / 2 +
+        cell._x = measure.barLeftInSystem.width / 2 +
                   measure.layout.options.measurePaddingRight;
 
         cell.y2 = measure.system.height;
 
-        // cell.el.rect(0, -cell.height, cell.width, cell.height)
-        //   .addClass('bbox');
+        // cell.drawBorder();
 
         return cell;
       });
@@ -3545,31 +3779,35 @@ return new Parser;
       }
     },
 
-    barLeft: {
+    barLeftInSystem: {
       get: function () {
-        return this.parts[0].barLeft;
+        return this.parts[0].barLeftInSystem;
       }
     },
 
-    barRight: {
+    barRightInSystem: {
       get: function () {
-        return this.parts[0].barRight;
+        return this.parts[0].barRightInSystem;
       }
     }
+  };
 
-  });
+  musje.defineProperties(musje.TimewiseMeasure.prototype,
+                         musje.LayoutTimewiseMeasure);
 
-}(musje.TimewiseMeasure.prototype, Snap));
+}(musje, Snap));
 
 /* global musje, Snap */
 
 (function (musje, Snap) {
   'use strict';
 
-  musje.defineProperties(musje.Cell.prototype,
-  /** @lends  musje.Cell.prototype */
+  /**
+   * @mixin
+   */
+  musje.LayoutCell =
+  /** @lends  musje.LayoutCell# */
   {
-
     /**
      * Flow the cell.
      */
@@ -3593,6 +3831,7 @@ return new Parser;
     },
 
     /**
+     * Reflow the cell.
      * @protected
      */
     _reflow: function () {
@@ -3619,7 +3858,8 @@ return new Parser;
     },
 
     /**
-     * X
+     * The x position of the cell in parent timewise measure.
+     * - Set the x value will cause the cell element translate.
      * @type {number}
      */
     x: {
@@ -3633,7 +3873,8 @@ return new Parser;
     },
 
     /**
-     * Y2
+     * The y2 position of the cell in parent timewise measure.
+     * - Set the y2 value will cause the cell element translate.
      * @type {number}
      */
     y2: {
@@ -3646,18 +3887,24 @@ return new Parser;
       }
     },
 
-    barLeft: {
-
-      // barLeft at first measure of a system:
-      // |]  -> |
-      // :|  -> |
-      // :|: -> |:
+    /**
+     * The left bar of this cell.
+     * - barLeft at first measure of a system:
+     * ```
+     * |]  -> |
+     * :|  -> |
+     * :|: -> |:
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barLeftInSystem: {
       get: function () {
-        var bar = this._bl;
+        var bar = this.barLeft;
         if (!bar) { return { width: 0, height: 0 }; }
 
         // First measure in the system.
-        if (this.measure.systemIndex === 0) {
+        if (this.measure.inSystemBegin) {
           if (bar.value === 'end' || bar.value === 'repeat-end') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -3666,29 +3913,29 @@ return new Parser;
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._bl = bar;
       }
     },
 
-    barRight: {
-
-      // barRight at last measure of a system:
-      //  |: ->  |
-      // :|: -> :|
+    /**
+     * The right bar of this cell.
+     * - barRight at last measure of a system:
+     * ```
+     *  |: ->  |
+     * :|: -> :|
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barRightInSystem: {
       get: function () {
-        if (!this.layout) { return this._br; }
-
         var
-          bar = this._br,
+          bar = this.barRight,
           system = this.measure.system;
 
         if (!bar) { return { width: 0, height: 0 }; }
 
         // Last measure in the system.
-        if (system && this.measure.systemIndex === system.measures.length - 1) {
+        if (system && this.measure.inSystemEnd) {
           if (bar.value === 'repeat-begin') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -3697,14 +3944,20 @@ return new Parser;
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._br = bar;
       }
-    }
+    },
 
-  });
+    drawBorder: function () {
+      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
+                              .addClass('bbox');
+    },
+
+    clearBorder: function () {
+      this._borderEl.remove();
+    }
+  };
+
+  musje.defineProperties(musje.Cell.prototype, musje.LayoutCell);
 
 }(musje, Snap));
 
@@ -3713,10 +3966,18 @@ return new Parser;
 (function (musje) {
   'use strict';
 
-  var defineProperty = Object.defineProperty;
-
-  function extendClass(className) {
-    defineProperty(musje[className].prototype, 'x', {
+  /**
+   * Layout mixin for the music data
+   * @mixin
+   */
+  musje.LayoutMusicData =
+  /** @lends musje.LayoutMusicData# */
+  {
+    /**
+     * The x position of the music data in the cell.
+     * @type {number}
+     */
+    x: {
       get: function () {
         return this._x;
       },
@@ -3726,9 +3987,13 @@ return new Parser;
           this.el.attr('x', x);
         }
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'y', {
+    /**
+     * The y position of the music data in the cell.
+     * @type {number}
+     */
+    y: {
       get: function () {
         return this._y;
       },
@@ -3736,25 +4001,33 @@ return new Parser;
         this._y = y;
         if (this.el) { this.el.attr('y', y); }
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'systemX', {
+    /**
+     * The x position of the music data in the system.
+     * @type {number}
+     */
+    systemX: {
       get: function () {
         return this.x + this.cell.x + this.cell.measure.x;
       }
-    });
+    },
 
-    defineProperty(musje[className].prototype, 'width', {
+    /**
+     * The width of the music data.
+     * @type {number}
+     * @readonly
+     */
+    width: {
       get: function () {
         return this.def.width;
-      },
-      // set: function (w) {
-      //   this._w = w;
-      // }
-    });
-  }
+      }
+    }
+  };
 
-  ['Time', 'Bar', 'Note', 'Rest'].forEach(extendClass);
+  ['Time', 'Bar', 'Note', 'Rest', 'Chord', 'Voice'].forEach(function (className) {
+    musje.defineProperties(musje[className].prototype, musje.LayoutMusicData);
+  });
 
 }(musje));
 
@@ -3963,27 +4236,25 @@ return new Parser;
   // @param len {number} Length of measures.
   musje.Renderer.renderBar = function (measure, lo) {
     var
-      m = measure.systemIndex,
-      len = measure.system.measures.length,
-      bar = measure.barRight,
+      bar = measure.barRightInSystem,
       el;
 
     if (bar.def) {
       el = render(bar, measure, lo);
 
-      // Last measure in a system align end
-      if (m === len - 1) {
+      // Align end in system end.
+      if (measure.inSystemEnd) {
         translate(el, measure.width - bar.width);
 
-      // Others align middle
+      // Others align middle.
       } else {
         translate(el, measure.width - bar.width / 2);
       }
     }
 
-    // First measure in a system, render right bar, align begin
-    if (m === 0) {
-      bar = measure.barLeft;
+    // Render right bar and align begin in system begin.
+    if (measure.inSystemBegin) {
+      bar = measure.barLeftInSystem;
       if (bar.def) {
         render(bar, measure, lo);
       }
@@ -4110,7 +4381,7 @@ return new Parser;
    */
   musje.Score.prototype.play = function() {
     var
-      measures = this.parts.value[0].measures,
+      measures = this.parts[0].measures,
       time = 0; //audioCtx.currentTime
 
     measures.forEach(function (cell) {

@@ -9,7 +9,6 @@
    */
   musje.Score = function (score) {
     musje.extend(this, score);
-    this.prepareCells();
     this.linkTies();
 
     // console.log(JSON.stringify(this, null, 2))
@@ -40,9 +39,11 @@
      */
     parts: {
       get: function () {
-        return this._parts || (this._parts = new musje.PartwiseParts(this));
+        return this._parts ||
+              (this._parts = new musje.PartwiseParts(this));
       },
       set: function (parts) {
+        this.parts.length = 0;
         this.parts.addParts(parts);
         this.measures.fromPartwise();
       }
@@ -55,11 +56,9 @@
      */
     measures: {
       get: function () {
-        return this._measures || (this._measures = new musje.TimewiseMeasures(this));
-      },
-      // set: function (measures) {
-      //   this.measures.addMeasures(measures);
-      // }
+        return this._measures ||
+              (this._measures = new musje.TimewiseMeasures(this));
+      }
     },
 
     /**
@@ -77,7 +76,7 @@
      * @return {string} Musje source code.
      */
     toString: function () {
-      return this.head + this.parts.value.map(function (part) {
+      return this.head + this.parts.map(function (part) {
         return part.toString();
       }).join('\n\n');
     },
@@ -92,7 +91,7 @@
      * @param  {Function}
      */
     walkCells: function (callback) {
-      this.parts.value.forEach(function (part, p) {
+      this.parts.forEach(function (part, p) {
         part.measures.forEach(function (cell, m) {
           callback(cell, m, p);
         });
@@ -108,19 +107,6 @@
         cell.data.forEach(function (data, d) {
           callback(data, d, m, p);
         });
-      });
-    },
-
-    /**
-     * Prepare cells
-     */
-    prepareCells: function () {
-      this.walkCells(function (cell) {
-        cell.data.forEach(function (data, d) {
-          data.cell = cell;
-          data.index = d;
-        });
-        cell.makeBeams(1);
       });
     },
 

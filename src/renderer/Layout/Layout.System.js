@@ -30,17 +30,26 @@
 
     system._tuneMeasuresWidths();
     system.measures.forEach(function (measure, m) {
+
+      /**
+       * Reference to the system.
+       * Produced by {@link musje.Layout.System#flow}
+       * @memberof musje.TimewiseMeasure#
+       * @alias system
+       * @type {musje.Layout.System}
+       * @readonly
+       */
       measure.system = system;
 
       /**
        * Index of this measure in the system.
        * Produced by {@link musje.Layout.System#flow}
        * @memberof musje.TimewiseMeasure#
-       * @alias systemIndex
+       * @alias _sIndex
        * @type {number}
-       * @readonly
+       * @protected
        */
-      measure.systemIndex = m;
+      measure._sIndex = m;
       measure.flow();
       measure.x = x;
       x += measure.width;

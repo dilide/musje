@@ -6,22 +6,22 @@
   /**
    * @class
    * @param measure {Object}
+   * @mixes musje.LayoutTimewiseMeasure
    */
-  musje.TimewiseMeasure = function (measure, index, measures) {
+  musje.TimewiseMeasure = function (index, measures) {
 
     /**
-     * Index of this part in the measures.
+     * Index of this measure in the timewise score measures.
      * @member {number}
+     * @protected
      */
-    this.index = index;
+    this._index = index;
 
     /**
      * Reference to the parent measures instance.
      * @member {musje.TimewiseMeasures}
      */
     this.measures = measures;
-
-    musje.extend(this, measure);
   };
 
   musje.defineProperties(musje.TimewiseMeasure.prototype,
@@ -40,9 +40,25 @@
       }
     },
 
-    prev: {
+    /**
+     * If the measure in the beginning of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemBegin: {
       get: function () {
-        return this.measures.at(this.index - 1);
+        return this._sIndex === 0;
+      }
+    },
+
+    /**
+     * If the measure in the end of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemEnd: {
+      get: function () {
+        return this._sIndex === this.system.measures.length - 1;
       }
     }
 

@@ -17,6 +17,8 @@
    * - 'repeat-begin' - `|:`
    * - 'repeat-end' - `:|`
    * - 'repeat-both' - `:|:`
+   * @mixes musje.MusicData
+   * @mixes musje.LayoutMusicData
    */
   musje.Bar = function (bar) {
     this.value = bar;

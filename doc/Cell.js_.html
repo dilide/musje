@@ -30,10 +30,12 @@
 (function (musje, Snap) {
   'use strict';
 
-  musje.defineProperties(musje.Cell.prototype,
-  /** @lends  musje.Cell.prototype */
+  /**
+   * @mixin
+   */
+  musje.LayoutCell =
+  /** @lends  musje.LayoutCell# */
   {
-
     /**
      * Flow the cell.
      */
@@ -57,6 +59,7 @@
     },
 
     /**
+     * Reflow the cell.
      * @protected
      */
     _reflow: function () {
@@ -83,7 +86,8 @@
     },
 
     /**
-     * X
+     * The x position of the cell in parent timewise measure.
+     * - Set the x value will cause the cell element translate.
      * @type {number}
      */
     x: {
@@ -97,7 +101,8 @@
     },
 
     /**
-     * Y2
+     * The y2 position of the cell in parent timewise measure.
+     * - Set the y2 value will cause the cell element translate.
      * @type {number}
      */
     y2: {
@@ -110,18 +115,24 @@
       }
     },
 
-    barLeft: {
-
-      // barLeft at first measure of a system:
-      // |]  -> |
-      // :|  -> |
-      // :|: -> |:
+    /**
+     * The left bar of this cell.
+     * - barLeft at first measure of a system:
+     * ```
+     * |]  -> |
+     * :|  -> |
+     * :|: -> |:
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barLeftInSystem: {
       get: function () {
-        var bar = this._bl;
+        var bar = this.barLeft;
         if (!bar) { return { width: 0, height: 0 }; }
 
         // First measure in the system.
-        if (this.measure.systemIndex === 0) {
+        if (this.measure.inSystemBegin) {
           if (bar.value === 'end' || bar.value === 'repeat-end') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -130,29 +141,29 @@
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._bl = bar;
       }
     },
 
-    barRight: {
-
-      // barRight at last measure of a system:
-      //  |: ->  |
-      // :|: -> :|
+    /**
+     * The right bar of this cell.
+     * - barRight at last measure of a system:
+     * ```
+     *  |: ->  |
+     * :|: -> :|
+     * ```
+     * @type {musje.Bar}
+     * @readonly
+     */
+    barRightInSystem: {
       get: function () {
-        if (!this.layout) { return this._br; }
-
         var
-          bar = this._br,
+          bar = this.barRight,
           system = this.measure.system;
 
         if (!bar) { return { width: 0, height: 0 }; }
 
         // Last measure in the system.
-        if (system &amp;&amp; this.measure.systemIndex === system.measures.length - 1) {
+        if (system &amp;&amp; this.measure.inSystemEnd) {
           if (bar.value === 'repeat-begin') {
             bar = new musje.Bar('single');
           } else if (bar.value === 'repeat-both') {
@@ -161,14 +172,20 @@
         }
         bar.def = this.layout.defs.get(bar);
         return bar;
-      },
-
-      set: function (bar) {
-        this._br = bar;
       }
-    }
+    },
 
-  });
+    drawBorder: function () {
+      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
+                              .addClass('bbox');
+    },
+
+    clearBorder: function () {
+      this._borderEl.remove();
+    }
+  };
+
+  musje.defineProperties(musje.Cell.prototype, musje.LayoutCell);
 
 }(musje, Snap));
 </code></pre>
@@ -181,13 +198,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Mon Aug 31 2015 16:42:37 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>
