@@ -36,9 +36,9 @@
         for (var i = 0; i < underbar; i++) {
 
           // Only render beam for the begin one.
-          if (note.beams && note.beams[i]) {
+          if (note.beams[i]) {
             if (note.beams[i].value === 'begin') {
-              renderUnderbar(note, note.beams[i].endNote(), y, lo);
+              renderUnderbar(note, note.beams[i].endDurable, y, lo);
             }
 
           // Unbeamed underbar

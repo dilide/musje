@@ -148,13 +148,22 @@
       }
     },
 
-    drawBorder: function () {
-      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
-                              .addClass('bbox');
+    /**
+     * Draw box of the cell.
+     * @return {Element} The box SVG rect element.
+     */
+    drawBox: function () {
+      this._boxEl = this.el.rect(0, -this.height, this.width, this.height)
+                           .addClass('bbox');
+      return this._boxEl;
     },
 
-    clearBorder: function () {
-      this._borderEl.remove();
+    /**
+     * Clear the box SVG element.
+     */
+    clearBox: function () {
+      this._boxEl.remove();
+      this._boxEl = undefined;
     }
   };
 

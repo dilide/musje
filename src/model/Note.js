@@ -13,12 +13,12 @@
     musje.extend(this, note);
 
     /**
-     * Reference to the parent note.
+     * Reference to the parent parent.
      * @memberof musje.Pitch#
-     * @alias note
-     * @type {musje.Note}
+     * @alias parent
+     * @type {musje.MusicData}
      */
-    this.pitch.note = this;
+    this.pitch.parent = this;
   };
 
   musje.defineProperties(musje.Note.prototype,
@@ -58,16 +58,34 @@
       }
     },
 
+    beams: {
+      get: function () {
+        return this._beams || (this._beams = []);
+      },
+      set: function (beams) {
+        this._beams = beams;
+      }
+    },
+
     /**
      * Tie
      * @type {musje.Tie}
      */
     tie: {
       get: function () {
-        return this._tie || (this._tie = new musje.Tie());
+        return this._tie || (this._tie = new musje.Tie(this));
       },
       set: function (tie) {
-        this._tie = new musje.Tie(tie);
+
+        /**
+         * Value of the tie.
+         *
+         * Whether the note tie to the next note.
+         * @memberof musje.Tie#
+         * @alias value
+         * @type {boolean}
+         */
+        this.tie.value = tie;
       }
     },
 

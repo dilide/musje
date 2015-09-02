@@ -162,7 +162,6 @@ if (typeof exports !== 'undefined') {
    */
   musje.Score = function (score) {
     musje.extend(this, score);
-    this.linkTies();
 
     // console.log(JSON.stringify(this, null, 2))
     // console.log('' + this)
@@ -196,7 +195,7 @@ if (typeof exports !== 'undefined') {
               (this._parts = new musje.PartwiseParts(this));
       },
       set: function (parts) {
-        this.parts.length = 0;
+        this.parts.removeAll();
         this.parts.addParts(parts);
         this.measures.fromPartwise();
       }
@@ -211,16 +210,6 @@ if (typeof exports !== 'undefined') {
       get: function () {
         return this._measures ||
               (this._measures = new musje.TimewiseMeasures(this));
-      }
-    },
-
-    /**
-     * Total numbers of measures.
-     * @type {number}
-     */
-    totalMeasures: {
-      get: function () {
-        return this.measures.length;
       }
     },
 
@@ -241,7 +230,7 @@ if (typeof exports !== 'undefined') {
 
     /**
      * A cell is identically a measure in a part or a part in a measure.
-     * @param  {Function}
+     * @param {Function}
      */
     walkCells: function (callback) {
       this.parts.forEach(function (part, p) {
@@ -253,60 +242,13 @@ if (typeof exports !== 'undefined') {
 
     /**
      * Walk each music data.
-     * @param  {Function} callback
+     * @param {Function} callback
      */
     walkMusicData: function (callback) {
       this.walkCells(function (cell, m, p) {
         cell.data.forEach(function (data, d) {
           callback(data, d, m, p);
         });
-      });
-    },
-
-    /**
-     * Link ties for each {@link musje.Note} in the entire score.
-     */
-    linkTies: function () {
-      var prevNote = null;
-
-      this.walkMusicData(function (data) {
-        var tie;
-
-        if (data.$type === 'Note') {
-          tie = data.tie.value;
-
-          if (prevNote) {
-
-            /**
-             * Previous tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Tie#
-             * @alias prev
-             * @type {(musje.Note|undefined)}
-             */
-            data.tie.prev = prevNote;
-
-            if (prevNote.pitch.midiNumber !== data.pitch.midiNumber) {
-
-              /**
-               * Tie should link to the note with the same pitch.
-               * @memberof musje.Tie#
-               * @alias error
-               * @type {Boolean}
-               */
-              data.tie.error = true;
-              prevNote.tie.error = true;
-            }
-
-            /**
-             * Next tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Tie#
-             * @alias next
-             * @type {(musje.Note|undefined)}
-             */
-            prevNote.tie.next = data;
-          }
-          prevNote = tie ? data : null;
-        }
       });
     }
 
@@ -383,6 +325,10 @@ if (typeof exports !== 'undefined') {
       var musjePart = new musje.PartwisePart(index, this);
       this.push(musjePart);
       musjePart.measures = part.measures;
+    },
+
+    removeAll: function () {
+      this.length = 0;
     }
   };
 
@@ -494,12 +440,16 @@ if (typeof exports !== 'undefined') {
     fromPartwise: function () {
       var that = this;
 
-      that.length = 0; // remove all data if exists
+      this.removeAll();
 
       this.score.walkCells(function (cell, m) {
         that[m] = that[m] || new musje.TimewiseMeasure(m, that);
         that[m].parts.push(cell);
       });
+    },
+
+    removeAll: function () {
+      this.length = 0;
     }
   };
 
@@ -634,6 +584,7 @@ if (typeof exports !== 'undefined') {
         counter %= groupDur;
       }
     });
+
     putGroup();
 
     return groups;
@@ -752,12 +703,33 @@ if (typeof exports !== 'undefined') {
       }
     },
 
+    /**
+     * Next cell in the part.
+     * @type {musje.Cell|undefined}
+     * @readonly
+     */
+    next: {
+      get: function () {
+        return this.part.measures[this._mIndex + 1];
+      }
+    },
+
+    /**
+     * The first music data in the cell.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
     firstData: {
       get: function () {
         return this.data[0];
       }
     },
 
+    /**
+     * The last music data in the cell.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
     lastData: {
       get: function () {
         return this.data[this.data.length - 1];
@@ -852,6 +824,7 @@ if (typeof exports !== 'undefined') {
     makeBeams: function (groupDur) {
 
       getBeamGroups(this, groupDur).forEach(function (group) {
+
         // beamLevel starts from 0 while underbar starts from 1
         var beamLevel = {};
 
@@ -877,6 +850,7 @@ if (typeof exports !== 'undefined') {
                * @type {Array.<musje.Beam>}
                */
               data.beams = data.beams || [];
+
               if (beamLevel[level]) {
                 data.beams[level] = new musje.Beam('continue', level, data);
               } else {
@@ -1031,12 +1005,12 @@ if (typeof exports !== 'undefined') {
     musje.extend(this, note);
 
     /**
-     * Reference to the parent note.
+     * Reference to the parent parent.
      * @memberof musje.Pitch#
-     * @alias note
-     * @type {musje.Note}
+     * @alias parent
+     * @type {musje.MusicData}
      */
-    this.pitch.note = this;
+    this.pitch.parent = this;
   };
 
   musje.defineProperties(musje.Note.prototype,
@@ -1076,16 +1050,34 @@ if (typeof exports !== 'undefined') {
       }
     },
 
+    beams: {
+      get: function () {
+        return this._beams || (this._beams = []);
+      },
+      set: function (beams) {
+        this._beams = beams;
+      }
+    },
+
     /**
      * Tie
      * @type {musje.Tie}
      */
     tie: {
       get: function () {
-        return this._tie || (this._tie = new musje.Tie());
+        return this._tie || (this._tie = new musje.Tie(this));
       },
       set: function (tie) {
-        this._tie = new musje.Tie(tie);
+
+        /**
+         * Value of the tie.
+         *
+         * Whether the note tie to the next note.
+         * @memberof musje.Tie#
+         * @alias value
+         * @type {boolean}
+         */
+        this.tie.value = tie;
       }
     },
 
@@ -1295,25 +1287,6 @@ if (typeof exports !== 'undefined') {
            octave < 0 ? chars(',', -octave) : '';
   }
 
-  function getAlter(pitch) {
-    var
-      note = pitch.note,
-      step = pitch.step,
-      data = note.cell.data,
-      datum,
-      i;
-
-    for (i = note.index - 1; i >= 0; i--) {
-      datum = data[i];
-      if (datum.$type === 'Note' &&
-          datum.pitch.step === step && datum.pitch.accidental) {
-        // note.alterLink = datum;
-        return datum.pitch.alter;
-      }
-    }
-    return 0;
-  }
-
   /**
    * @class
    * @param pitch {Object}
@@ -1352,13 +1325,38 @@ if (typeof exports !== 'undefined') {
     accidental: '',
 
     /**
-     * Alter (from -2 to 2 inclusive)
+     * Alter (from -2 to 2 inclusive).
+     *
+     * If no accidental in this pitch, it might be affected by a previous note in the same cell (the same part and the same measure).
      * @type {number}
+     * @readonly
      */
     alter: {
       get: function () {
-        var acc = this.accidental;
-        return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
+        if (this.accidental) {
+          return ACCIDENTAL_TO_ALTER[this.accidental];
+        }
+        var al = this.alterLink;
+        return al ? al.alter : 0;
+      }
+    },
+
+    /**
+     * Pitch linked that will affect the alter in this pitch.
+     * @type {musje.Pitch|undefined}
+     * @readonly
+     */
+    alterLink: {
+      get: function () {
+        var prevData = this.parent.prev;
+
+        while(prevData) {
+          if (prevData.$type === 'Note' &&
+              prevData.pitch.step === this.step && prevData.pitch.accidental) {
+            return prevData.pitch;
+          }
+          prevData = prevData.prev;
+        }
       }
     },
 
@@ -1376,6 +1374,7 @@ if (typeof exports !== 'undefined') {
     /**
      * Frequency of the pitch
      * @type {number}
+     * @readonly
      */
     frequency: {
       get: function () {
@@ -1511,34 +1510,43 @@ if (typeof exports !== 'undefined') {
    * [wiki]: https://en.wikipedia.org/wiki/Beam_(music)
    *
    * Beam is created by {@link musje.Cell#makeBeams} and
-   * attached to {@link musje.Note} in {@link musje.Note#beams}[level]
+   * attached to {@link musje.Durable} in {@link musje.Durable#beams}[level]
    * @class
    * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
    * @param {number} level - Beam level starting from 0 to up.
-   * @param {musje.Note} note - The parent note.
+   * @param {musje.Durable} parent - The parent durable music data.
    */
-  musje.Beam = function (value, level, note) {
+  musje.Beam = function (value, level, parent) {
+
     /** @member */
     this.value = value;
+
     /** @member */
     this.level = level;
+
     /** @member */
-    this.note = note;
+    this.parent = parent;
   };
+
+  musje.defineProperties(musje.Beam.prototype,
+  /** @lends musje.Beam# */
+  {
 
   /**
-   * Get the end note of the beam group.
-   * @return {musje.Note} End note of the beam group.
+   * The end parent music data of the beam group.
+   * @type {musje.MusicData}
    */
-  musje.Beam.prototype.endNote = function () {
-    var next = this.note.next;
+  endDurable: {
+      get: function () {
+        var nextData = this.parent.next;
 
-    while (next && next.beams && next.beams[this.level].value !== 'end') {
-      next = next.next;
+        while (nextData && nextData.beams[this.level].value !== 'end') {
+          nextData = nextData.next;
+        }
+        return nextData;
+      }
     }
-    return next;
-  };
-
+  });
 
 }(musje));
 
@@ -1582,16 +1590,66 @@ if (typeof exports !== 'undefined') {
   /**
    * Tie of the note.
    * @class
-   * @param {boolean} tie - Whether the note tie to the next note.
    */
-  musje.Tie = function (tie) {
+  musje.Tie = function (parent) {
+
     /** @member */
-    this.value = tie;
+    this.parent = parent;
   };
 
   musje.defineProperties(musje.Tie.prototype,
   /** @lends musje.Tie# */
   {
+
+    /**
+     * The previous durable music data in part, if it is a tie begin.
+     * @type {musje.Durable|undefined}
+     * @readonly
+     */
+    prevDurable: {
+      get: function () {
+        var prev = this.parent.prevDurableInPart;
+        return prev && prev.tie && prev.tie.value && prev;
+      }
+    },
+
+    /**
+     * The next durable music data in part.
+     * @type {musje.Durable|undefined}
+     * @readonly
+     */
+    nextDurable: {
+      get: function () {
+        return this.value && this.parent.nextDurableInPart;
+      }
+    },
+
+    /**
+     * If previous durable music data in part has error.
+     * @type {boolean}
+     * @readonly
+     */
+    prevHasError: {
+      get: function () {
+        var prev = this.prevDurable;
+        if (!prev || !prev.pitch) { return true; }
+        return prev.pitch && prev.pitch.midiNumber !== this.parent.pitch.midiNumber;
+      }
+    },
+
+    /**
+     * If next durable music data in part has error.
+     * @type {boolean}
+     * @readonly
+     */
+    nextHasError: {
+      get: function () {
+        var next = this.nextDurable;
+        if (!next || !next.pitch) { return true; }
+        return next.pitch.midiNumber !== this.parent.pitch.midiNumber;
+      }
+    },
+
     toJSON: function () {
       return this.value;
     }
@@ -1613,6 +1671,17 @@ if (typeof exports !== 'undefined') {
   {
 
     /**
+     * The ascendant system of the music data.
+     * @type {musje.Layout.System}
+     * @readonly
+     */
+    system: {
+      get: function () {
+        return this.cell.measure.system;
+      }
+    },
+
+    /**
      * Previous music data.
      * @type {musje.MusicData|undefined}
      * @readonly
@@ -1631,6 +1700,102 @@ if (typeof exports !== 'undefined') {
     next: {
       get: function () {
         return this.cell.data[this._index + 1];
+      }
+    },
+
+    /**
+     * Previous music data in part, across measure.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    prevInPart: {
+      get: function () {
+        var prev = this.prev, cell = this.cell;
+        while (!prev && cell.prev) {
+          if (!prev) {
+            cell = cell.prev;
+            prev = cell.lastData;
+          }
+        }
+        return prev;
+      }
+    },
+
+    /**
+     * Next music data in part, across measure.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    nextInPart: {
+      get: function () {
+        var next = this.next, cell = this.cell;
+        while (!next && cell.next) {
+          if (!next) {
+            cell = cell.next;
+            next = cell.firstData;
+          }
+        }
+        return next;
+      }
+    },
+
+    /**
+     * Previous music data which has a duration.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    prevDurable: {
+      get: function () {
+        var prev = this.prev;
+        while (prev && !prev.duration) {
+          prev = prev.prev;
+        }
+        return prev;
+      }
+    },
+
+    /**
+     * Next music data which has a duration.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    nextDurable: {
+      get: function () {
+        var next = this.next;
+        while (next && !next.duration) {
+          next = next.next;
+        }
+        return next;
+      }
+    },
+
+    /**
+     * Previous music data which has a duration in part, across measure.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    prevDurableInPart: {
+      get: function () {
+        var prev = this.prevInPart;
+        while (prev && !prev.duration) {
+          prev = prev.prevInPart;
+        }
+        return prev;
+      }
+    },
+
+    /**
+     * Next music data which has a duration in part, across measure.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
+    nextDurableInPart: {
+      get: function () {
+        var next = this.nextInPart;
+        while (next && !next.duration) {
+          next = next.nextInPart;
+        }
+        return next;
       }
     }
 
@@ -3491,8 +3656,11 @@ return new Parser;
               (headerHeight ? headerHeight + layout.options.headerSep : 0);
     },
 
-    // Divide measures in timewise score into the systems.
-    // Assign y, height, minWdith, and measures to each system.
+    /**
+     * Divide measures in timewise score into the systems.
+     * Assign `y`, `height`, `minWdith`, and `measures` to each system.
+     * @param scoreMeasure {musje.TimewiseMeasures} The timewise score measure.
+     */
     flow: function (scoreMeasures) {
       var
         content = this,
@@ -3725,7 +3893,7 @@ return new Parser;
       measure.parts = measure.parts.map(function (cell) {
 
         /**
-         * Cell SVG group element
+         * Cell SVG group element.
          * @memberof musje.LayoutCell#
          * @alias el
          * @type {Element}
@@ -3739,23 +3907,51 @@ return new Parser;
 
         cell.y2 = measure.system.height;
 
-        // cell.drawBorder();
+        // cell.drawBox();
 
         return cell;
       });
     },
 
+    /**
+     * Reference to the parent system of this measure.
+     * - (Getter)
+     * - (Setter) The measure el will be created, and the height of the measure will be set.
+     * @type {musje.Layout.System}
+     */
     system: {
       get: function () {
         return this._s;
       },
       set: function (system) {
         this._s = system;
+
+        /**
+         * Measure SVG group element.
+         * @memberof musje.LayoutTimewiseMeasure#
+         * @alias el
+         * @type {Element}
+         * @readonly
+         */
         this.el = system.el.g().addClass('mus-measure');
+
+        /**
+         * Height of the measure.
+         * @memberof musje.LayoutTimewiseMeasure#
+         * @alias height
+         * @type {number}
+         * @readonly
+         */
         this.height = system.height;
       }
     },
 
+    /**
+     * Width of the measure.
+     * - (Getter)
+     * - (Setter) Set width of the measure and also set the widths of the containing cells.
+     * @type {number}
+     */
     width: {
       get: function () {
         return this._w;
@@ -3769,6 +3965,12 @@ return new Parser;
       }
     },
 
+    /**
+     * The x position of the measure in the system.
+     * - (Getter)
+     * - (Setter) Set x cause the measure element to translate.
+     * @type {number}
+     */
     x: {
       get: function () {
         return this._x;
@@ -3779,12 +3981,22 @@ return new Parser;
       }
     },
 
+    /**
+     * Left bar of the measure in system.
+     * @type {musje.Bar}
+     * @readonly
+     */
     barLeftInSystem: {
       get: function () {
         return this.parts[0].barLeftInSystem;
       }
     },
 
+    /**
+     * Right bar of the measure in system.
+     * @type {musje.Bar}
+     * @readonly
+     */
     barRightInSystem: {
       get: function () {
         return this.parts[0].barRightInSystem;
@@ -3947,13 +4159,22 @@ return new Parser;
       }
     },
 
-    drawBorder: function () {
-      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
-                              .addClass('bbox');
+    /**
+     * Draw box of the cell.
+     * @return {Element} The box SVG rect element.
+     */
+    drawBox: function () {
+      this._boxEl = this.el.rect(0, -this.height, this.width, this.height)
+                           .addClass('bbox');
+      return this._boxEl;
     },
 
-    clearBorder: function () {
-      this._borderEl.remove();
+    /**
+     * Clear the box SVG element.
+     */
+    clearBox: function () {
+      this._boxEl.remove();
+      this._boxEl = undefined;
     }
   };
 
@@ -4141,27 +4362,31 @@ return new Parser;
 
   Renderer.renderTie = function (note) {
     var
-      next = note.tie.next,
-      prev = note.tie.prev,
-      system = note.cell.measure.system,
+      next = note.tie.nextDurable,
+      prev = note.tie.prevDurable,
+      system = note.system,
       noteDx,
       tiePath,
       x1, x2, y1, y2;
 
     // Tie end
-    if (prev && prev.cell.measure.system !== system) {
+    if (prev && prev.system !== system) {
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
       x2 = - note.systemX - 3;
       tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
+
+      if (note.tie.prevHasError) {
+        tiePath.addClass('mus-error');
+      }
     }
 
-    if (next) {
+    if (note.tie.value) {
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
 
       // Tie begin
-      if (next.cell.measure.system !== system) {
+      if (!next || next.system !== system) {
         x2 = system.width - note.systemX + 3;
         tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
 
@@ -4172,10 +4397,10 @@ return new Parser;
         y2 = next.def.pitchDef.stepTop;
         tiePath = note.el.path(getTiePath(x1, y1, noteDx + x2, y2));
       }
-    }
 
-    if (tiePath && note.tie.error) {
-      tiePath.addClass('mus-error');
+      if (note.tie.nextHasError) {
+        tiePath.addClass('mus-error');
+      }
     }
   };
 
@@ -4301,9 +4526,9 @@ return new Parser;
         for (var i = 0; i < underbar; i++) {
 
           // Only render beam for the begin one.
-          if (note.beams && note.beams[i]) {
+          if (note.beams[i]) {
             if (note.beams[i].value === 'begin') {
-              renderUnderbar(note, note.beams[i].endNote(), y, lo);
+              renderUnderbar(note, note.beams[i].endDurable, y, lo);
             }
 
           // Unbeamed underbar

@@ -33,7 +33,7 @@
       measure.parts = measure.parts.map(function (cell) {
 
         /**
-         * Cell SVG group element
+         * Cell SVG group element.
          * @memberof musje.LayoutCell#
          * @alias el
          * @type {Element}
@@ -47,23 +47,51 @@
 
         cell.y2 = measure.system.height;
 
-        // cell.drawBorder();
+        // cell.drawBox();
 
         return cell;
       });
     },
 
+    /**
+     * Reference to the parent system of this measure.
+     * - (Getter)
+     * - (Setter) The measure el will be created, and the height of the measure will be set.
+     * @type {musje.Layout.System}
+     */
     system: {
       get: function () {
         return this._s;
       },
       set: function (system) {
         this._s = system;
+
+        /**
+         * Measure SVG group element.
+         * @memberof musje.LayoutTimewiseMeasure#
+         * @alias el
+         * @type {Element}
+         * @readonly
+         */
         this.el = system.el.g().addClass('mus-measure');
+
+        /**
+         * Height of the measure.
+         * @memberof musje.LayoutTimewiseMeasure#
+         * @alias height
+         * @type {number}
+         * @readonly
+         */
         this.height = system.height;
       }
     },
 
+    /**
+     * Width of the measure.
+     * - (Getter)
+     * - (Setter) Set width of the measure and also set the widths of the containing cells.
+     * @type {number}
+     */
     width: {
       get: function () {
         return this._w;
@@ -77,6 +105,12 @@
       }
     },
 
+    /**
+     * The x position of the measure in the system.
+     * - (Getter)
+     * - (Setter) Set x cause the measure element to translate.
+     * @type {number}
+     */
     x: {
       get: function () {
         return this._x;
@@ -87,12 +121,22 @@
       }
     },
 
+    /**
+     * Left bar of the measure in system.
+     * @type {musje.Bar}
+     * @readonly
+     */
     barLeftInSystem: {
       get: function () {
         return this.parts[0].barLeftInSystem;
       }
     },
 
+    /**
+     * Right bar of the measure in system.
+     * @type {musje.Bar}
+     * @readonly
+     */
     barRightInSystem: {
       get: function () {
         return this.parts[0].barRightInSystem;

@@ -21,25 +21,6 @@
            octave < 0 ? chars(',', -octave) : '';
   }
 
-  function getAlter(pitch) {
-    var
-      note = pitch.note,
-      step = pitch.step,
-      data = note.cell.data,
-      datum,
-      i;
-
-    for (i = note.index - 1; i >= 0; i--) {
-      datum = data[i];
-      if (datum.$type === 'Note' &&
-          datum.pitch.step === step && datum.pitch.accidental) {
-        // note.alterLink = datum;
-        return datum.pitch.alter;
-      }
-    }
-    return 0;
-  }
-
   /**
    * @class
    * @param pitch {Object}
@@ -78,13 +59,38 @@
     accidental: '',
 
     /**
-     * Alter (from -2 to 2 inclusive)
+     * Alter (from -2 to 2 inclusive).
+     *
+     * If no accidental in this pitch, it might be affected by a previous note in the same cell (the same part and the same measure).
      * @type {number}
+     * @readonly
      */
     alter: {
       get: function () {
-        var acc = this.accidental;
-        return acc ? ACCIDENTAL_TO_ALTER[acc] : getAlter(this);
+        if (this.accidental) {
+          return ACCIDENTAL_TO_ALTER[this.accidental];
+        }
+        var al = this.alterLink;
+        return al ? al.alter : 0;
+      }
+    },
+
+    /**
+     * Pitch linked that will affect the alter in this pitch.
+     * @type {musje.Pitch|undefined}
+     * @readonly
+     */
+    alterLink: {
+      get: function () {
+        var prevData = this.parent.prev;
+
+        while(prevData) {
+          if (prevData.$type === 'Note' &&
+              prevData.pitch.step === this.step && prevData.pitch.accidental) {
+            return prevData.pitch;
+          }
+          prevData = prevData.prev;
+        }
       }
     },
 
@@ -102,6 +108,7 @@
     /**
      * Frequency of the pitch
      * @type {number}
+     * @readonly
      */
     frequency: {
       get: function () {

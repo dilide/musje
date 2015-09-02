@@ -108,27 +108,31 @@
 
   Renderer.renderTie = function (note) {
     var
-      next = note.tie.next,
-      prev = note.tie.prev,
-      system = note.cell.measure.system,
+      next = note.tie.nextDurable,
+      prev = note.tie.prevDurable,
+      system = note.system,
       noteDx,
       tiePath,
       x1, x2, y1, y2;
 
     // Tie end
-    if (prev && prev.cell.measure.system !== system) {
+    if (prev && prev.system !== system) {
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
       x2 = - note.systemX - 3;
       tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
+
+      if (note.tie.prevHasError) {
+        tiePath.addClass('mus-error');
+      }
     }
 
-    if (next) {
+    if (note.tie.value) {
       x1 = note.def.pitchDef.stepCx;
       y1 = note.def.pitchDef.stepTop;
 
       // Tie begin
-      if (next.cell.measure.system !== system) {
+      if (!next || next.system !== system) {
         x2 = system.width - note.systemX + 3;
         tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
 
@@ -139,10 +143,10 @@
         y2 = next.def.pitchDef.stepTop;
         tiePath = note.el.path(getTiePath(x1, y1, noteDx + x2, y2));
       }
-    }
 
-    if (tiePath && note.tie.error) {
-      tiePath.addClass('mus-error');
+      if (note.tie.nextHasError) {
+        tiePath.addClass('mus-error');
+      }
     }
   };
 

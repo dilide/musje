@@ -12,12 +12,16 @@
     fromPartwise: function () {
       var that = this;
 
-      that.length = 0; // remove all data if exists
+      this.removeAll();
 
       this.score.walkCells(function (cell, m) {
         that[m] = that[m] || new musje.TimewiseMeasure(m, that);
         that[m].parts.push(cell);
       });
+    },
+
+    removeAll: function () {
+      this.length = 0;
     }
   };
 

@@ -9,33 +9,42 @@
    * [wiki]: https://en.wikipedia.org/wiki/Beam_(music)
    *
    * Beam is created by {@link musje.Cell#makeBeams} and
-   * attached to {@link musje.Note} in {@link musje.Note#beams}[level]
+   * attached to {@link musje.Durable} in {@link musje.Durable#beams}[level]
    * @class
    * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
    * @param {number} level - Beam level starting from 0 to up.
-   * @param {musje.Note} note - The parent note.
+   * @param {musje.Durable} parent - The parent durable music data.
    */
-  musje.Beam = function (value, level, note) {
+  musje.Beam = function (value, level, parent) {
+
     /** @member */
     this.value = value;
+
     /** @member */
     this.level = level;
+
     /** @member */
-    this.note = note;
+    this.parent = parent;
   };
+
+  musje.defineProperties(musje.Beam.prototype,
+  /** @lends musje.Beam# */
+  {
 
   /**
-   * Get the end note of the beam group.
-   * @return {musje.Note} End note of the beam group.
+   * The end parent music data of the beam group.
+   * @type {musje.MusicData}
    */
-  musje.Beam.prototype.endNote = function () {
-    var next = this.note.next;
+  endDurable: {
+      get: function () {
+        var nextData = this.parent.next;
 
-    while (next && next.beams && next.beams[this.level].value !== 'end') {
-      next = next.next;
+        while (nextData && nextData.beams[this.level].value !== 'end') {
+          nextData = nextData.next;
+        }
+        return nextData;
+      }
     }
-    return next;
-  };
-
+  });
 
 }(musje));

@@ -37,6 +37,7 @@
         counter %= groupDur;
       }
     });
+
     putGroup();
 
     return groups;
@@ -155,12 +156,33 @@
       }
     },
 
+    /**
+     * Next cell in the part.
+     * @type {musje.Cell|undefined}
+     * @readonly
+     */
+    next: {
+      get: function () {
+        return this.part.measures[this._mIndex + 1];
+      }
+    },
+
+    /**
+     * The first music data in the cell.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
     firstData: {
       get: function () {
         return this.data[0];
       }
     },
 
+    /**
+     * The last music data in the cell.
+     * @type {musje.MusicData|undefined}
+     * @readonly
+     */
     lastData: {
       get: function () {
         return this.data[this.data.length - 1];
@@ -255,6 +277,7 @@
     makeBeams: function (groupDur) {
 
       getBeamGroups(this, groupDur).forEach(function (group) {
+
         // beamLevel starts from 0 while underbar starts from 1
         var beamLevel = {};
 
@@ -280,6 +303,7 @@
                * @type {Array.<musje.Beam>}
                */
               data.beams = data.beams || [];
+
               if (beamLevel[level]) {
                 data.beams[level] = new musje.Beam('continue', level, data);
               } else {

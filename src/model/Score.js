@@ -9,7 +9,6 @@
    */
   musje.Score = function (score) {
     musje.extend(this, score);
-    this.linkTies();
 
     // console.log(JSON.stringify(this, null, 2))
     // console.log('' + this)
@@ -43,7 +42,7 @@
               (this._parts = new musje.PartwiseParts(this));
       },
       set: function (parts) {
-        this.parts.length = 0;
+        this.parts.removeAll();
         this.parts.addParts(parts);
         this.measures.fromPartwise();
       }
@@ -58,16 +57,6 @@
       get: function () {
         return this._measures ||
               (this._measures = new musje.TimewiseMeasures(this));
-      }
-    },
-
-    /**
-     * Total numbers of measures.
-     * @type {number}
-     */
-    totalMeasures: {
-      get: function () {
-        return this.measures.length;
       }
     },
 
@@ -88,7 +77,7 @@
 
     /**
      * A cell is identically a measure in a part or a part in a measure.
-     * @param  {Function}
+     * @param {Function}
      */
     walkCells: function (callback) {
       this.parts.forEach(function (part, p) {
@@ -100,60 +89,13 @@
 
     /**
      * Walk each music data.
-     * @param  {Function} callback
+     * @param {Function} callback
      */
     walkMusicData: function (callback) {
       this.walkCells(function (cell, m, p) {
         cell.data.forEach(function (data, d) {
           callback(data, d, m, p);
         });
-      });
-    },
-
-    /**
-     * Link ties for each {@link musje.Note} in the entire score.
-     */
-    linkTies: function () {
-      var prevNote = null;
-
-      this.walkMusicData(function (data) {
-        var tie;
-
-        if (data.$type === 'Note') {
-          tie = data.tie.value;
-
-          if (prevNote) {
-
-            /**
-             * Previous tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Tie#
-             * @alias prev
-             * @type {(musje.Note|undefined)}
-             */
-            data.tie.prev = prevNote;
-
-            if (prevNote.pitch.midiNumber !== data.pitch.midiNumber) {
-
-              /**
-               * Tie should link to the note with the same pitch.
-               * @memberof musje.Tie#
-               * @alias error
-               * @type {Boolean}
-               */
-              data.tie.error = true;
-              prevNote.tie.error = true;
-            }
-
-            /**
-             * Next tied note. Produced by {@link musje.Score#linkTies}.
-             * @memberof musje.Tie#
-             * @alias next
-             * @type {(musje.Note|undefined)}
-             */
-            prevNote.tie.next = data;
-          }
-          prevNote = tie ? data : null;
-        }
       });
     }
 

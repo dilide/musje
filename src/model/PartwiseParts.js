@@ -23,6 +23,10 @@
       var musjePart = new musje.PartwisePart(index, this);
       this.push(musjePart);
       musjePart.measures = part.measures;
+    },
+
+    removeAll: function () {
+      this.length = 0;
     }
   };
 

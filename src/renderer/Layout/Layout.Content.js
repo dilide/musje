@@ -30,8 +30,11 @@
               (headerHeight ? headerHeight + layout.options.headerSep : 0);
     },
 
-    // Divide measures in timewise score into the systems.
-    // Assign y, height, minWdith, and measures to each system.
+    /**
+     * Divide measures in timewise score into the systems.
+     * Assign `y`, `height`, `minWdith`, and `measures` to each system.
+     * @param scoreMeasure {musje.TimewiseMeasures} The timewise score measure.
+     */
     flow: function (scoreMeasures) {
       var
         content = this,
