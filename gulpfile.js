@@ -75,6 +75,7 @@ gulp.task('concat', function () {
       './src/renderer/Renderer/Renderer.js',
       './src/renderer/Renderer/Renderer.renderBar.js',
       './src/renderer/Renderer/Renderer.renderDuration.js',
+      './src/renderer/Renderer/Renderer.renderCurve.js',
 
       './src/player.js'
     ])

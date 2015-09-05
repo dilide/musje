@@ -33,10 +33,10 @@
       dur = note.duration.second;
 
     function play() {
-      if (!note.tie.prev) {
+      if (!note.tie.prevParent || note.tie.prevHasError) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!note.tie.next) {
+      if (!note.tie.nextParent || note.tie.nextHasError) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 

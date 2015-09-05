@@ -114,6 +114,8 @@ if (typeof exports !== 'undefined') {
 
   musje.makeToJSON = function (values, elName) {
     return function () {
+      if (this.isEmpty) { return; }
+
       var
         that = this,
         result = {};
@@ -274,28 +276,65 @@ if (typeof exports !== 'undefined') {
   /** @lends musje.ScoreHead# */
   {
     /**
-     * Title of the song.
+     * Title of the score.
      * @type {string}
      */
     title: undefined,
 
     /**
-     * Composer of the song.
+     * Subtitle of the score.
+     * @type {string}
+     */
+    subtitle: undefined,
+
+    /**
+     * Subsubtitle of the score.
+     * @type {string}
+     */
+    subsubtitle: undefined,
+
+    /**
+     * Composer of the score.
      * @type {string}
      */
     composer: undefined,
 
-    // isEmpty: function () {
-    //   return !this.title && !this.composer;
-    // },
+    /**
+     * Arranger of the score.
+     * @type {string}
+     */
+    arranger: undefined,
+
+    /**
+     * Lyricist of the score.
+     * @type {string}
+     */
+    lyricist: undefined,
+
+    isEmpty: {
+      get: function () {
+        return !this.title && !this.subtitle && !this.subsubtitle &&
+               !this.composer && !this.arranger && !this.lyricist;
+      }
+    },
 
     /**
      * Convert score head to string.
      * @return {string} The converted musje head source code.
      */
     toString: function () {
-      return '<<' + this.title + '>>' + this.composer + '\n';
-    }
+      return '' + (this.title ? ('<<' + this.title + '>>') : '') +
+              (this.composer || '') +
+              '\n';
+    },
+
+    toJSON: musje.makeToJSON({
+      title: undefined,
+      subtitle: undefined,
+      subsubtitle: undefined,
+      composer: undefined,
+      lyricist: undefined
+    })
   });
 
 }(musje));
@@ -1082,30 +1121,30 @@ if (typeof exports !== 'undefined') {
     },
 
     /**
-     * Slurs attached to the note.
-     * @type {Array.<musje.Slur>}
+     * Slur
+     * @type {musje.Slur}
      */
-    slurs: {
+    slur: {
       get: function () {
-        return this._slurs;
+        return this._slur || (this._slur = new musje.Slur(this));
       },
-      set: function (slurs) {
-        this._slurs = slurs.map(function (slur) {
-          return new musje.Slur(slur);
-        });
+      set: function (slur) {
+        musje.extend(this.slur, slur);
       }
     },
 
     /** @method */
     toString: function () {
-      return this.pitch + this.duration;
+      console.log(typeof this.slur.begin)
+      return this.slur.begin + this.pitch + this.duration +
+             this.slur.end + this.tie.value;
     },
 
     toJSON: musje.makeToJSON({
       pitch: undefined,
       duration: undefined,
       tie: undefined,
-      slurs: undefined
+      slur: undefined
     }, 'note')
   });
 
@@ -1147,6 +1186,15 @@ if (typeof exports !== 'undefined') {
       },
       set: function (duration) {
         this._duration = new musje.Duration(duration);
+      }
+    },
+
+    beams: {
+      get: function () {
+        return this._beams || (this._beams = []);
+      },
+      set: function (beams) {
+        this._beams = beams;
       }
     },
 
@@ -1558,27 +1606,130 @@ if (typeof exports !== 'undefined') {
   /**
    * Slur
    * @class
-   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
-   * @param {number} level - Beam level starting from 0 to up.
-   * @param {musje.Note} note - The parent note.
+   * @param parent {musje.Note|musje.Chord}
    */
-  musje.Slur = function (value, level, note) {
-    /** @member */
-    this.value = value;
-    /** @member */
-    this.level = level;
-    /** @member */
-    this.note = note;
+  musje.Slur = function (parent) {
+
+    /**
+     * Parent
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    this.parent = parent;
   };
 
   musje.defineProperties(musje.Slur.prototype,
   /** @lends musje.Slur# */
   {
-    toJSON: function () {
-      return this.value;
-    }
-  });
+    begin: '',
 
+    end: '',
+
+    /**
+     * Previous slurred parent.
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    prevParent: {
+      get: function () {
+        if (!this.end) { return; }
+
+        var prev = this.parent.prevInPart;
+        while(prev) {
+          if (prev.slur && !prev.slur.isEmpty) {
+            return prev;
+          }
+          prev = prev.prevInPart;
+        }
+      }
+    },
+
+    /**
+     * Next Slurred parent.
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    nextParent: {
+      get: function () {
+        if (!this.begin) { return; }
+
+        var next = this.parent.nextInPart;
+        while(next) {
+          if (next.slur && !next.slur.isEmpty) {
+            return next;
+          }
+          next = next.nextInPart;
+        }
+      }
+    },
+
+    /**
+     * @todo
+     * @type {boolean}
+     * @readonly
+     */
+    prevCrossTie: {
+      get: function () {
+
+      }
+    },
+
+    /**
+     * @todo
+     * @type {boolean}
+     * @readonly
+     */
+    nextCrossTie: {
+      get: function () {
+
+      }
+    },
+
+    /**
+     * If the previous slur has error.
+     * @type {boolean}
+     * @readonly
+     */
+    prevHasError: {
+      get: function () {
+        var prev = this.prevParent;
+        return !prev || !prev.slur.begin;
+      }
+    },
+
+    /**
+     * If the next slur has error.
+     * @type {boolean}
+     * @readonly
+     */
+    nextHasError: {
+      get: function () {
+        var next = this.nextParent;
+        return !next || !next.slur.end;
+      }
+    },
+
+    /**
+     * If the slur is empty.
+     * @type {boolean}
+     * @readonly
+     */
+    isEmpty: {
+      get: function () {
+        return !(this.begin || this.end);
+      }
+    },
+
+    /**
+     * Convert the slur to JSON object.
+     * @method
+     * @return {Object} JSON object.
+     */
+    toJSON: musje.makeToJSON({
+      begin: undefined,
+      end: undefined
+    })
+  });
 
 }(musje));
 
@@ -1590,23 +1741,47 @@ if (typeof exports !== 'undefined') {
   /**
    * Tie of the note.
    * @class
+   * @param parent {musje.Note|musje.Chord}
    */
   musje.Tie = function (parent) {
 
-    /** @member */
+    /**
+     * Parent
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
     this.parent = parent;
   };
 
   musje.defineProperties(musje.Tie.prototype,
   /** @lends musje.Tie# */
   {
+    value: '',
+
+    /**
+     * @readonly
+     */
+    begin: {
+      get: function () {
+        return this.value;
+      }
+    },
+
+    /**
+     * @readonly
+     */
+    end: {
+      get: function () {
+        return this.prevParent;
+      }
+    },
 
     /**
      * The previous durable music data in part, if it is a tie begin.
      * @type {musje.Durable|undefined}
      * @readonly
      */
-    prevDurable: {
+    prevParent: {
       get: function () {
         var prev = this.parent.prevDurableInPart;
         return prev && prev.tie && prev.tie.value && prev;
@@ -1618,7 +1793,7 @@ if (typeof exports !== 'undefined') {
      * @type {musje.Durable|undefined}
      * @readonly
      */
-    nextDurable: {
+    nextParent: {
       get: function () {
         return this.value && this.parent.nextDurableInPart;
       }
@@ -1631,7 +1806,7 @@ if (typeof exports !== 'undefined') {
      */
     prevHasError: {
       get: function () {
-        var prev = this.prevDurable;
+        var prev = this.prevParent;
         if (!prev || !prev.pitch) { return true; }
         return prev.pitch && prev.pitch.midiNumber !== this.parent.pitch.midiNumber;
       }
@@ -1644,7 +1819,7 @@ if (typeof exports !== 'undefined') {
      */
     nextHasError: {
       get: function () {
-        var next = this.nextDurable;
+        var next = this.nextParent;
         if (!next || !next.pitch) { return true; }
         return next.pitch.midiNumber !== this.parent.pitch.midiNumber;
       }
@@ -1909,13 +2084,13 @@ case 10:
  this.$ = $$[$0-1] ? $$[$0-1] + 1 : 1; 
 break;
 case 11:
- this.$ = { head: $$[$0] }; 
+this.$ = { head: $$[$0] };
 break;
 case 12:
- this.$ = { parts: $$[$0] }; 
+this.$ = { parts: $$[$0] };
 break;
 case 13:
- this.$ = { head: $$[$0-1], parts: $$[$0] }; 
+this.$ = { head: $$[$0-1], parts: $$[$0] };
 break;
 case 15:
  this.$ = { title: $$[$0] }; 
@@ -1923,14 +2098,17 @@ break;
 case 16:
  this.$ =  { title: $$[$0-1], composer: $$[$0] }; 
 break;
-case 17: case 20: case 59: case 62:
- this.$ = [$$[$0]]; 
+case 17: case 59: case 62:
+this.$ = [$$[$0]];
 break;
 case 18:
- this.$ = { measures: $$[$0]}; 
+this.$ = { measures: $$[$0] };
 break;
 case 19:
  this.$ = { measures: $$[$0]}; $$[$0][0].data.unshift({ bar: $$[$0-2] }); 
+break;
+case 20:
+ this.$ = [$$[$0]]; 
 break;
 case 21:
  this.$ = $$[$0-3]; lastItem($$[$0-3]).data.push({ bar: $$[$0-2] }); $$[$0-3].push($$[$0]); 
@@ -1939,37 +2117,37 @@ case 22:
  this.$ = $$[$0-2]; lastItem($$[$0-2]).data.push({ bar: $$[$0-1] }); $$[$0-2].push({ data: [] }); 
 break;
 case 23:
- this.$ = { data: [$$[$0-1]] }; 
+this.$ = { data: [$$[$0-1]] };
 break;
 case 24:
  this.$ = $$[$0-2]; $$[$0-2].data.push($$[$0-1]); 
 break;
 case 25:
- this.$ = 'single'; 
+this.$ = 'single';
 break;
 case 26:
- this.$ = 'double'; 
+this.$ = 'double';
 break;
 case 27:
- this.$ = 'end'; 
+this.$ = 'end';
 break;
 case 28:
- this.$ = 'repeat-begin'; 
+this.$ = 'repeat-begin';
 break;
 case 29:
- this.$ = 'repeat-end'; 
+this.$ = 'repeat-end';
 break;
 case 30:
- this.$ = 'repeat-both'; 
+this.$ = 'repeat-both';
 break;
 case 32:
- this.$ = $$[$0-1]; onlyProperty($$[$0-1]).tie = true; 
+ this.$ = $$[$0-1]; onlyProperty($$[$0-1]).tie = '~'; 
 break;
 case 33:
- this.$ = { rest: { duration: $$[$0] } }; 
+this.$ = { rest: { duration: $$[$0] } };
 break;
 case 34:
- this.$ = { voice: $$[$0] }; 
+this.$ = { voice: $$[$0] };
 break;
 case 36:
  this.$ = $$[$0-1]; onlyProperty($$[$0-1]).duration = $$[$0]; 
@@ -1979,7 +2157,7 @@ case 37:
       this.$ = $$[$0-1];
       extend(onlyProperty($$[$0-1]), {
         duration: $$[$0],
-        slurs: ['begin']
+        slur: { begin: '(' }
       });
     
 break;
@@ -1988,81 +2166,78 @@ case 38:
       this.$ = $$[$0-2];
       extend(onlyProperty($$[$0-2]), {
         duration: $$[$0-1],
-        slurs: ['end']
+        slur: { end: ')' }
       });
     
 break;
 case 39:
- this.$ = { note: $$[$0] }; 
+this.$ = { note: $$[$0] };
 break;
 case 40:
- this.$ = { chord: $$[$0] }; 
+this.$ = { chord: $$[$0] };
 break;
 case 41:
- this.$ = { pitch: $$[$0] }; 
+this.$ = { pitch: $$[$0] };
 break;
 case 42:
- this.$ = { step: +$$[$0] }; 
+this.$ = { step: +$$[$0] };
 break;
 case 43:
- this.$ = { step: +$$[$0-1], octave: octave($$[$0]) }; 
+this.$ = { step: +$$[$0-1], octave: octave($$[$0]) };
 break;
 case 44:
- this.$ = { accidental: $$[$0-1], step: +$$[$0] }; 
+this.$ = { accidental: $$[$0-1], step: +$$[$0] };
 break;
 case 45:
- this.$ = { accidental: $$[$0-2], step: +$$[$0-1], octave: octave($$[$0]) }; 
-break;
-case 46:
- this.$ = { type: 4 }; 
+this.$ = { accidental: $$[$0-2], step: +$$[$0-1], octave: octave($$[$0]) };
 break;
 case 47:
- this.$ = { type: $$[$0] }; 
+this.$ = { type: $$[$0] };
 break;
 case 48:
- this.$ = { type: 4, dot: $$[$0].length }; 
+this.$ = { type: 4, dot: $$[$0].length };
 break;
 case 49:
- this.$ = { type: $$[$0-1], dot: $$[$0].length }; 
+this.$ = { type: $$[$0-1], dot: $$[$0].length };
 break;
 case 50:
- this.$ = 8; 
+this.$ = 8;
 break;
 case 51:
- this.$ = 16; 
+this.$ = 16;
 break;
 case 52:
- this.$ = 32; 
+this.$ = 32;
 break;
 case 53:
- this.$ = 64; 
+this.$ = 64;
 break;
 case 54:
- this.$ = 128; 
+this.$ = 128;
 break;
 case 55:
- this.$ = 256; 
+this.$ = 256;
 break;
 case 56:
- this.$ = 2; 
+this.$ = 2;
 break;
 case 57:
- this.$ = 1; 
+this.$ = 1;
 break;
 case 58:
- this.$ = { pitches: $$[$0-1] }; 
+this.$ = { pitches: $$[$0-1] };
 break;
 case 60: case 65:
  this.$ = $$[$0-1]; $$[$0-1].push($$[$0]); 
 break;
 case 61:
- this.$ = $$[$0-1]; 
+this.$ = $$[$0-1];
 break;
 case 63:
  this.$ = $$[$0-2]; $$[$0-2].push($$[$0-1]); 
 break;
 case 66:
- this.$ = { time: { beats: +$$[$0-1], beatType: +$$[$0] } }; 
+this.$ = { time: { beats: +$$[$0-1], beatType: +$$[$0] } };
 break;
 }
 },
@@ -2219,8 +2394,7 @@ parse: function parse(input) {
   function lastItem(arr) { return arr[arr.length - 1]; }
 
   function onlyProperty(obj) {
-    for (var key in obj) {}
-    return obj[key];
+    return obj[Object.keys(obj)[0]];
   }
 
   function octave(str) {
@@ -2229,18 +2403,15 @@ parse: function parse(input) {
   }
 
   function removeLastEmptyMeasure(score) {
-    var
-      parts = score.parts,
-      lastMeasure,
-      i;
+    var parts = score.parts;
     if (!parts) { return; }
 
-    for (i = 0; i < parts.length; i++) {
-      lastMeasure = lastItem(parts[i].measures);
+    parts.forEach(function (part) {
+      var lastMeasure = lastItem(part.measures);
       if (lastMeasure.data.length === 0) {
-        parts[i].measures.pop();
+        part.measures.pop();
       }
-    }
+    });
   }
 
 /* generated by jison-lex 0.3.4 */
@@ -2869,7 +3040,7 @@ return new Parser;
     getAccidental: function (accidental) {
       var id = 'a' + accidental.replace(/#/g, 's');
       return this[id] ||
-          (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
+            (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
     },
 
     _make: function (id, musicData) {
@@ -2891,17 +3062,21 @@ return new Parser;
 
     _getPitch: function (id, pitch, underbar) {
       return this[id] ||
-          (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
+            (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
     },
 
+    /**
+     * Make note.
+     * @param id {string}  Def id.
+     * @param note {musje.Note} Note
+     * @return {Object}
+     */
     _makeNote: function (id, note) {
       var
-        pitch = note.pitch,
-        duration = note.duration,
-        underbar = duration.underbar,
-        pitchId = pitch.defId + underbar,
-        pitchDef = this._getPitch(pitchId, pitch, underbar),
-        durationDef = this.get(duration);
+        underbar = note.duration.underbar,
+        pitchId = note.pitch.defId + underbar,
+        pitchDef = this._getPitch(pitchId, note.pitch, underbar),
+        durationDef = this.get(note.duration);
 
       return {
         pitchDef: pitchDef,
@@ -2917,7 +3092,7 @@ return new Parser;
      * @protected
      * @param  {string} id   [description]
      * @param  {string} rest [description]
-     * @return {musje.Defs.NoteDef}      [description]
+     * @return {Object}      [description]
      */
     _makeRest: function(id, rest) {
       return this._makeNote(id, new musje.Note({
@@ -4257,55 +4432,68 @@ return new Parser;
 (function (musje, Snap) {
   'use strict';
 
+  /**
+   * [Renderer description]
+   * @class
+   * @alias musje.Renderer
+   * @param svg {string}
+   * @param lo {Object}
+   */
   var Renderer = musje.Renderer = function (svg, lo) {
     this._lo = musje.extend(musje.Layout.options, lo);
     this.layout = new musje.Layout(svg, this._lo);
   };
 
-  Renderer.prototype.render = function (score) {
-    this._score = score;
-    this.layout.flow(score);
+  musje.defineProperties(musje.Renderer.prototype,
+  /** @lends musje.Renderer# */
+  {
+    render: function (score) {
+      this._score = score;
+      this.layout.flow(score);
 
-    this.renderHeader();
-    this.renderContent();
-  };
+      this.renderHeader();
+      this.renderContent();
+    },
 
-  Renderer.prototype.renderHeader = function () {
-    var
-      lo = this._lo,
-      header = this.layout.header,
-      el = header.el,
-      width = header.width;
+    renderHeader: function () {
+      var
+        lo = this._lo,
+        header = this.layout.header,
+        el = header.el,
+        width = header.width;
 
-    el.text(width / 2, lo.titleFontSize, this._score.head.title)
-      .attr({
-        fontSize: lo.titleFontSize,
-        fontWeight: lo.titleFontWeight,
-        textAnchor: 'middle'
-      });
-    el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
-      .attr({
-        fontSize: lo.composerFontSize,
-        fontWeight: lo.composerFontWeight,
-        textAnchor: 'end'
-      });
+      el.text(width / 2, lo.titleFontSize, this._score.head.title)
+        .attr({
+          fontSize: lo.titleFontSize,
+          fontWeight: lo.titleFontWeight,
+          textAnchor: 'middle'
+        });
 
-    header.height = el.getBBox().height;
-  };
+      el.text(width, lo.titleFontSize * 1.5, this._score.head.composer)
+        .attr({
+          fontSize: lo.composerFontSize,
+          fontWeight: lo.composerFontWeight,
+          textAnchor: 'end'
+        });
 
-  Renderer.prototype.renderContent = function () {
-    var lo = this._lo;
+      header.height = el.getBBox().height;
+    },
 
-    this.layout.content.systems.forEach(function (system) {
-      var measures = system.measures;
-      measures.forEach(function (measure) {
-        Renderer.renderBar(measure, lo);
-        measure.parts.forEach(function (cell) {
-          Renderer.renderCell(cell, lo);
+    renderContent: function () {
+      var lo = this._lo;
+
+      this.layout.content.systems.forEach(function (system) {
+        var measures = system.measures;
+        measures.forEach(function (measure) {
+          Renderer.renderBar(measure, lo);
+          measure.parts.forEach(function (cell) {
+            Renderer.renderCell(cell, lo);
+          });
         });
       });
-    });
-  };
+    }
+
+  });
 
   function renderNote(note, cell, lo) {
     note.el = cell.el.g().transform(Snap.matrix()
@@ -4314,7 +4502,12 @@ return new Parser;
     Renderer.renderDuration(note, lo);
   }
 
-  Renderer.renderCell = function (cell, lo) {
+  /**
+   * Render cell
+   * @param  {musje.Cell} cell The cell
+   * @param  {Object} lo   Layout options
+   */
+  musje.Renderer.renderCell = function (cell, lo) {
     cell.data.forEach(function (data) {
       switch (data.$type) {
       case 'Rest':
@@ -4323,6 +4516,7 @@ return new Parser;
       case 'Note':
         renderNote(data, cell, lo);
         Renderer.renderTie(data);
+        Renderer.renderSlur(data);
         break;
       case 'Time':
         data.el = cell.el.use(data.def.el).attr({
@@ -4332,78 +4526,6 @@ return new Parser;
       }
     });
   };
-
-  function getTiePath(x1, y1, x2, y2) {
-    var
-      dx = x2 - x1,
-      dy = y2 - y1,
-      c1x = 0,//-0.1 * dx,
-      c1y = 0,//-0.1 * dy,
-      c2x = dx,//1.1 * dx,
-      c2y = dy;//1.1 * dy;
-
-    return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
-      x1: x1,
-      y1: y1,
-      c1x: c1x,
-      c1y: c1y - 8,
-      c2x: c2x,
-      c2y: c2y - 8,
-      dx: dx,
-      dy: dy,
-      c3x: -c1x,
-      c3y: -c1y - 10,
-      c4x: -c2x,
-      c4y: -c2y - 10,
-      negDx: -dx,
-      negDy: -dy
-    });
-  }
-
-  Renderer.renderTie = function (note) {
-    var
-      next = note.tie.nextDurable,
-      prev = note.tie.prevDurable,
-      system = note.system,
-      noteDx,
-      tiePath,
-      x1, x2, y1, y2;
-
-    // Tie end
-    if (prev && prev.system !== system) {
-      x1 = note.def.pitchDef.stepCx;
-      y1 = note.def.pitchDef.stepTop;
-      x2 = - note.systemX - 3;
-      tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
-
-      if (note.tie.prevHasError) {
-        tiePath.addClass('mus-error');
-      }
-    }
-
-    if (note.tie.value) {
-      x1 = note.def.pitchDef.stepCx;
-      y1 = note.def.pitchDef.stepTop;
-
-      // Tie begin
-      if (!next || next.system !== system) {
-        x2 = system.width - note.systemX + 3;
-        tiePath = note.el.path(getTiePath(x1, y1, x2, y1 - 3));
-
-      // Tie complete
-      } else {
-        noteDx = next.systemX - note.systemX;
-        x2 = next.def.pitchDef.stepCx;
-        y2 = next.def.pitchDef.stepTop;
-        tiePath = note.el.path(getTiePath(x1, y1, noteDx + x2, y2));
-      }
-
-      if (note.tie.nextHasError) {
-        tiePath.addClass('mus-error');
-      }
-    }
-  };
-
 
   /**
    * Render the score in jianpu (numbered musical notation).
@@ -4543,6 +4665,117 @@ return new Parser;
 
 }(musje.Renderer, Snap));
 
+/* global musje, Snap */
+
+(function (musje, Snap) {
+  'use strict';
+
+  function getCurvePath(x1, y1, x2, y2) {
+    var
+      dx = x2 - x1,
+      dy = y2 - y1,
+      c1x = 0,//-0.1 * dx,
+      c1y = 0,//-0.1 * dy,
+      c2x = dx,//1.1 * dx,
+      c2y = dy;//1.1 * dy;
+
+    return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
+      x1: x1,
+      y1: y1,
+      c1x: c1x,
+      c1y: c1y - 8,
+      c2x: c2x,
+      c2y: c2y - 8,
+      dx: dx,
+      dy: dy,
+      c3x: -c1x,
+      c3y: -c1y - 10,
+      c4x: -c2x,
+      c4y: -c2y - 10,
+      negDx: -dx,
+      negDy: -dy
+    });
+  }
+
+  function renderEndCurve(note, error) {
+    var
+      x1 = note.def.pitchDef.stepCx,
+      y1 = note.def.pitchDef.stepTop,
+      x2 = - note.systemX - 3,
+      el = note.el.path(getCurvePath(x1, y1, x2, y1 - 3));
+
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
+
+  function renderBeginCurve(note, error) {
+    var
+      x1 = note.def.pitchDef.stepCx,
+      y1 = note.def.pitchDef.stepTop,
+      x2 = note.system.width - note.systemX + 3,
+      el = note.el.path(getCurvePath(x1, y1, x2, y1 - 3));
+
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
+
+  function renderCompleteCurve(note1, note2, error) {
+    var
+      x1 = note1.def.pitchDef.stepCx,
+      y1 = note1.def.pitchDef.stepTop,
+      x2 = note2.def.pitchDef.stepCx,
+      y2 = note2.def.pitchDef.stepTop,
+      noteDx = note2.systemX - note1.systemX,
+      el = note1.el.path(getCurvePath(x1, y1, noteDx + x2, y2));
+
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
+
+  function renderCurve(type, note) {
+    var next, prev, prevHasError, nextHasError;
+
+    if (note[type].end) {
+      prev = note[type].prevParent;
+      prevHasError = note[type].prevHasError;
+
+      if (!prev || prev.system !== note.system) {
+        renderEndCurve(note, prevHasError);
+      } else if (prevHasError) {
+        renderCompleteCurve(note, prev, prevHasError);
+      }
+    }
+
+    if (note[type].begin) {
+      next = note[type].nextParent;
+      nextHasError = note[type].nextHasError;
+
+      if (!next || next.system !== note.system) {
+        renderBeginCurve(note, nextHasError);
+      } else {
+        renderCompleteCurve(note, next, nextHasError);
+      }
+    }
+  }
+
+  /**
+   * Render tie.
+   * @param  {musje.Note} note
+   */
+  musje.Renderer.renderTie = function (note) {
+    renderCurve('tie', note);
+  };
+
+  /**
+   * Render slur.
+   * @param  {musje.Note} note
+   */
+  musje.Renderer.renderSlur = function (note) {
+    renderCurve('slur', note);
+  };
+
+}(musje, Snap));
+
 /* global musje, MIDI */
 
 (function (musje, MIDI) {
@@ -4578,10 +4811,10 @@ return new Parser;
       dur = note.duration.second;
 
     function play() {
-      if (!note.tie.prev) {
+      if (!note.tie.prevParent || note.tie.prevHasError) {
         MIDI.noteOn(0, midiNumber, 100, 0);
       }
-      if (!note.tie.next) {
+      if (!note.tie.nextParent || note.tie.nextHasError) {
         MIDI.noteOff(0, midiNumber, dur);
       }
 

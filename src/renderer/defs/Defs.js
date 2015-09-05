@@ -23,7 +23,7 @@
     getAccidental: function (accidental) {
       var id = 'a' + accidental.replace(/#/g, 's');
       return this[id] ||
-          (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
+            (this[id] = new Defs.AccidentalDef(id, accidental, this._layout));
     },
 
     _make: function (id, musicData) {
@@ -45,17 +45,21 @@
 
     _getPitch: function (id, pitch, underbar) {
       return this[id] ||
-          (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
+            (this[id] = new Defs.PitchDef(id, pitch, underbar, this));
     },
 
+    /**
+     * Make note.
+     * @param id {string}  Def id.
+     * @param note {musje.Note} Note
+     * @return {Object}
+     */
     _makeNote: function (id, note) {
       var
-        pitch = note.pitch,
-        duration = note.duration,
-        underbar = duration.underbar,
-        pitchId = pitch.defId + underbar,
-        pitchDef = this._getPitch(pitchId, pitch, underbar),
-        durationDef = this.get(duration);
+        underbar = note.duration.underbar,
+        pitchId = note.pitch.defId + underbar,
+        pitchDef = this._getPitch(pitchId, note.pitch, underbar),
+        durationDef = this.get(note.duration);
 
       return {
         pitchDef: pitchDef,
@@ -71,7 +75,7 @@
      * @protected
      * @param  {string} id   [description]
      * @param  {string} rest [description]
-     * @return {musje.Defs.NoteDef}      [description]
+     * @return {Object}      [description]
      */
     _makeRest: function(id, rest) {
       return this._makeNote(id, new musje.Note({

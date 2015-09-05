@@ -37,6 +37,15 @@
       }
     },
 
+    beams: {
+      get: function () {
+        return this._beams || (this._beams = []);
+      },
+      set: function (beams) {
+        this._beams = beams;
+      }
+    },
+
     /**
      * Convert the rest to musje source code string.
      * @return {string} Converted musje source code.

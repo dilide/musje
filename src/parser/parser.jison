@@ -7,8 +7,7 @@
   function lastItem(arr) { return arr[arr.length - 1]; }
 
   function onlyProperty(obj) {
-    for (var key in obj) {}
-    return obj[key];
+    return obj[Object.keys(obj)[0]];
   }
 
   function octave(str) {
@@ -17,18 +16,15 @@
   }
 
   function removeLastEmptyMeasure(score) {
-    var
-      parts = score.parts,
-      lastMeasure,
-      i;
+    var parts = score.parts;
     if (!parts) { return; }
 
-    for (i = 0; i < parts.length; i++) {
-      lastMeasure = lastItem(parts[i].measures);
+    parts.forEach(function (part) {
+      var lastMeasure = lastItem(part.measures);
       if (lastMeasure.data.length === 0) {
-        parts[i].measures.pop();
+        part.measures.pop();
       }
-    }
+    });
   }
 
 %}
@@ -39,8 +35,8 @@
 
 S             [ \t]
 NL            [\n\r]
-ACCIDENTAL    "#"{1,2}|"n"|"b"{1,2}
-HALF          " "*"-"" "*
+ACCIDENTAL    '#'{1,2}|'n'|'b'{1,2}
+HALF          ' '*'-'' '*
 SMALL_INT     [1-9]\d{0,2}
 BEATS         {SMALL_INT}\/
 
@@ -50,8 +46,8 @@ BEATS         {SMALL_INT}\/
 \/\*([\s\S]*?)\*\/      return 'S'
 \/\*[\s\S]*             return 'S'
 
-"<<"                   { this.begin('title'); }
-<title>.*">>"          { yytext = yytext.substr(0, yyleng - 2).trim();
+'<<'                   { this.begin('title'); }
+<title>.*'>>'          { yytext = yytext.substr(0, yyleng - 2).trim();
                           return 'TITLE'; }
 <title>{S}*{NL}         { this.begin('INITIAL'); }
 <title>.*               { this.begin('INITIAL');
@@ -65,32 +61,32 @@ BEATS         {SMALL_INT}\/
 
 {ACCIDENTAL}            return 'ACCIDENTAL'
 [1-7]                   return 'STEP'
-","+|"'"+               return 'OCTAVE'
-"."+                    return 'DOT'
+','+|"'"+               return 'OCTAVE'
+'.'+                    return 'DOT'
 {HALF}{3}               return 'WHOLE'
 {HALF}                  return 'HALF'
-" "*"~"                 return 'TIE'
+' '*'~'                 return 'TIE'
 
 [_]                     return '_'
-"="                     return '='
-"."                     return '.'
+'='                     return '='
+'.'                     return '.'
 [0]                     return '0'
-"<"                     return '<'
-">"                     return '>'
-"("                     return '('
-")"                     return ')'
+'<'                     return '<'
+'>'                     return '>'
+'('                     return '('
+')'                     return ')'
 \/                      return '/'
-"\\"                    return '\\'
-"|]"                    return '|]'
-"||"                    return '||'
-"[|"                    return '[|'
-"|:"                    return '|:'
-":|:"                   return ':|:'
-":|"                    return ':|'
-"|"                     return '|'
-"{"                     return '{'
-"}"                     return '}'
-":"                     return ':'
+'\\'                    return '\\'
+'|]'                    return '|]'
+'||'                    return '||'
+'[|'                    return '[|'
+'|:'                    return '|:'
+':|:'                   return ':|:'
+':|'                    return ':|'
+'|'                     return '|'
+'{'                     return '{'
+'}'                     return '}'
+':'                     return ':'
 
 {NL}                    return 'NL'
 {S}                     return 'S'
@@ -131,12 +127,9 @@ maybe_space
   ;
 
 musje
-  : score_head
-    { $$ = { head: $1 }; }
-  | part_list
-    { $$ = { parts: $1 }; }
-  | score_head part_list
-    { $$ = { head: $1, parts: $2 }; }
+  : score_head              -> { head: $1 }
+  | part_list               -> { parts: $1 }
+  | score_head part_list    -> { head: $1, parts: $2 }
   ;
 
 score_head
@@ -151,13 +144,11 @@ title
   ;
 
 part_list
-  : part
-    { $$ = [$1]; }
+  : part                    -> [$1]
   ;
 
 part
-  : measure_list
-    { $$ = { measures: $1}; }
+  : measure_list            -> { measures: $1 }
   | bar maybe_space measure_list
     { $$ = { measures: $3}; $3[0].data.unshift({ bar: $1 }); }
   ;
@@ -172,36 +163,24 @@ measure_list
   ;
 
 measure
-  : music_data maybe_space
-    { $$ = { data: [$1] }; }
-  | measure music_data maybe_space
-    { $$ = $1; $1.data.push($2); }
+  : music_data maybe_space            -> { data: [$1] }
+  | measure music_data maybe_space    { $$ = $1; $1.data.push($2); }
   ;
 
 bar
-  : '|'
-    { $$ = 'single'; }
-  | '||'
-    { $$ = 'double'; }
-  | '|]'
-    { $$ = 'end'; }
-  // | '[|'
-  | '|:'
-    { $$ = 'repeat-begin'; }
-  | ':|'
-    { $$ = 'repeat-end'; }
-  | ':|:'
-    { $$ = 'repeat-both'; }
+  : '|'             -> 'single'
+  | '||'            -> 'double'
+  | '|]'            -> 'end'
+  | '|:'            -> 'repeat-begin'
+  | ':|'            -> 'repeat-end'
+  | ':|:'           -> 'repeat-both'
   ;
 
 music_data
   : slurable
-  | slurable TIE
-    { $$ = $1; onlyProperty($1).tie = true; }
-  | '0' maybe_duration
-    { $$ = { rest: { duration: $2 } }; }
-  | voice
-    { $$ = { voice: $1 }; }
+  | slurable TIE          { $$ = $1; onlyProperty($1).tie = '~'; }
+  | '0' maybe_duration    -> { rest: { duration: $2 } }
+  | voice                 -> { voice: $1 }
   | time_signature
   ;
 
@@ -213,7 +192,7 @@ slurable
       $$ = $2;
       extend(onlyProperty($2), {
         duration: $3,
-        slurs: ['begin']
+        slur: { begin: '(' }
       });
     }
   | pitchful maybe_duration ')'
@@ -221,86 +200,61 @@ slurable
       $$ = $1;
       extend(onlyProperty($1), {
         duration: $2,
-        slurs: ['end']
+        slur: { end: ')' }
       });
     }
   ;
 
 pitchful
-  : note
-    { $$ = { note: $1 }; }
-  | chord
-    { $$ = { chord: $1 }; }
+  : note                  -> { note: $1 }
+  | chord                 -> { chord: $1 }
   ;
 
 note
-  : pitch
-    { $$ = { pitch: $1 }; }
+  : pitch                 -> { pitch: $1 }
   ;
 
 pitch
-  : STEP
-    { $$ = { step: +$1 }; }
-  | STEP OCTAVE
-    { $$ = { step: +$1, octave: octave($2) }; }
-  | ACCIDENTAL STEP
-    { $$ = { accidental: $1, step: +$2 }; }
-  | ACCIDENTAL STEP OCTAVE
-    { $$ = { accidental: $1, step: +$2, octave: octave($3) }; }
+  : STEP                    -> { step: +$1 }
+  | STEP OCTAVE             -> { step: +$1, octave: octave($2) }
+  | ACCIDENTAL STEP         -> { accidental: $1, step: +$2 }
+  | ACCIDENTAL STEP OCTAVE  -> { accidental: $1, step: +$2, octave: octave($3) }
   ;
 
 maybe_duration
-  : %empty
-    { $$ = { type: 4 }; }
-  | type_modifier
-    { $$ = { type: $1 }; }
-  | DOT
-    { $$ = { type: 4, dot: $1.length }; }
-  | type_modifier DOT
-    { $$ = { type: $1, dot: $2.length }; }
+  : %empty                -> { type: 4 }
+  | type_modifier         -> { type: $1 }
+  | DOT                   -> { type: 4, dot: $1.length }
+  | type_modifier DOT     -> { type: $1, dot: $2.length }
   ;
 
 type_modifier
-  : '_'
-    { $$ = 8; }
-  | '='
-    { $$ = 16; }
-  | '=' '_'
-    { $$ = 32; }
-  | '=' '='
-    { $$ = 64; }
-  | '=' '=' '_'
-    { $$ = 128; }
-  | '=' '=' '='
-    { $$ = 256; }
-  | 'HALF'
-    { $$ = 2; }
-  | 'WHOLE'
-    { $$ = 1; }
+  : '_'             -> 8
+  | '='             -> 16
+  | '=' '_'         -> 32
+  | '=' '='         -> 64
+  | '=' '=' '_'     -> 128
+  | '=' '=' '='     -> 256
+  | 'HALF'          -> 2
+  | 'WHOLE'         -> 1
   ;
 
 chord
-  : '<' pitch_list '>'
-    { $$ = { pitches: $2 }; }
+  : '<' pitch_list '>'    -> { pitches: $2 }
   ;
 
 pitch_list
-  : pitch
-    { $$ = [$1]; }
-  | pitch_list pitch
-    { $$ = $1; $1.push($2); }
+  : pitch                 -> [$1]
+  | pitch_list pitch      { $$ = $1; $1.push($2); }
   ;
 
 voice
-  : '{' voice_list '}'
-    { $$ = $2; }
+  : '{' voice_list '}'    -> $2
   ;
 
 voice_list
-  : voice_data_list
-    { $$ = [$1]; }
-  | voice_data_list ':' voice_data
-    { $$ = $1; $1.push($2); }
+  : voice_data_list                   -> [$1]
+  | voice_data_list ':' voice_data    { $$ = $1; $1.push($2); }
   ;
 
 // TODO
@@ -311,6 +265,5 @@ voice_data
   ;
 
 time_signature
-  : BEATS BEAT_TYPE
-    { $$ = { time: { beats: +$1, beatType: +$2 } }; }
+  : BEATS BEAT_TYPE       -> { time: { beats: +$1, beatType: +$2 } }
   ;

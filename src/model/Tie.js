@@ -6,23 +6,47 @@
   /**
    * Tie of the note.
    * @class
+   * @param parent {musje.Note|musje.Chord}
    */
   musje.Tie = function (parent) {
 
-    /** @member */
+    /**
+     * Parent
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
     this.parent = parent;
   };
 
   musje.defineProperties(musje.Tie.prototype,
   /** @lends musje.Tie# */
   {
+    value: '',
+
+    /**
+     * @readonly
+     */
+    begin: {
+      get: function () {
+        return this.value;
+      }
+    },
+
+    /**
+     * @readonly
+     */
+    end: {
+      get: function () {
+        return this.prevParent;
+      }
+    },
 
     /**
      * The previous durable music data in part, if it is a tie begin.
      * @type {musje.Durable|undefined}
      * @readonly
      */
-    prevDurable: {
+    prevParent: {
       get: function () {
         var prev = this.parent.prevDurableInPart;
         return prev && prev.tie && prev.tie.value && prev;
@@ -34,7 +58,7 @@
      * @type {musje.Durable|undefined}
      * @readonly
      */
-    nextDurable: {
+    nextParent: {
       get: function () {
         return this.value && this.parent.nextDurableInPart;
       }
@@ -47,7 +71,7 @@
      */
     prevHasError: {
       get: function () {
-        var prev = this.prevDurable;
+        var prev = this.prevParent;
         if (!prev || !prev.pitch) { return true; }
         return prev.pitch && prev.pitch.midiNumber !== this.parent.pitch.midiNumber;
       }
@@ -60,7 +84,7 @@
      */
     nextHasError: {
       get: function () {
-        var next = this.nextDurable;
+        var next = this.nextParent;
         if (!next || !next.pitch) { return true; }
         return next.pitch.midiNumber !== this.parent.pitch.midiNumber;
       }

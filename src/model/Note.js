@@ -90,30 +90,30 @@
     },
 
     /**
-     * Slurs attached to the note.
-     * @type {Array.<musje.Slur>}
+     * Slur
+     * @type {musje.Slur}
      */
-    slurs: {
+    slur: {
       get: function () {
-        return this._slurs;
+        return this._slur || (this._slur = new musje.Slur(this));
       },
-      set: function (slurs) {
-        this._slurs = slurs.map(function (slur) {
-          return new musje.Slur(slur);
-        });
+      set: function (slur) {
+        musje.extend(this.slur, slur);
       }
     },
 
     /** @method */
     toString: function () {
-      return this.pitch + this.duration;
+      console.log(typeof this.slur.begin)
+      return this.slur.begin + this.pitch + this.duration +
+             this.slur.end + this.tie.value;
     },
 
     toJSON: musje.makeToJSON({
       pitch: undefined,
       duration: undefined,
       tie: undefined,
-      slurs: undefined
+      slur: undefined
     }, 'note')
   });
 

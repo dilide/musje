@@ -114,6 +114,8 @@ if (typeof exports !== 'undefined') {
 
   musje.makeToJSON = function (values, elName) {
     return function () {
+      if (this.isEmpty) { return; }
+
       var
         that = this,
         result = {};
