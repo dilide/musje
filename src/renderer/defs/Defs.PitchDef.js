@@ -5,8 +5,7 @@
 
   var
     extend = musje.extend,
-    near = musje.near,
-    Defs = musje.Defs;
+    near = musje.near;
 
   function getBBoxAfterTransform(container, bbox, matrix) {
     var
@@ -17,13 +16,23 @@
     bbox = g.getBBox();
     g.remove();
     return bbox;
- }
+  }
 
-  // @constructor PitchDef
-  // SVG definition for pitch.
-  // The `PitchDef` is defined by properties: a s o u
-  // accidental step octave underbar
-  var PitchDef = Defs.PitchDef = function (id, pitch, underbar, defs) {
+  function getScale(hasAccidental, octave, underbar) {
+    var absOctave = Math.abs(octave);
+    return {
+      x: Math.pow(0.97, absOctave + underbar + (hasAccidental ? 2 : 0)),
+      y: Math.pow(0.95, absOctave + underbar + (hasAccidental ? 1 : 0))
+    };
+  }
+
+  /**
+   * SVG definition for pitch.
+   * The `PitchDef` is defined by properties: a s o u
+   * accidental step octave underbar
+   * @class
+   */
+  musje.Defs.PitchDef = function (id, pitch, underbar, defs) {
     var
       layout = this._layout = defs._layout,
       accidental = pitch.accidental,
@@ -65,70 +74,68 @@
     });
   };
 
-  PitchDef.prototype._addAccidental = function (accidental) {
-    if (!accidental) {
-      this._accidentalX2 = 0;
-      return;
+  musje.defineProperties(musje.Defs.PitchDef.prototype,
+  /** @lends musje.Defs.PitchDef# */
+  {
+
+    _addAccidental: function (accidental) {
+      if (!accidental) {
+        this._accidentalX2 = 0;
+        return;
+      }
+
+      var
+        accDef = this._defs.getAccidental(accidental);
+
+      this.el.use(accDef.el).attr('y', -this._layout.options.accidentalShift);
+      this._accidentalX2 = accDef.width;
+    },
+
+    _addStep: function (step) {
+      this._sbbox = this.el
+        .text(this._accidentalX2, 0, '' + step)
+        .attr('font-size', this._layout.options.fontSize)
+        .getBBox();
+    },
+
+    _addOctave: function (octave) {
+      if (!octave) { return; }
+
+      var
+        lo = this._layout.options,
+        octaveRadius = lo.octaveRadius,
+        octaveOffset = lo.octaveOffset,
+        octaveSep = lo.octaveSep,
+        octaveEl = this.el.g(),
+        i;
+
+      if (octave > 0) {
+        for (i = 0; i < octave; i++) {
+          octaveEl.circle(this._sbbox.cx, this._sbbox.y + octaveOffset - octaveSep * i, octaveRadius);
+        }
+      } else {
+        for (i = 0; i > octave; i--) {
+          octaveEl.circle(this._sbbox.cx, this._sbbox.y2 - octaveOffset - octaveSep * i, octaveRadius);
+        }
+      }
+      this.el.add(octaveEl);
+    },
+
+    // Transform the pitch to be in a good baseline position and
+    // scale it to be more square.
+    _getMatrix: function (scale, octave, underbar) {
+      var
+        lo = this._layout.options,
+        pbbox = this.el.getBBox(),
+        dy = (octave >= 0 && underbar === 0 ? -lo.stepBaselineShift : 0) -
+                              underbar * lo.underbarSep;
+
+      return Snap.matrix()
+        .translate(-pbbox.x, dy)
+        .scale(scale.x, scale.y)
+        .translate(0, near(pbbox.y2, this._sbbox.y2) ? 0 : -pbbox.y2);
     }
 
-    var
-      accDef = this._defs.getAccidental(accidental);
-
-    this.el.use(accDef.el).attr('y', -this._layout.options.accidentalShift);
-    this._accidentalX2 = accDef.width;
-  };
-
-  PitchDef.prototype._addStep = function (step) {
-    this._sbbox = this.el
-      .text(this._accidentalX2, 0, '' + step)
-      .attr('font-size', this._layout.options.fontSize)
-      .getBBox();
-  };
-
-  PitchDef.prototype._addOctave = function (octave) {
-    if (!octave) { return; }
-
-    var
-      lo = this._layout.options,
-      octaveRadius = lo.octaveRadius,
-      octaveOffset = lo.octaveOffset,
-      octaveSep = lo.octaveSep,
-      octaveEl = this.el.g(),
-      i;
-
-    if (octave > 0) {
-      for (i = 0; i < octave; i++) {
-        octaveEl.circle(this._sbbox.cx, this._sbbox.y + octaveOffset - octaveSep * i, octaveRadius);
-      }
-    } else {
-      for (i = 0; i > octave; i--) {
-        octaveEl.circle(this._sbbox.cx, this._sbbox.y2 - octaveOffset - octaveSep * i, octaveRadius);
-      }
-    }
-    this.el.add(octaveEl);
-  };
-
-  function getScale(hasAccidental, octave, underbar) {
-    var absOctave = Math.abs(octave);
-    return {
-      x: Math.pow(0.97, absOctave + underbar + (hasAccidental ? 2 : 0)),
-      y: Math.pow(0.95, absOctave + underbar + (hasAccidental ? 1 : 0))
-    };
-  }
-
-  // Transform the pitch to be in a good baseline position and
-  // scale it to be more square.
-  PitchDef.prototype._getMatrix = function (scale, octave, underbar) {
-    var
-      lo = this._layout.options,
-      pbbox = this.el.getBBox(),
-      dy = (octave >= 0 && underbar === 0 ? -lo.stepBaselineShift : 0) -
-                            underbar * lo.underbarSep;
-
-    return Snap.matrix()
-      .translate(-pbbox.x, dy)
-      .scale(scale.x, scale.y)
-      .translate(0, near(pbbox.y2, this._sbbox.y2) ? 0 : -pbbox.y2);
-  };
+  });
 
 }(musje, Snap));

@@ -58,6 +58,12 @@
       }
     },
 
+    height: {
+      get: function () {
+        return this.layout.options.partHeight;
+      }
+    },
+
     /**
      * The x position of the cell in parent timewise measure.
      * - Set the x value will cause the cell element translate.
@@ -80,11 +86,10 @@
      */
     y2: {
       get: function () {
-        return this._y2;
-      },
-      set: function (y2) {
-        this._y2 = y2;
-        this.el.transform(Snap.matrix().translate(this.x, y2));
+        var lo = this.layout.options,
+          p = this._pIndex;
+
+        return p ? (p + 1) * lo.partHeight + (p - 1) * lo.partSep : lo.partHeight;
       }
     },
 

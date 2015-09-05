@@ -11,46 +11,17 @@
   /** @lends musje.LayoutTimewiseMeasure# */
   {
     /**
-     * Calculate minimum measure width.
-     * @return {number} The minimum measure width.
+     * Minimun width of the measure.
+     * @type {number}
      */
-    calcMinWidth: function () {
-      var lo = this.layout.options, minWidth = 0;
-
-      this.parts.forEach(function (cell) {
-        minWidth = Math.max(minWidth, cell.minWidth);
-      });
-
-      this._padding = lo.measurePaddingLeft + lo.measurePaddingRight;
-      this.minWidth = minWidth + this._padding;
-    },
-
-    /**
-     * Flow the measure.
-     */
-    flow: function () {
-      var measure = this;
-      measure.parts = measure.parts.map(function (cell) {
-
-        /**
-         * Cell SVG group element.
-         * @memberof musje.LayoutCell#
-         * @alias el
-         * @type {Element}
-         * @readonly
-         */
-        cell.el = measure.el.g().addClass('mus-cell');
-
-        cell.height = measure.height;
-        cell._x = measure.barLeftInSystem.width / 2 +
-                  measure.layout.options.measurePaddingRight;
-
-        cell.y2 = measure.system.height;
-
-        // cell.drawBox();
-
-        return cell;
-      });
+    minWidth: {
+      get: function () {
+        var minWidth = 0;
+        this.parts.forEach(function (cell) {
+          minWidth = Math.max(minWidth, cell.minWidth);
+        });
+        return minWidth + this.padding;
+      }
     },
 
     /**
@@ -74,15 +45,33 @@
          * @readonly
          */
         this.el = system.el.g().addClass('mus-measure');
+      }
+    },
 
-        /**
-         * Height of the measure.
-         * @memberof musje.LayoutTimewiseMeasure#
-         * @alias height
-         * @type {number}
-         * @readonly
-         */
-        this.height = system.height;
+    padding: {
+      get: function () {
+        var lo = this.layout.options;
+        return lo.measurePaddingRight + lo.measurePaddingLeft;
+      }
+    },
+
+    outerWidth: {
+      get: function () {
+        return this.outerWidthLeft + this.outerWidthRight;
+      }
+    },
+
+    outerWidthLeft: {
+      get: function () {
+        return this.layout.options.measurePaddingLeft +
+                this.barLeftInSystem.width / 2;
+      }
+    },
+
+    outerWidthRight: {
+      get: function () {
+        return this.layout.options.measurePaddingRight +
+                this.barRightInSystem.width / 2;
       }
     },
 
@@ -98,10 +87,27 @@
       },
       set: function (w) {
         this._w = w;
-        var padding = this._padding;
+        var outerWidth = this.outerWidth;
+
         this.parts.forEach(function (cell) {
-          cell.width = w - padding;
+          cell.width = w - outerWidth;
         });
+      }
+    },
+
+    height: {
+      get: function () {
+        return this.system.height;
+      }
+    },
+
+    minHeight: {
+      get: function () {
+        var minHeight = 0, partSep = this.layout.options.partSep;
+        this.parts.forEach(function (cell) {
+          minHeight += cell.height + partSep;
+        });
+        return minHeight ? minHeight - partSep : 0;
       }
     },
 
@@ -118,6 +124,28 @@
       set: function (x) {
         this._x = x;
         this.el.transform(Snap.matrix().translate(x, 0));
+      }
+    },
+
+    /**
+     * If the measure in the beginning of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemBegin: {
+      get: function () {
+        return this._sIndex === 0;
+      }
+    },
+
+    /**
+     * If the measure in the end of the system.
+     * @type {boolean}
+     * @readonly
+     */
+    inSystemEnd: {
+      get: function () {
+        return this._sIndex === this.system.measures.length - 1;
       }
     },
 
@@ -141,6 +169,30 @@
       get: function () {
         return this.parts[0].barRightInSystem;
       }
+    },
+
+    /**
+     * Flow the measure.
+     */
+    flow: function () {
+      var measure = this;
+      measure.parts = measure.parts.map(function (cell) {
+
+        /**
+         * Cell SVG group element.
+         * @memberof musje.LayoutCell#
+         * @alias el
+         * @type {Element}
+         * @readonly
+         */
+        cell.el = measure.el.g().addClass('mus-cell');
+
+        cell.x = measure.outerWidthLeft;
+
+        // cell.drawBox();
+
+        return cell;
+      });
     }
   };
 

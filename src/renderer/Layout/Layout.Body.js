@@ -55,6 +55,7 @@
       set: function (h) {
         var layout = this._layout, lo = layout.options;
         layout.svg.height = h + lo.marginTop + lo.marginBottom;
+        this._h = h;
       }
     }
   });

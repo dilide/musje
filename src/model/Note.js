@@ -17,6 +17,7 @@
      * @memberof musje.Pitch#
      * @alias parent
      * @type {musje.MusicData}
+     * @readonly
      */
     this.pitch.parent = this;
   };
@@ -79,8 +80,6 @@
 
         /**
          * Value of the tie.
-         *
-         * Whether the note tie to the next note.
          * @memberof musje.Tie#
          * @alias value
          * @type {boolean}
@@ -104,7 +103,6 @@
 
     /** @method */
     toString: function () {
-      console.log(typeof this.slur.begin)
       return this.slur.begin + this.pitch + this.duration +
              this.slur.end + this.tie.value;
     },

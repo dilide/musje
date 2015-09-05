@@ -3,14 +3,11 @@
 (function (Layout, Snap) {
   'use strict';
 
-  var defineProperty = Object.defineProperty;
-
   /**
    * @class
-   * @alias musje.Layout.Svg
    * @param layout {musje.Layout}
    */
-  var Svg = Layout.Svg = function (layout) {
+  musje.Layout.Svg = function (layout) {
     this._layout = layout;
     var lo = layout.options;
 
@@ -18,28 +15,41 @@
         fontFamily: lo.fontFamily
       }).addClass('musje');
     this.el.clear();
+
     this.width = lo.width;
   };
 
-  defineProperty(Svg.prototype, 'width', {
-    get: function () {
-      return this._w;
+  musje.defineProperties(musje.Layout.Svg.prototype,
+  /** @lends musje.Layout.Svg# */
+  {
+    /**
+     * Width of the svg.
+     * @type {number}
+     */
+    width: {
+      get: function () {
+        return this._w;
+      },
+      set: function (w) {
+        this._w = w;
+        this.el.attr('width', w);
+        var body = this._layout.body;
+        if (body) { body.width = w; }
+      }
     },
-    set: function (w) {
-      this._w = w;
-      this.el.attr('width', w);
-      var body = this._layout.body;
-      if (body) { body.width = w; }
-    }
-  });
 
-  defineProperty(Svg.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._h = h;
-      this.el.attr('height', h);
+    /**
+     * Height of the svg.
+     * @type {number}
+     */
+    height: {
+      get: function () {
+        return this._h;
+      },
+      set: function (h) {
+        this._h = h;
+        this.el.attr('height', h);
+      }
     }
   });
 

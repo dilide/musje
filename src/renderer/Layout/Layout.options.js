@@ -52,9 +52,13 @@
     systemSep: '150%',
     musicDataSep: '20%',
 
+    partHeight: '150%',
+    partSep: '50%',
+
     measurePaddingLeft: '50%',
     measurePaddingRight: '50%',
 
+    barlineHeight: '120%',
     thinBarlineWidth: '4%',
     thickBarlineWidth: '16%',
     barlineSep: '18%',

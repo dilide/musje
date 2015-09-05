@@ -41,27 +41,26 @@
     },
 
     /**
-     * If the measure in the beginning of the system.
-     * @type {boolean}
+     * Left bar of the measure.
+     * @type {musje.Bar}
      * @readonly
      */
-    inSystemBegin: {
+    barLeft: {
       get: function () {
-        return this._sIndex === 0;
+        return this.parts[0].barLeft;
       }
     },
 
     /**
-     * If the measure in the end of the system.
-     * @type {boolean}
+     * Right bar of the measure.
+     * @type {musje.Bar}
      * @readonly
      */
-    inSystemEnd: {
+    barRight: {
       get: function () {
-        return this._sIndex === this.system.measures.length - 1;
+        return this.parts[0].barRight;
       }
     }
-
   });
 
 }(musje));

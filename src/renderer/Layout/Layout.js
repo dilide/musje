@@ -45,7 +45,6 @@
         cell.layout = layout;
         cell.flow();
       });
-      measure.calcMinWidth();
     });
   };
 
