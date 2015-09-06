@@ -1,12 +1,25 @@
 # Musje Change Log
 
-## 0.2.1
+## 0.3.0
 
+- Model has been complete rewritten.
+- Refactoring model and renderer
+- Add documentation using jsdoc3 (not completed yet).
+- The libs in demo is now included (not from CDN anymore).
 - Add this change log file.
+
+### Broken changes
+
+- The JSON schema support is dropped due to the written model (may be written again if required - low priority).
+- The model is slightly changed in tie and slur.
 
 ### Features
 
 - Ties can be rendererd.
+- Pitch alter is now correctly affacted by the previous note with the same step.
+- Slur rendering implemented.
+- The last system is filled and each system measures length are balanced
+during the process.
 
 
 ## 0.2.0 (2015-08-19)
