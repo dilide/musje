@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: model/Pitch.js</title>
+    <title>JSDoc: Source: renderer/Layout/Layout.Header.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: model/Pitch.js</h1>
+    <h1 class="page-title">Source: renderer/Layout/Layout.Header.js</h1>
 
     
 
@@ -30,132 +30,47 @@
 (function (musje) {
   'use strict';
 
-  // Constants and helpers
-  // =================================================================
-
-  var
-    A4_FREQUENCY = 440,
-    A4_MIDI_NUMBER = 69,
-    STEP_TO_MIDI_NUMBER = [null, 0, 2, 4, 5, 7, 9, 11],
-    ACCIDENTAL_TO_ALTER = { '#' : 1, '##': 2, n: 0, b : -1, bb: -2 };
-
-  function chars(ch, num) {
-    return new Array(num + 1).join(ch);
-  }
-
-  function octaveString(octave) {
-    return octave > 0 ? chars('\'', octave) :
-           octave &lt; 0 ? chars(',', -octave) : '';
-  }
-
   /**
+   * Header layout.
    * @class
-   * @param pitch {Object}
+   * @param {musje.Layout} layout
    */
-  musje.Pitch = function (pitch) {
-    musje.extend(this, pitch);
+  musje.Layout.Header = function (layout) {
+    this._layout = layout;
+    this.el = layout.body.el.g().addClass('mus-header');
+    this.width = layout.body.width;
   };
 
-  musje.defineProperties(musje.Pitch.prototype,
-  /** @lends musje.Pitch.prototype */
+  musje.defineProperties(musje.Layout.Header.prototype,
+  /** @lends musje.Layout.Header# */
   {
     /**
-     * Step is a value of `1`, `2`, `3`, `4`, `5`, `6`, or `7`.
+     * Width of the header.
      * @type {number}
-     * @default
      */
-    step: 1,
-
-    /**
-     * Octave is an integer value from `-5` to `5` inclusive.
-     * @type {number}
-     * @default
-     */
-    octave: 0,
-
-    /**
-     * Accidental is either of
-     * - `'#'` - sharp
-     * - `'##'` - double sharp
-     * - `'b'` - flat
-     * - `'bb'` - double flat
-     * - `'n'` - natural
-     * - `''` - (none)
-     * @type {string}
-     */
-    accidental: '',
-
-    /**
-     * Alter (from -2 to 2 inclusive).
-     *
-     * If no accidental in this pitch, it might be affected by a previous note in the same cell (the same part and the same measure).
-     * @type {number}
-     * @readonly
-     */
-    alter: {
+    width: {
       get: function () {
-        if (this.accidental) {
-          return ACCIDENTAL_TO_ALTER[this.accidental];
-        }
-        var al = this.alterLink;
-        return al ? al.alter : 0;
+        return this._w;
+      },
+      set: function (w) {
+        this._w = w;
       }
     },
 
     /**
-     * Pitch linked that will affect the alter in this pitch.
-     * @type {musje.Pitch|undefined}
-     * @readonly
-     */
-    alterLink: {
-      get: function () {
-        var prevData = this.parent.prev;
-
-        while(prevData) {
-          if (prevData.$type === 'Note' &amp;&amp;
-              prevData.pitch.step === this.step &amp;&amp; prevData.pitch.accidental) {
-            return prevData.pitch;
-          }
-          prevData = prevData.prev;
-        }
-      }
-    },
-
-    /**
-     * The MIDI note number of the pitch
+     * Height of the header.
      * @type {number}
      */
-    midiNumber: {
+    height: {
       get: function () {
-        return (this.octave + 5) * 12 +
-          STEP_TO_MIDI_NUMBER[this.step] + this.alter;
+        return this._h;
+      },
+      set: function (h) {
+        this._h = h;
+        var layout = this._layout;
+        layout.content.y = h ? h + layout.options.headerSep : 0;
       }
-    },
-
-    /**
-     * Frequency of the pitch
-     * @type {number}
-     * @readonly
-     */
-    frequency: {
-      get: function () {
-        return A4_FREQUENCY * Math.pow(2, (this.midiNumber - A4_MIDI_NUMBER) / 12);
-      }
-    },
-
-    /**
-     * Convert to musje source code string.
-     * @return {string} Converted musje source code string.
-     */
-    toString: function () {
-      return this.accidental + this.step + octaveString(this.octave);
-    },
-
-    toJSON: musje.makeToJSON({
-      step: 1,
-      octave: 0,
-      accidental: ''
-    })
+    }
   });
 
 }(musje));

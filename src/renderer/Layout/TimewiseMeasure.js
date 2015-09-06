@@ -83,7 +83,7 @@
      */
     width: {
       get: function () {
-        return this._w;
+        return this._w || (this._w = this.minWidth);
       },
       set: function (w) {
         this._w = w;
@@ -103,7 +103,10 @@
 
     minHeight: {
       get: function () {
-        var minHeight = 0, partSep = this.layout.options.partSep;
+        var
+          minHeight = 0,
+          partSep = this.layout.options.partSep;
+
         this.parts.forEach(function (cell) {
           minHeight += cell.height + partSep;
         });
@@ -176,7 +179,7 @@
      */
     flow: function () {
       var measure = this;
-      measure.parts = measure.parts.map(function (cell) {
+      measure.parts.forEach(function (cell) {
 
         /**
          * Cell SVG group element.
@@ -190,9 +193,25 @@
         cell.x = measure.outerWidthLeft;
 
         // cell.drawBox();
-
-        return cell;
       });
+    },
+
+    /**
+     * Draw box of the cell.
+     * @return {Element} The box SVG rect element.
+     */
+    drawBox: function () {
+      this._boxEl = this.el.rect(0, 0, this.width, this.height)
+                                .attr({ stroke: 'green', fill: 'none' });
+      return this._boxEl;
+    },
+
+    /**
+     * Clear the box SVG element.
+     */
+    clearBox: function () {
+      this._boxEl.remove();
+      this._boxEl = undefined;
     }
   };
 

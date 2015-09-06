@@ -43,28 +43,65 @@
   /** @lends musje.ScoreHead# */
   {
     /**
-     * Title of the song.
+     * Title of the score.
      * @type {string}
      */
     title: undefined,
 
     /**
-     * Composer of the song.
+     * Subtitle of the score.
+     * @type {string}
+     */
+    subtitle: undefined,
+
+    /**
+     * Subsubtitle of the score.
+     * @type {string}
+     */
+    subsubtitle: undefined,
+
+    /**
+     * Composer of the score.
      * @type {string}
      */
     composer: undefined,
 
-    // isEmpty: function () {
-    //   return !this.title &amp;&amp; !this.composer;
-    // },
+    /**
+     * Arranger of the score.
+     * @type {string}
+     */
+    arranger: undefined,
+
+    /**
+     * Lyricist of the score.
+     * @type {string}
+     */
+    lyricist: undefined,
+
+    isEmpty: {
+      get: function () {
+        return !this.title &amp;&amp; !this.subtitle &amp;&amp; !this.subsubtitle &amp;&amp;
+               !this.composer &amp;&amp; !this.arranger &amp;&amp; !this.lyricist;
+      }
+    },
 
     /**
      * Convert score head to string.
      * @return {string} The converted musje head source code.
      */
     toString: function () {
-      return '&lt;&lt;' + this.title + '>>' + this.composer + '\n';
-    }
+      return '' + (this.title ? ('&lt;&lt;' + this.title + '>>') : '') +
+              (this.composer || '') +
+              '\n';
+    },
+
+    toJSON: musje.makeToJSON({
+      title: undefined,
+      subtitle: undefined,
+      subsubtitle: undefined,
+      composer: undefined,
+      lyricist: undefined
+    })
   });
 
 }(musje));
@@ -78,13 +115,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Defs.PitchDef.html">PitchDef</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Header.html">Header</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Layout.System.html">System</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Renderer.html">Renderer</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Sep 06 2015 14:07:22 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -36,38 +36,6 @@
   musje.LayoutCell =
   /** @lends  musje.LayoutCell# */
   {
-    /**
-     * Flow the cell.
-     */
-    flow: function () {
-      var
-        defs = this.layout.defs,
-        lo = this.layout.options,
-        x = 0,
-        minHeight;
-
-      this.data.forEach(function (data) {
-        var def = data.def = defs.get(data);
-        data.x = x;
-        data.y = 0;
-        x += def.width + lo.musicDataSep;
-        minHeight = Math.min(minHeight, def.height);
-      });
-
-      this.minWidth = x;
-      this.minHeight = minHeight;
-    },
-
-    /**
-     * Reflow the cell.
-     * @protected
-     */
-    _reflow: function () {
-      var cell = this;
-      this.data.forEach(function (data) {
-        data.x *= cell.width / cell.minWidth;
-      });
-    },
 
     /**
      * Width
@@ -82,6 +50,12 @@
       set: function (w) {
         this._w = w;
         this._reflow();
+      }
+    },
+
+    height: {
+      get: function () {
+        return this.layout.options.partHeight;
       }
     },
 
@@ -107,11 +81,11 @@
      */
     y2: {
       get: function () {
-        return this._y2;
-      },
-      set: function (y2) {
-        this._y2 = y2;
-        this.el.transform(Snap.matrix().translate(this.x, y2));
+        var
+          lo = this.layout.options,
+          p = this._pIndex;
+
+        return p ? (p + 1) * lo.partHeight + p * lo.partSep : lo.partHeight;
       }
     },
 
@@ -175,13 +149,55 @@
       }
     },
 
-    drawBorder: function () {
-      this._borderEl = this.el.rect(0, -this.height, this.width, this.height)
-                              .addClass('bbox');
+    /**
+     * Reflow the cell.
+     * @protected
+     */
+    _reflow: function () {
+      var cell = this;
+      this.data.forEach(function (data) {
+        data.x *= cell.width / cell.minWidth;
+      });
     },
 
-    clearBorder: function () {
-      this._borderEl.remove();
+    /**
+     * Flow the cell.
+     */
+    flow: function () {
+      var
+        defs = this.layout.defs,
+        lo = this.layout.options,
+        x = 0,
+        minHeight;
+
+      this.data.forEach(function (data) {
+        var def = data.def = defs.get(data);
+        data.x = x;
+        data.y = 0;
+        x += def.width + lo.musicDataSep;
+        minHeight = Math.min(minHeight, def.height);
+      });
+
+      this.minWidth = x;
+      this.minHeight = minHeight;
+    },
+
+    /**
+     * Draw box of the cell.
+     * @return {Element} The box SVG rect element.
+     */
+    drawBox: function () {
+      this._boxEl = this.el.rect(0, -this.height, this.width, this.height)
+                           .addClass('bbox');
+      return this._boxEl;
+    },
+
+    /**
+     * Clear the box SVG element.
+     */
+    clearBox: function () {
+      this._boxEl.remove();
+      this._boxEl = undefined;
     }
   };
 
@@ -198,13 +214,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Defs.PitchDef.html">PitchDef</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Header.html">Header</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Layout.System.html">System</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Renderer.html">Renderer</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Sep 06 2015 14:07:22 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

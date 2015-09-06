@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Defs</title>
+    <title>JSDoc: Class: Renderer</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Defs</h1>
+    <h1 class="page-title">Class: Renderer</h1>
 
     
 
@@ -29,7 +29,7 @@
     <h2>
         <span class="ancestors"><a href="musje.html">musje</a>.</span>
     
-    Defs
+    Renderer
     </h2>
     
 </header>
@@ -41,12 +41,16 @@
     
         
 <dt>
-    <h4 class="name" id="Defs"><span class="type-signature"></span>new Defs<span class="signature">(layout)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Renderer"><span class="type-signature"></span>new Renderer<span class="signature">(svg, lo)</span><span class="type-signature"></span></h4>
 
     
 </dt>
 <dd>
 
+    
+    <div class="description">
+        <p>[Renderer description]</p>
+    </div>
     
 
     
@@ -79,13 +83,36 @@
 
         <tr>
             
-                <td class="name"><code>layout</code></td>
+                <td class="name"><code>svg</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="musje.Layout.html">musje.Layout</a></span>
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>lo</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
 
 
             
@@ -126,7 +153,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Defs.js.html">renderer/defs/Defs.js</a>, <a href="Defs.js.html#line11">line 11</a>
+        <a href="Renderer.js.html">renderer/Renderer/Renderer.js</a>, <a href="Renderer.js.html#line13">line 13</a>
     </li></ul></dd>
     
 
@@ -163,13 +190,6 @@
     
 
     
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="musje.Defs.PitchDef.html">PitchDef</a></dt>
-            <dd></dd>
-        </dl>
-    
 
     
 
@@ -181,7 +201,7 @@
         <dl>
             
 <dt>
-    <h4 class="name" id="_makeNote"><span class="type-signature"></span>_makeNote<span class="signature">(id, note)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="renderCell"><span class="type-signature">&lt;static> </span>renderCell<span class="signature">(cell, lo)</span><span class="type-signature"></span></h4>
 
     
 </dt>
@@ -189,7 +209,7 @@
 
     
     <div class="description">
-        <p>Make note.</p>
+        <p>Render cell</p>
     </div>
     
 
@@ -223,13 +243,13 @@
 
         <tr>
             
-                <td class="name"><code>id</code></td>
+                <td class="name"><code>cell</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type"><a href="musje.Cell.html">musje.Cell</a></span>
 
 
             
@@ -239,9 +259,128 @@
 
             
 
-            <td class="description last"><p>Def id.</p></td>
+            <td class="description last"><p>The cell</p></td>
         </tr>
 
+    
+
+        <tr>
+            
+                <td class="name"><code>lo</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Layout options</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Renderer.js.html">renderer/Renderer/Renderer.js</a>, <a href="Renderer.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="renderSlur"><span class="type-signature">&lt;static> </span>renderSlur<span class="signature">(note)</span><span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        <p>Render slur.</p>
+    </div>
+    
+
+    
+
+    
+
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
@@ -262,7 +401,7 @@
 
             
 
-            <td class="description last"><p>Note</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -293,7 +432,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Defs.js.html">renderer/defs/Defs.js</a>, <a href="Defs.js.html#line57">line 57</a>
+        <a href="Renderer.renderCurve.js.html">renderer/Renderer/Renderer.renderCurve.js</a>, <a href="Renderer.renderCurve.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -316,24 +455,6 @@
     
 
     
-    <h5>Returns:</h5>
-    
-            
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
-        
 
     
 </dd>
@@ -341,7 +462,7 @@
         
             
 <dt>
-    <h4 class="name" id="_makeRest"><span class="type-signature">&lt;protected> </span>_makeRest<span class="signature">(id, rest)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="renderTie"><span class="type-signature">&lt;static> </span>renderTie<span class="signature">(note)</span><span class="type-signature"></span></h4>
 
     
 </dt>
@@ -349,7 +470,7 @@
 
     
     <div class="description">
-        <p>Make rest is a trick to use a note with pitch.step = 0.</p>
+        <p>Render tie.</p>
     </div>
     
 
@@ -383,13 +504,13 @@
 
         <tr>
             
-                <td class="name"><code>id</code></td>
+                <td class="name"><code>note</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
 
 
             
@@ -399,30 +520,7 @@
 
             
 
-            <td class="description last"><p>[description]</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>rest</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>[description]</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -453,7 +551,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Defs.js.html">renderer/defs/Defs.js</a>, <a href="Defs.js.html#line80">line 80</a>
+        <a href="Renderer.renderCurve.js.html">renderer/Renderer/Renderer.renderCurve.js</a>, <a href="Renderer.renderCurve.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -476,28 +574,6 @@
     
 
     
-    <h5>Returns:</h5>
-    
-            
-<div class="param-desc">
-    <p>[description]</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Object</span>
-
-
-    </dd>
-</dl>
-
-        
 
     
 </dd>

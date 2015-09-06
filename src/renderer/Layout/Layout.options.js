@@ -49,11 +49,11 @@
     timeFontWeight: 'bold',
 
     headerSep: '100%',
-    systemSep: '150%',
+    systemSep: '180%',
     musicDataSep: '20%',
 
-    partHeight: '150%',
-    partSep: '50%',
+    partHeight: '120%',
+    partSep: '80%',
 
     measurePaddingLeft: '50%',
     measurePaddingRight: '50%',

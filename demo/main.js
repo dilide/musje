@@ -65,7 +65,7 @@
 
     $scope.run = function () {
       var t0 = now();
-      // try {
+      try {
         var score = $scope.score = musje.parse($scope.src);
         $scope.parseTime = now() - t0;
         $document[0].title =  (score.head.title || 'Untitled') + ' - Musje';
@@ -74,15 +74,10 @@
         // $scope.converted = '' + score;
 
         $scope.error = false;
-        // if (!tv4.validate(JSON.parse(score.stringify()), JSONSchema)) {
-        //   $scope.error =
-        //         'Validation Error: ' + JSON.stringify(tv4.error, null, 2) +
-        //       '\nValidation Missing: ' + JSON.stringify(tv4.missing, null, 2);
-        // }
-      // } catch (err) {
-      //   $scope.totalMeasures = 'N/A';
-      //   $scope.error = '' + err;
-      // }
+      } catch (err) {
+        $scope.totalMeasures = 'N/A';
+        $scope.error = '' + err;
+      }
       t0 = now();
       $scope.render();
       $scope.renderTime = now() - t0;

@@ -46,6 +46,12 @@
       }
     },
 
+    next: {
+      get: function () {
+        return this.layout.content.systems[this._index + 1];
+      }
+    },
+
     y: {
       get: function () {
         return this._y;
@@ -69,6 +75,18 @@
           min += measure.minWidth;
         });
         return min;
+      }
+    },
+
+    content: {
+      get: function () {
+        return this.layout.content;
+      }
+    },
+
+    systems: {
+      get: function () {
+        return this.content.systems;
       }
     },
 
@@ -103,18 +121,34 @@
         measure._sIndex = m;
 
         measure.flow();
+
         measure.x = x;
         x += measure.width;
         minHeight = Math.max(minHeight, measure.minHeight);
       });
 
       var prev = this.prev;
-      this.y = prev ? prev.y + prev.height + this.layout.options.systemSep :
-                        0;
+      this.y = prev ? prev.y + prev.height + this.layout.options.systemSep : 0;
       this.height = minHeight;
     },
 
+    _isTunable: {
+      get: function () {
+        var
+          ctWidth = this.content.width,
+          s = this._index,
+          ssLen = this.systems.length;
+
+        return ssLen > 2 ||
+           (ssLen === 1 && this.minWidth > ctWidth * 0.7) ||
+           (ssLen === 2 && (s === 0 ||
+                           (s === 1 && this.minWidth > ctWidth * 0.4)));
+      }
+    },
+
     _tuneMeasuresWidths: function () {
+      if (!this._isTunable) { return; }
+
       var
         pairs = getPairs(this.measures),
         length = pairs.length,
@@ -139,11 +173,6 @@
           itemLeft--;
         }
       }
-
-      // measures.forEach(function (measure) {
-      //   measure.el.rect(0, 0, measure.width, measure.height)
-      //         .attr({ stroke: 'green', fill: 'none' });
-      // });
     }
 
   });

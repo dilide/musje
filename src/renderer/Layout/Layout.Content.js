@@ -39,11 +39,8 @@
 
     height: {
       get: function () {
-        return this._h;
-      },
-      set: function (h) {
-        this._h = h;
-        this._resizeBody();
+        var last = this.systems[this.systems.length - 1];
+        return last ? last.y + last.height : 0;
       }
     },
 
@@ -69,10 +66,9 @@
         systems = this.systems = [system];
 
       scoreMeasures.forEach(function (measure) {
-        var
-          minWidth = measure.minWidth + measurePadding +
-                    (measure.barLeftInSystem.width +
-                     measure.barRightInSystem.width) / 2;
+        var minWidth = measure.minWidth + measurePadding +
+                      (measure.barLeftInSystem.width +
+                       measure.barRightInSystem.width) / 2;
 
         // Continue put this measure in the system.
         if (system.minWidth + minWidth < content.width) {
@@ -87,23 +83,73 @@
       });
     },
 
+    _maxLengthSystem: {
+      get:function () {
+        var maxLength = 0, i, system;
+
+        this.systems.forEach(function (system) {
+          maxLength = Math.max(maxLength, system.measures.length);
+        });
+
+        // Find the first max length system backward.
+        for(i = this.systems.length - 1; i >= 0; i--) {
+          system = this.systems[i];
+          if (system.measures.length === maxLength) { return system; }
+        }
+      }
+    },
+
+    _isNotBalancable: {
+      get: function () {
+        var
+          systems = this.systems,
+          len = systems.length;
+
+        return len === 1 ||
+              (len === 2 && systems[1].minWidth < this.width * 0.4);
+      }
+    },
+
+    _balanceSystems: function () {
+      if (this._isNotBalancable) { return; }
+
+      var
+        systems = this.systems,
+        last = systems[systems.length - 1],
+        system = this._maxLengthSystem,
+        next, prev;
+
+      // Move measures down to balance the last system.
+      while (last.measures.length < system.measures.length - 1) {
+
+        // Move a measure tail-to-head downward to the last measure.
+        while (true) {
+          next = system.next;
+          if (!next) { break; }
+          next.measures.unshift(system.measures.pop());
+          system = next;
+        }
+        system = this._maxLengthSystem;
+      }
+
+      // Move back measures if the system exceeds the content width.
+      system = last;
+      while (system) {
+        prev = system.prev;
+        while (system.minWidth > this.width) {
+          prev.measures.push(system.measures.shift());
+        }
+        system = prev;
+      }
+    },
+
     /**
      * @param scoreMeasure {musje.TimewiseMeasures} The timewise score measure.
      */
     flow: function (scoreMeasures) {
-
       this._makeSystems(scoreMeasures);
-
-      var
-        systemSep = this.layout.options.systemSep,
-        height = 0;
-
-      this.systems.forEach(function (system) {
-        system.flow();
-        height += system.height + systemSep;
-      });
-
-      this.height = height ? height - systemSep : 0;
+      this._balanceSystems();
+      this.systems.forEach(function (system) { system.flow(); });
     }
   });
 

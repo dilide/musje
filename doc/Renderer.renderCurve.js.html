@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: renderer/Layout/Layout.Svg.js</title>
+    <title>JSDoc: Source: renderer/Renderer/Renderer.renderCurve.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: renderer/Layout/Layout.Svg.js</h1>
+    <h1 class="page-title">Source: renderer/Renderer/Renderer.renderCurve.js</h1>
 
     
 
@@ -27,60 +27,114 @@
         <article>
             <pre class="prettyprint source linenums"><code>/* global musje, Snap */
 
-(function (Layout, Snap) {
+(function (musje, Snap) {
   'use strict';
 
-  /**
-   * @class
-   * @param layout {musje.Layout}
-   */
-  musje.Layout.Svg = function (layout) {
-    this._layout = layout;
-    var lo = layout.options;
+  function getCurvePath(x1, y1, x2, y2) {
+    var
+      dx = x2 - x1,
+      dy = y2 - y1,
+      c1x = 0,//-0.1 * dx,
+      c1y = 0,//-0.1 * dy,
+      c2x = dx,//1.1 * dx,
+      c2y = dy;//1.1 * dy;
 
-    this.el = Snap(layout.svg).attr({
-        fontFamily: lo.fontFamily
-      }).addClass('musje');
-    this.el.clear();
+    return Snap.format('M{x1},{y1}c{c1x},{c1y} {c2x},{c2y} {dx},{dy}c{c3x},{c3y} {c4x},{c4y} {negDx},{negDy}', {
+      x1: x1,
+      y1: y1,
+      c1x: c1x,
+      c1y: c1y - 8,
+      c2x: c2x,
+      c2y: c2y - 8,
+      dx: dx,
+      dy: dy,
+      c3x: -c1x,
+      c3y: -c1y - 10,
+      c4x: -c2x,
+      c4y: -c2y - 10,
+      negDx: -dx,
+      negDy: -dy
+    });
+  }
 
-    this.width = lo.width;
-  };
+  function renderEndCurve(note, error) {
+    var
+      x1 = note.def.pitchDef.stepCx,
+      y1 = note.def.pitchDef.stepTop,
+      x2 = - note.systemX - 3,
+      el = note.el.path(getCurvePath(x1, y1, x2, y1 - 3));
 
-  musje.defineProperties(musje.Layout.Svg.prototype,
-  /** @lends musje.Layout.Svg# */
-  {
-    /**
-     * Width of the svg.
-     * @type {number}
-     */
-    width: {
-      get: function () {
-        return this._w;
-      },
-      set: function (w) {
-        this._w = w;
-        this.el.attr('width', w);
-        var body = this._layout.body;
-        if (body) { body.width = w; }
-      }
-    },
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
 
-    /**
-     * Height of the svg.
-     * @type {number}
-     */
-    height: {
-      get: function () {
-        return this._h;
-      },
-      set: function (h) {
-        this._h = h;
-        this.el.attr('height', h);
+  function renderBeginCurve(note, error) {
+    var
+      x1 = note.def.pitchDef.stepCx,
+      y1 = note.def.pitchDef.stepTop,
+      x2 = note.system.width - note.systemX + 3,
+      el = note.el.path(getCurvePath(x1, y1, x2, y1 - 3));
+
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
+
+  function renderCompleteCurve(note1, note2, error) {
+    var
+      x1 = note1.def.pitchDef.stepCx,
+      y1 = note1.def.pitchDef.stepTop,
+      x2 = note2.def.pitchDef.stepCx,
+      y2 = note2.def.pitchDef.stepTop,
+      noteDx = note2.systemX - note1.systemX,
+      el = note1.el.path(getCurvePath(x1, y1, noteDx + x2, y2));
+
+    if (error) { el.addClass('mus-error'); }
+    return el;
+  }
+
+  function renderCurve(type, note) {
+    var next, prev, prevHasError, nextHasError;
+
+    if (note[type].end) {
+      prev = note[type].prevParent;
+      prevHasError = note[type].prevHasError;
+
+      if (!prev || prev.system !== note.system) {
+        renderEndCurve(note, prevHasError);
+      } else if (prevHasError) {
+        renderCompleteCurve(note, prev, prevHasError);
       }
     }
-  });
 
-}(musje.Layout, Snap));
+    if (note[type].begin) {
+      next = note[type].nextParent;
+      nextHasError = note[type].nextHasError;
+
+      if (!next || next.system !== note.system) {
+        renderBeginCurve(note, nextHasError);
+      } else {
+        renderCompleteCurve(note, next, nextHasError);
+      }
+    }
+  }
+
+  /**
+   * Render tie.
+   * @param  {musje.Note} note
+   */
+  musje.Renderer.renderTie = function (note) {
+    renderCurve('tie', note);
+  };
+
+  /**
+   * Render slur.
+   * @param  {musje.Note} note
+   */
+  musje.Renderer.renderSlur = function (note) {
+    renderCurve('slur', note);
+  };
+
+}(musje, Snap));
 </code></pre>
         </article>
     </section>

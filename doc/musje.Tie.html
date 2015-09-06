@@ -41,7 +41,7 @@
     
         
 <dt>
-    <h4 class="name" id="Tie"><span class="type-signature"></span>new Tie<span class="signature">(tie)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Tie"><span class="type-signature"></span>new Tie<span class="signature">(parent)</span><span class="type-signature"></span></h4>
 
     
 </dt>
@@ -83,13 +83,16 @@
 
         <tr>
             
-                <td class="name"><code>tie</code></td>
+                <td class="name"><code>parent</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">boolean</span>
+<span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
+|
+
+<span class="param-type"><a href="musje.Chord.html">musje.Chord</a></span>
 
 
             
@@ -99,7 +102,7 @@
 
             
 
-            <td class="description last"><p>Whether the note tie to the next note.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -176,14 +179,118 @@
         <dl>
             
 <dt>
-    <h4 class="name" id="error"><span class="type-signature"></span>error<span class="type-signature"> :Boolean</span></h4>
+    <h4 class="name" id="begin"><span class="type-signature">&lt;readonly> </span>begin<span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
+    
+
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line29">line 29</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="end"><span class="type-signature">&lt;readonly> </span>end<span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
+    
+
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line38">line 38</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="nextHasError"><span class="type-signature">&lt;readonly> </span>nextHasError<span class="type-signature"> :boolean</span></h4>
 
     
 </dt>
 <dd>
     
     <div class="description">
-        <p>Tie should link to the note with the same pitch.</p>
+        <p>If next durable music data in part has error.</p>
     </div>
     
 
@@ -192,7 +299,7 @@
         <ul>
             <li>
                 
-<span class="param-type">Boolean</span>
+<span class="param-type">boolean</span>
 
 
             </li>
@@ -222,7 +329,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line143">line 143</a>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line85">line 85</a>
     </li></ul></dd>
     
 
@@ -242,14 +349,14 @@
         
             
 <dt>
-    <h4 class="name" id="next"><span class="type-signature"></span>next<span class="type-signature"> :<a href="musje.Note.html">musje.Note</a>|undefined</span></h4>
+    <h4 class="name" id="nextParent"><span class="type-signature">&lt;readonly> </span>nextParent<span class="type-signature"> :musje.Durable|undefined</span></h4>
 
     
 </dt>
 <dd>
     
     <div class="description">
-        <p>Next tied note. Produced by <a href="musje.Score.html#linkTies">musje.Score#linkTies</a>.</p>
+        <p>The next durable music data in part.</p>
     </div>
     
 
@@ -258,7 +365,7 @@
         <ul>
             <li>
                 
-<span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
+<span class="param-type">musje.Durable</span>
 |
 
 <span class="param-type">undefined</span>
@@ -291,7 +398,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line153">line 153</a>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line61">line 61</a>
     </li></ul></dd>
     
 
@@ -311,14 +418,14 @@
         
             
 <dt>
-    <h4 class="name" id="prev"><span class="type-signature"></span>prev<span class="type-signature"> :<a href="musje.Note.html">musje.Note</a>|undefined</span></h4>
+    <h4 class="name" id="parent"><span class="type-signature">&lt;readonly> </span>parent<span class="type-signature"> :<a href="musje.Note.html">musje.Note</a>|<a href="musje.Chord.html">musje.Chord</a></span></h4>
 
     
 </dt>
 <dd>
     
     <div class="description">
-        <p>Previous tied note. Produced by <a href="musje.Score.html#linkTies">musje.Score#linkTies</a>.</p>
+        <p>Parent</p>
     </div>
     
 
@@ -328,6 +435,141 @@
             <li>
                 
 <span class="param-type"><a href="musje.Note.html">musje.Note</a></span>
+|
+
+<span class="param-type"><a href="musje.Chord.html">musje.Chord</a></span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="prevHasError"><span class="type-signature">&lt;readonly> </span>prevHasError<span class="type-signature"> :boolean</span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>If previous durable music data in part has error.</p>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">boolean</span>
+
+
+            </li>
+        </ul>
+    
+
+    
+<dl class="details">
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line72">line 72</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="prevParent"><span class="type-signature">&lt;readonly> </span>prevParent<span class="type-signature"> :musje.Durable|undefined</span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <p>The previous durable music data in part, if it is a tie begin.</p>
+    </div>
+    
+
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">musje.Durable</span>
 |
 
 <span class="param-type">undefined</span>
@@ -360,7 +602,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Score.js.html">model/Score.js</a>, <a href="Score.js.html#line133">line 133</a>
+        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line49">line 49</a>
     </li></ul></dd>
     
 
@@ -380,13 +622,27 @@
         
             
 <dt>
-    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="type-signature"></span></h4>
+    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="type-signature"> :boolean</span></h4>
 
     
 </dt>
 <dd>
     
+    <div class="description">
+        <p>Value of the tie.</p>
+    </div>
+    
 
+    
+        <h5>Type:</h5>
+        <ul>
+            <li>
+                
+<span class="param-type">boolean</span>
+
+
+            </li>
+        </ul>
     
 
     
@@ -412,7 +668,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Tie.js.html">model/Tie.js</a>, <a href="Tie.js.html#line13">line 13</a>
+        <a href="Note.js.html">model/Note.js</a>, <a href="Note.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -447,13 +703,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Defs.PitchDef.html">PitchDef</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Header.html">Header</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Layout.System.html">System</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Renderer.html">Renderer</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Sep 06 2015 14:07:22 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

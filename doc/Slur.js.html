@@ -33,27 +33,130 @@
   /**
    * Slur
    * @class
-   * @param {string} value - Beam value: `'begin'`, `'continue'` or `'end'`.
-   * @param {number} level - Beam level starting from 0 to up.
-   * @param {musje.Note} note - The parent note.
+   * @param parent {musje.Note|musje.Chord}
    */
-  musje.Slur = function (value, level, note) {
-    /** @member */
-    this.value = value;
-    /** @member */
-    this.level = level;
-    /** @member */
-    this.note = note;
+  musje.Slur = function (parent) {
+
+    /**
+     * Parent
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    this.parent = parent;
   };
 
   musje.defineProperties(musje.Slur.prototype,
   /** @lends musje.Slur# */
   {
-    toJSON: function () {
-      return this.value;
-    }
-  });
+    begin: '',
 
+    end: '',
+
+    /**
+     * Previous slurred parent.
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    prevParent: {
+      get: function () {
+        if (!this.end) { return; }
+
+        var prev = this.parent.prevInPart;
+        while(prev) {
+          if (prev.slur &amp;&amp; !prev.slur.isEmpty) {
+            return prev;
+          }
+          prev = prev.prevInPart;
+        }
+      }
+    },
+
+    /**
+     * Next Slurred parent.
+     * @type {musje.Note|musje.Chord}
+     * @readonly
+     */
+    nextParent: {
+      get: function () {
+        if (!this.begin) { return; }
+
+        var next = this.parent.nextInPart;
+        while(next) {
+          if (next.slur &amp;&amp; !next.slur.isEmpty) {
+            return next;
+          }
+          next = next.nextInPart;
+        }
+      }
+    },
+
+    /**
+     * @todo
+     * @type {boolean}
+     * @readonly
+     */
+    prevCrossTie: {
+      get: function () {
+
+      }
+    },
+
+    /**
+     * @todo
+     * @type {boolean}
+     * @readonly
+     */
+    nextCrossTie: {
+      get: function () {
+
+      }
+    },
+
+    /**
+     * If the previous slur has error.
+     * @type {boolean}
+     * @readonly
+     */
+    prevHasError: {
+      get: function () {
+        var prev = this.prevParent;
+        return !prev || !prev.slur.begin;
+      }
+    },
+
+    /**
+     * If the next slur has error.
+     * @type {boolean}
+     * @readonly
+     */
+    nextHasError: {
+      get: function () {
+        var next = this.nextParent;
+        return !next || !next.slur.end;
+      }
+    },
+
+    /**
+     * If the slur is empty.
+     * @type {boolean}
+     * @readonly
+     */
+    isEmpty: {
+      get: function () {
+        return !(this.begin || this.end);
+      }
+    },
+
+    /**
+     * Convert the slur to JSON object.
+     * @method
+     * @return {Object} JSON object.
+     */
+    toJSON: musje.makeToJSON({
+      begin: undefined,
+      end: undefined
+    })
+  });
 
 }(musje));
 </code></pre>
@@ -66,13 +169,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Defs.PitchDef.html">PitchDef</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Header.html">Header</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Layout.System.html">System</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Renderer.html">Renderer</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Sep 06 2015 14:07:22 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

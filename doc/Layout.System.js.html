@@ -27,10 +27,8 @@
         <article>
             <pre class="prettyprint source linenums"><code>/* global musje, Snap */
 
-(function (Layout, Snap) {
+(function (musje, Snap) {
   'use strict';
-
-  var defineProperty = Object.defineProperty;
 
   function getPairs(measures) {
     return measures.map(function (measure) {
@@ -43,107 +41,170 @@
     });
   }
 
-  var System = Layout.System = function (content, lo) {
-    this._lo = lo;
-    this.el = content.el.g().addClass('mus-system');
-    this.width = content.width;
+  /**
+   * @class
+   * @param {number} index
+   * @param {musje.Layout} layout
+   */
+  musje.Layout.System = function (layout, index) {
+
+    /**
+     * Index of the system in systems.
+     * @type {number}
+     * @protected
+     */
+    this._index = index;
+
+    /** @member */
+    this.layout = layout;
+
+    /** @member */
+    this.el = layout.content.el.g().addClass('mus-system');
+    /** @member */
     this.measures = [];
   };
 
-  System.prototype.flow = function () {
-    var
-      system = this,
-      x = 0;
+  musje.defineProperties(musje.Layout.System.prototype,
+  /** @lends musje.Layout.System# */
+  {
+    prev: {
+      get: function () {
+        return this.layout.content.systems[this._index - 1];
+      }
+    },
 
-    system._tuneMeasuresWidths();
-    system.measures.forEach(function (measure, m) {
+    next: {
+      get: function () {
+        return this.layout.content.systems[this._index + 1];
+      }
+    },
 
-      /**
-       * Reference to the system.
-       * Produced by {@link musje.Layout.System#flow}
-       * @memberof musje.TimewiseMeasure#
-       * @alias system
-       * @type {musje.Layout.System}
-       * @readonly
-       */
-      measure.system = system;
+    y: {
+      get: function () {
+        return this._y;
+      },
+      set: function (y) {
+        this._y = y;
+        this.el.transform(Snap.matrix().translate(0, y));
+      }
+    },
 
-      /**
-       * Index of this measure in the system.
-       * Produced by {@link musje.Layout.System#flow}
-       * @memberof musje.TimewiseMeasure#
-       * @alias _sIndex
-       * @type {number}
-       * @protected
-       */
-      measure._sIndex = m;
-      measure.flow();
-      measure.x = x;
-      x += measure.width;
-    });
-  };
+    width: {
+      get: function () {
+        return this.layout.content.width;
+      }
+    },
 
-  System.prototype._tuneMeasuresWidths = function () {
-    var
-      pairs = getPairs(this.measures),
-      length = pairs.length,
-      widthLeft = this.width,
-      itemLeft = length,
-      i = 0,    // i + itemLeft === length
-      width;
+    minWidth: {
+      get: function () {
+        var min = 0;
+        this.measures.forEach(function (measure) {
+          min += measure.minWidth;
+        });
+        return min;
+      }
+    },
 
-    while (i &lt; length) {
-      if (widthLeft >= pairs[i].width * itemLeft) {
-        width = widthLeft / itemLeft;
-        do {
+    content: {
+      get: function () {
+        return this.layout.content;
+      }
+    },
+
+    systems: {
+      get: function () {
+        return this.content.systems;
+      }
+    },
+
+    flow: function () {
+      var
+        system = this,
+        minHeight = 0,
+        x = 0;
+
+      this._tuneMeasuresWidths();
+
+      this.measures.forEach(function (measure, m) {
+
+        /**
+         * Reference to the system.
+         * Produced by {@link musje.Layout.System#flow}
+         * @memberof musje.TimewiseMeasure#
+         * @alias system
+         * @type {musje.Layout.System}
+         * @readonly
+         */
+        measure.system = system;
+
+        /**
+         * Index of this measure in the system.
+         * Produced by {@link musje.Layout.System#flow}
+         * @memberof musje.TimewiseMeasure#
+         * @alias _sIndex
+         * @type {number}
+         * @protected
+         */
+        measure._sIndex = m;
+
+        measure.flow();
+
+        measure.x = x;
+        x += measure.width;
+        minHeight = Math.max(minHeight, measure.minHeight);
+      });
+
+      var prev = this.prev;
+      this.y = prev ? prev.y + prev.height + this.layout.options.systemSep : 0;
+      this.height = minHeight;
+    },
+
+    _isTunable: {
+      get: function () {
+        var
+          ctWidth = this.content.width,
+          s = this._index,
+          ssLen = this.systems.length;
+
+        return ssLen > 2 ||
+           (ssLen === 1 &amp;&amp; this.minWidth > ctWidth * 0.7) ||
+           (ssLen === 2 &amp;&amp; (s === 0 ||
+                           (s === 1 &amp;&amp; this.minWidth > ctWidth * 0.4)));
+      }
+    },
+
+    _tuneMeasuresWidths: function () {
+      if (!this._isTunable) { return; }
+
+      var
+        pairs = getPairs(this.measures),
+        length = pairs.length,
+        widthLeft = this.width,
+        itemLeft = length,
+        i = 0,    // i + itemLeft === length
+        width;
+
+      while (i &lt; length) {
+        if (widthLeft >= pairs[i].width * itemLeft) {
+          width = widthLeft / itemLeft;
+          do {
+            pairs[i].measure.width = width;
+            i++;
+          } while (i &lt; length);
+          break;
+        } else {
+          width = pairs[i].width;
           pairs[i].measure.width = width;
+          widthLeft -= width;
           i++;
-        } while (i &lt; length);
-        break;
-      } else {
-        width = pairs[i].width;
-        pairs[i].measure.width = width;
-        widthLeft -= width;
-        i++;
-        itemLeft--;
+          itemLeft--;
+        }
       }
     }
 
-    // measures.forEach(function (measure) {
-    //   measure.el.rect(0, 0, measure.width, measure.height)
-    //         .attr({ stroke: 'green', fill: 'none' });
-    // });
-  };
-
-  defineProperty(System.prototype, 'y', {
-    get: function () {
-      return this._y;
-    },
-    set: function (y) {
-      this._y = y;
-      this.el.transform(Snap.matrix().translate(0, y));
-    }
   });
 
-  defineProperty(System.prototype, 'width', {
-    get: function () {
-      return this._w;
-    },
-    set: function (w) {
-      this._w = w;
-    }
-  });
-
-  defineProperty(System.prototype, 'height', {
-    get: function () {
-      return this._h;
-    },
-    set: function (h) {
-      this._h = h;
-    }
-  });
-
-}(musje.Layout, Snap));
+}(musje, Snap));
 </code></pre>
         </article>
     </section>
@@ -154,13 +215,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="musje.Bar.html">Bar</a></li><li><a href="musje.Beam.html">Beam</a></li><li><a href="musje.Cell.html">Cell</a></li><li><a href="musje.Chord.html">Chord</a></li><li><a href="musje.Defs.html">Defs</a></li><li><a href="musje.Defs.PitchDef.html">PitchDef</a></li><li><a href="musje.Duration.html">Duration</a></li><li><a href="musje.Layout.html">Layout</a></li><li><a href="musje.Layout.Body.html">Body</a></li><li><a href="musje.Layout.Content.html">Content</a></li><li><a href="musje.Layout.Header.html">Header</a></li><li><a href="musje.Layout.Svg.html">Svg</a></li><li><a href="musje.Layout.System.html">System</a></li><li><a href="musje.Note.html">Note</a></li><li><a href="musje.PartwisePart.html">PartwisePart</a></li><li><a href="musje.PartwiseParts.html">PartwiseParts</a></li><li><a href="musje.Pitch.html">Pitch</a></li><li><a href="musje.Renderer.html">Renderer</a></li><li><a href="musje.Rest.html">Rest</a></li><li><a href="musje.Score.html">Score</a></li><li><a href="musje.ScoreHead.html">ScoreHead</a></li><li><a href="musje.Slur.html">Slur</a></li><li><a href="musje.Tie.html">Tie</a></li><li><a href="musje.Time.html">Time</a></li><li><a href="musje.TimewiseMeasure.html">TimewiseMeasure</a></li><li><a href="musje.TimewiseMeasures.html">TimewiseMeasures</a></li><li><a href="musje.Voice.html">Voice</a></li></ul><h3>Namespaces</h3><ul><li><a href="musje.html">musje</a></li></ul><h3>Mixins</h3><ul><li><a href="musje.LayoutCell.html">LayoutCell</a></li><li><a href="musje.LayoutMusicData.html">LayoutMusicData</a></li><li><a href="musje.LayoutTimewiseMeasure.html">LayoutTimewiseMeasure</a></li><li><a href="musje.MusicData.html">MusicData</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Tue Sep 01 2015 19:58:47 GMT+0800 (CST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha5</a> on Sun Sep 06 2015 14:07:22 GMT+0800 (CST)
 </footer>
 
 <script> prettyPrint(); </script>

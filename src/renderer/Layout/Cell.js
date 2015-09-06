@@ -9,38 +9,6 @@
   musje.LayoutCell =
   /** @lends  musje.LayoutCell# */
   {
-    /**
-     * Flow the cell.
-     */
-    flow: function () {
-      var
-        defs = this.layout.defs,
-        lo = this.layout.options,
-        x = 0,
-        minHeight;
-
-      this.data.forEach(function (data) {
-        var def = data.def = defs.get(data);
-        data.x = x;
-        data.y = 0;
-        x += def.width + lo.musicDataSep;
-        minHeight = Math.min(minHeight, def.height);
-      });
-
-      this.minWidth = x;
-      this.minHeight = minHeight;
-    },
-
-    /**
-     * Reflow the cell.
-     * @protected
-     */
-    _reflow: function () {
-      var cell = this;
-      this.data.forEach(function (data) {
-        data.x *= cell.width / cell.minWidth;
-      });
-    },
 
     /**
      * Width
@@ -86,10 +54,11 @@
      */
     y2: {
       get: function () {
-        var lo = this.layout.options,
+        var
+          lo = this.layout.options,
           p = this._pIndex;
 
-        return p ? (p + 1) * lo.partHeight + (p - 1) * lo.partSep : lo.partHeight;
+        return p ? (p + 1) * lo.partHeight + p * lo.partSep : lo.partHeight;
       }
     },
 
@@ -151,6 +120,39 @@
         bar.def = this.layout.defs.get(bar);
         return bar;
       }
+    },
+
+    /**
+     * Reflow the cell.
+     * @protected
+     */
+    _reflow: function () {
+      var cell = this;
+      this.data.forEach(function (data) {
+        data.x *= cell.width / cell.minWidth;
+      });
+    },
+
+    /**
+     * Flow the cell.
+     */
+    flow: function () {
+      var
+        defs = this.layout.defs,
+        lo = this.layout.options,
+        x = 0,
+        minHeight;
+
+      this.data.forEach(function (data) {
+        var def = data.def = defs.get(data);
+        data.x = x;
+        data.y = 0;
+        x += def.width + lo.musicDataSep;
+        minHeight = Math.min(minHeight, def.height);
+      });
+
+      this.minWidth = x;
+      this.minHeight = minHeight;
     },
 
     /**
