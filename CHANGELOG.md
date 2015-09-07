@@ -1,6 +1,6 @@
 # Musje Change Log
 
-## 0.3.0
+## 0.3.0 (2015-09-06)
 
 - Model has been complete rewritten.
 - Refactoring model and renderer
