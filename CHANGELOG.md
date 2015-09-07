@@ -15,11 +15,11 @@
 
 ### Features
 
-- Ties can be rendererd.
-- Pitch alter is now correctly affacted by the previous note with the same step.
+- Ties can be rendered.
+- Pitch alter is now correctly affected by the previous note with the same step.
 - Slur rendering implemented.
 - The last system is filled and each system measures length are balanced
-during the process.
+  during the process.
 
 
 ## 0.2.0 (2015-08-19)
@@ -107,7 +107,7 @@ during the process.
 
 ## 0.0.1 (2015-07-24)
 
-- The repo is picked up again for furthur development.
+- The repo is picked up again for further development.
 - Repo transfer from https://github.com/malcomwu/musje.git
   to https://github.com/jianpu/musje.git
 - Code clean up. Use vanilla javascript as much as possible.
@@ -115,8 +115,8 @@ during the process.
 
 ## 0.0.0 (2014-01-23)
 
-- Build infrastructur
+- Build infrastructure.
 
 ### Features
 
-- Musje 123 parser implemented
+- Musje 123 parser implemented.
