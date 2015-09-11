@@ -192,7 +192,7 @@ slurable
       $$ = $2;
       extend(onlyProperty($2), {
         duration: $3,
-        slur: { begin: '(' }
+        slur: { begin: 'solid' }
       });
     }
   | pitchful maybe_duration ')'
@@ -200,7 +200,15 @@ slurable
       $$ = $1;
       extend(onlyProperty($1), {
         duration: $2,
-        slur: { end: ')' }
+        slur: { end: 'solid' }
+      });
+    }
+  | '(' pitchful maybe_duration ')'
+    {
+      $$ = $2;
+      extend(onlyProperty($2), {
+        duration: $3,
+        slur: { begin: 'solid', end: 'solid' }
       });
     }
   ;
